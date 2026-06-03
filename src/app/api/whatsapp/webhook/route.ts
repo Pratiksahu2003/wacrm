@@ -172,7 +172,19 @@ export async function POST(request: Request) {
     // 401 (not 200) — we want Meta's delivery dashboard to show failures
     // loudly if a misconfiguration causes signatures to stop matching,
     // rather than silently eating events.
-    console.warn('[webhook] rejected request with invalid signature')
+    if (signatureSecrets.length === 0) {
+      console.warn(
+        '[webhook] rejected request — no Meta App Secret configured. ' +
+          'Save it in Settings → App Secret or set META_APP_SECRET on the server.',
+      )
+    } else if (!signature) {
+      console.warn('[webhook] rejected request — missing x-hub-signature-256 header')
+    } else {
+      console.warn(
+        '[webhook] rejected request — signature mismatch. ' +
+          'Confirm the App Secret matches the Meta app that owns this webhook.',
+      )
+    }
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 

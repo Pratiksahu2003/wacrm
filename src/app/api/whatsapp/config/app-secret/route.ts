@@ -54,6 +54,9 @@ export async function GET() {
     return NextResponse.json({
       has_config: Boolean(config),
       configured: Boolean(config?.meta_app_secret),
+      // True when META_APP_SECRET is set on this server — webhooks
+      // verify even if the account hasn't saved a secret in Settings.
+      server_env_fallback: Boolean(process.env.META_APP_SECRET),
     })
   } catch (error) {
     console.error('[app-secret GET]', error)

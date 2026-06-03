@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
@@ -78,6 +79,7 @@ export function WhatsAppConfig() {
   };
   const [registrationProbe, setRegistrationProbe] =
     useState<RegistrationProbe | null>(null);
+  const [webhookSignatureReady, setWebhookSignatureReady] = useState(true);
 
   const webhookUrl =
     typeof window !== 'undefined'
@@ -124,6 +126,18 @@ export function WhatsAppConfig() {
       }
       // Clear any stale probe result when reloading the row.
       setRegistrationProbe(null);
+
+      try {
+        const secretRes = await fetch('/api/whatsapp/config/app-secret');
+        const secretPayload = await secretRes.json();
+        if (secretRes.ok) {
+          setWebhookSignatureReady(
+            Boolean(secretPayload.configured || secretPayload.server_env_fallback),
+          );
+        }
+      } catch (err) {
+        console.error('App secret status check failed:', err);
+      }
 
       // Then verify health via the API (decrypts token + pings Meta)
       if (data) {
@@ -638,12 +652,36 @@ export function WhatsAppConfig() {
           </CardContent>
         </Card>
 
+        {!webhookSignatureReady && config && (
+          <Alert className="bg-red-950/30 border-red-700/50">
+            <AlertTriangle className="size-4 text-red-400" />
+            <AlertTitle className="text-red-200">
+              Webhook events will be rejected
+            </AlertTitle>
+            <AlertDescription className="text-slate-400 text-sm leading-relaxed">
+              Meta signs every webhook POST with your App Secret. Without it,
+              wacrm returns <strong className="text-red-300">401</strong> and
+              Meta&apos;s &quot;Test&quot; button fails with the error you saw.
+              Add your App Secret in{' '}
+              <Link
+                href="/settings?tab=app-secret"
+                className="text-primary hover:underline"
+              >
+                Settings → App Secret
+              </Link>
+              , or set <code className="text-slate-300">META_APP_SECRET</code>{' '}
+              on your production server.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Webhook URL */}
         <Card className="bg-slate-900 border-slate-700 ring-0 ring-transparent">
           <CardHeader>
             <CardTitle className="text-white">Webhook Configuration</CardTitle>
             <CardDescription className="text-slate-400">
               Use this URL as your webhook callback in the Meta App Dashboard.
+              Must be a public HTTPS URL — Meta cannot reach localhost.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -800,6 +838,16 @@ export function WhatsAppConfig() {
                     <li>Paste the <strong className="text-slate-200">Webhook Callback URL</strong> from above</li>
                     <li>Enter the same <strong className="text-slate-200">Verify Token</strong> you set here</li>
                     <li>Subscribe to &quot;messages&quot; webhook field</li>
+                    <li>
+                      Save your{' '}
+                      <Link
+                        href="/settings?tab=app-secret"
+                        className="text-primary hover:underline"
+                      >
+                        Meta App Secret
+                      </Link>{' '}
+                      in wacrm — required for webhook POSTs to be accepted
+                    </li>
                   </ol>
                 </AccordionContent>
               </AccordionItem>
