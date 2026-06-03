@@ -44,7 +44,7 @@ export function looksEncryptedToken(value: string): boolean {
   if (!parts.every(isHex)) return false
 
   if (parts.length === 3) {
-    const [ivHex, _ctHex, tagHex] = parts
+    const [ivHex, , tagHex] = parts
     if (ivHex.length !== GCM_IV_LENGTH * 2) return false
     if (tagHex.length !== AUTH_TAG_LENGTH * 2) return false
     return true

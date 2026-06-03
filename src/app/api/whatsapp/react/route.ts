@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendReactionMessage } from '@/lib/whatsapp/meta-api';
-import { decrypt } from '@/lib/whatsapp/encryption';
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption';
 import { sanitizePhoneForMeta } from '@/lib/whatsapp/phone-utils';
 import {
   checkRateLimit,
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit';
+
+export const runtime = 'nodejs';
 
 /**
  * POST /api/whatsapp/react
@@ -122,7 +124,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const accessToken = decrypt(config.access_token);
+    const decodedToken = decryptIfEncrypted(config.access_token);
+    const accessToken = decodedToken.plaintext;
+    if (!decodedToken.encrypted || decodedToken.legacy) {
+      void supabase
+        .from('whatsapp_config')
+        .update({ access_token: encrypt(accessToken) })
+        .eq('account_id', accountId);
+    }
     const sanitizedPhone = sanitizePhoneForMeta(contact.phone);
 
     try {

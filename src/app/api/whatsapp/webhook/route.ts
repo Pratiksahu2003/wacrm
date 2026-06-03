@@ -5,7 +5,7 @@ import {
   encrypt,
   isLegacyFormat,
 } from '@/lib/whatsapp/encryption'
-import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
+import { getMediaUrl } from '@/lib/whatsapp/meta-api'
 import { normalizePhone, phonesMatch } from '@/lib/whatsapp/phone-utils'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import {
@@ -26,6 +26,8 @@ import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
 } from '@/lib/whatsapp/template-webhook'
+
+export const runtime = 'nodejs'
 
 // Lazy-initialized to avoid build-time crash when env vars are missing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1199,11 +1201,13 @@ async function findOrCreateConversation(
     .select('*')
     .eq('account_id', accountId)
     .eq('contact_id', contactId)
-    .single()
+    .maybeSingle()
 
-  if (!findError && existing) {
-    return existing
+  if (findError) {
+    console.error('Error fetching conversations:', findError)
+    return null
   }
+  if (existing) return existing
 
   // Create new conversation. Same tenancy + audit split as
   // findOrCreateContact above.

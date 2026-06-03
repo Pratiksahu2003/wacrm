@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { decrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import {
   getSubscribedApps,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
+
+export const runtime = 'nodejs'
 
 /**
  * GET /api/whatsapp/config/verify-registration
@@ -71,7 +73,14 @@ export async function GET() {
 
   let accessToken: string
   try {
-    accessToken = decrypt(config.access_token)
+    const decoded = decryptIfEncrypted(config.access_token)
+    accessToken = decoded.plaintext
+    if (!decoded.encrypted || decoded.legacy) {
+      void supabase
+        .from('whatsapp_config')
+        .update({ access_token: encrypt(accessToken) })
+        .eq('id', config.id)
+    }
   } catch {
     return NextResponse.json({
       live: false,

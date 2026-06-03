@@ -123,12 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          // `account:accounts!inner(id, name)` — explicit join on the
-          // single FK profiles.account_id → accounts.id. `!inner` so a
-          // missing account collapses to null rather than a half-
-          // populated row (shouldn't happen post-017 NOT NULL, but
-          // belt-and-braces against forks running older schemas).
-          "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, account:accounts!inner(id, name)",
+          "id, full_name, email, avatar_url, role, beta_features, account_id, account_role, account:accounts(id, name)",
         )
         .eq("user_id", userId)
         .maybeSingle();

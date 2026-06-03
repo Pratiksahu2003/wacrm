@@ -15,6 +15,12 @@ describe("verifyMetaWebhookSignature", () => {
     expect(verifyMetaWebhookSignature(body, signedHeader(body))).toBe(true);
   });
 
+  it("accepts when body is provided as raw bytes", () => {
+    const body = JSON.stringify({ entry: [] });
+    const bytes = Buffer.from(body, "utf8");
+    expect(verifyMetaWebhookSignature(bytes, signedHeader(body))).toBe(true);
+  });
+
   it("rejects a signature computed with a different secret", () => {
     const body = "{}";
     expect(verifyMetaWebhookSignature(body, signedHeader(body, "wrong"))).toBe(

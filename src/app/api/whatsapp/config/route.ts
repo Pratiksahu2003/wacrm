@@ -6,7 +6,9 @@ import {
   subscribeWabaToApp,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
-import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
+
+export const runtime = 'nodejs'
 
 /**
  * Resolve the caller's account_id from their profile. Inlined here
@@ -114,7 +116,14 @@ export async function GET() {
     // If this fails, the key changed (or was never consistent across envs).
     let accessToken: string
     try {
-      accessToken = decrypt(config.access_token)
+      const decoded = decryptIfEncrypted(config.access_token)
+      accessToken = decoded.plaintext
+      if (!decoded.encrypted || decoded.legacy) {
+        void supabase
+          .from('whatsapp_config')
+          .update({ access_token: encrypt(accessToken) })
+          .eq('account_id', accountId)
+      }
     } catch (err) {
       console.error('[whatsapp/config GET] Token decryption failed:', err)
       return NextResponse.json(

@@ -7,13 +7,13 @@ import type { Conversation, ConversationStatus } from "@/types";
 import { Search, ChevronDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ConversationListProps {
@@ -53,6 +53,7 @@ export function ConversationList({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ConversationStatus | "all">("all");
   const [loading, setLoading] = useState(true);
+  const { accountId, profileLoading } = useAuth();
 
   // Keep the latest callback in a ref so the fetch effect below can
   // have a stable, empty-dep identity. Previously the fetch useCallback
@@ -76,9 +77,16 @@ export function ConversationList({
     let cancelled = false;
 
     (async () => {
+      if (profileLoading) return;
+      if (!accountId) {
+        onConversationsLoadedRef.current([]);
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from("conversations")
         .select("*, contact:contacts(*)")
+        .eq("account_id", accountId)
         .order("last_message_at", { ascending: false });
 
       if (cancelled) return;
@@ -105,7 +113,7 @@ export function ConversationList({
     // `resyncToken` is included so the parent can force a refetch when
     // the realtime channel reconnects or the tab regains focus — catches
     // up on any events sent while the WS was disconnected or throttled.
-  }, [resyncToken]);
+  }, [resyncToken, accountId, profileLoading]);
 
   const filtered = useMemo(() => {
     let result = conversations;
@@ -192,6 +200,12 @@ export function ConversationList({
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : !profileLoading && !accountId ? (
+          <div className="px-4 py-12 text-center">
+            <p className="text-sm text-slate-500">
+              Your profile is not linked to an account
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">

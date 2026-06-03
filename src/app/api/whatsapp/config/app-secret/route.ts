@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 
+export const runtime = 'nodejs'
+
 async function resolveAccountId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,

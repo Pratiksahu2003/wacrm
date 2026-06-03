@@ -180,7 +180,12 @@ function buildButtonComponent(
       };
     }
     case 'COPY_CODE': {
-      const code = override?.trim() || button.example;
+      const code = override?.trim() || button.example?.trim();
+      if (!code) {
+        throw new Error(
+          `COPY_CODE button #${index + 1} requires a coupon code. Provide buttonParams[${index}] or add an example code in the template definition.`,
+        );
+      }
       return {
         type: 'button',
         sub_type: 'copy_code',

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { decrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { submitMessageTemplate } from '@/lib/whatsapp/meta-api'
 import {
   validateTemplatePayload,
@@ -9,6 +9,8 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
+
+export const runtime = 'nodejs'
 
 /**
  * Shared upsert payload builder — both the Meta-failure path and the
@@ -174,7 +176,14 @@ export async function POST(request: Request) {
         )
       }
 
-      const accessToken = decrypt(config.access_token)
+      const decodedToken = decryptIfEncrypted(config.access_token)
+      const accessToken = decodedToken.plaintext
+      if (!decodedToken.encrypted || decodedToken.legacy) {
+        void supabase
+          .from('whatsapp_config')
+          .update({ access_token: encrypt(accessToken) })
+          .eq('id', config.id)
+      }
       try {
         const meta = await submitMessageTemplate({
           wabaId: config.waba_id,
