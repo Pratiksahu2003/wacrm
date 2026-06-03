@@ -206,32 +206,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const signatureHeader = request.headers.get('x-hub-signature-256')
-  const secrets = await loadWebhookSignatureSecrets(supabaseAdmin())
+  const secretSources = await describeWebhookSignatureSources(supabaseAdmin())
 
-  logWebhook('info', 'signature_sources', {
-    request_id: requestId,
-    ...describeWebhookSignatureSources(secrets),
-  })
+  const signature256 = request.headers.get('x-hub-signature-256')
+  const signature1 = request.headers.get('x-hub-signature')
+  const signature = signature256 ?? signature1
+  const signatureHeaderName = signature256
+    ? 'x-hub-signature-256'
+    : signature1
+      ? 'x-hub-signature'
+      : null
 
-  const { isValid, secretUsed } = verifyMetaWebhookSignature(
-    signatureHeader,
+  const signatureSecrets = await loadWebhookSignatureSecrets(supabaseAdmin())
+
+  const signatureOk = await verifyMetaWebhookSignature(
     rawBodyBytes,
-    secrets.list
+    signature,
+    signatureSecrets
   )
 
-  if (!isValid) {
+  if (!signatureOk) {
+    const reason =
+      signatureSecrets.length === 0
+        ? 'no_app_secret'
+        : !signature
+          ? 'missing_signature_header'
+          : 'signature_mismatch'
+
     logWebhook('warn', 'post_rejected', {
       request_id: requestId,
-      reason: 'invalid_signature',
-      has_signature: !!signatureHeader,
-      secret_count: secrets.list.length,
+      reason,
+      body_bytes: rawBodyBytes.byteLength,
+      has_signature_header: Boolean(signature),
+      signature_header: signatureHeaderName,
+      signature_prefix: signature?.slice(0, 12) ?? null,
+      ...secretSources,
       duration_ms: Date.now() - startedAt,
     })
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   // Parse body
@@ -268,7 +280,6 @@ export async function POST(request: Request) {
     request_id: requestId,
     body_bytes: rawBodyBytes.byteLength,
     ...summary,
-    signature_matched: secretUsed ?? null,
     duration_ms: Date.now() - startedAt,
   })
 
@@ -316,7 +327,7 @@ async function processWebhook(
       const value = change.value
 
       // Skip non-message webhooks
-      if (!value?.messages || value.messages.length === 0) {
+      if (!value?.messages || !value.contacts || value.messages.length === 0) {
         continue
       }
 
@@ -597,37 +608,50 @@ async function processMessage(
   // Check for broadcast reply flagging
   await flagBroadcastReplyIfAny(accountId, contactRecord.id)
 
-  // Run automations
-  const automationResult = await runAutomationsForTrigger({
-    triggerType: 'message_received',
-    accountId,
-    conversationId: conversation.id,
-    contactId: contactRecord.id,
-    messageContent: contentText,
-  })
-
-  if (automationResult.executed) {
-    logWebhook('info', 'automation_triggered', {
-      request_id: requestId,
-      automation_id: automationResult.automationId,
-    })
-  }
-
-  // Dispatch to flows
   const flowResult = await dispatchInboundToFlows({
     accountId,
-    conversationId: conversation.id,
+    userId: configOwnerUserId,
     contactId: contactRecord.id,
-    messageId: message.id,
-    content: contentText,
+    conversationId: conversation.id,
+    message: interactiveReplyId
+      ? {
+          kind: 'interactive_reply',
+          reply_id: interactiveReplyId,
+          reply_title: contentText ?? '',
+          meta_message_id: message.id,
+        }
+      : {
+          kind: 'text',
+          text: contentText ?? message.text?.body ?? '',
+          meta_message_id: message.id,
+        },
+    isFirstInboundMessage,
   })
+  const flowConsumed = flowResult.consumed
 
-  if (flowResult.handled) {
-    logWebhook('info', 'flow_dispatched', {
-      request_id: requestId,
-      flow_id: flowResult.flowId,
-      node_id: flowResult.nodeId,
-    })
+  const inboundText = contentText ?? message.text?.body ?? ''
+  const automationTriggers: (
+    | 'new_contact_created'
+    | 'first_inbound_message'
+    | 'new_message_received'
+    | 'keyword_match'
+  )[] = []
+  if (!flowConsumed) {
+    automationTriggers.push('new_message_received', 'keyword_match')
+  }
+  if (contactOutcome.created) automationTriggers.unshift('new_contact_created')
+  if (isFirstInboundMessage) automationTriggers.unshift('first_inbound_message')
+
+  for (const triggerType of automationTriggers) {
+    runAutomationsForTrigger({
+      accountId,
+      triggerType,
+      contactId: contactRecord.id,
+      context: {
+        message_text: inboundText,
+        conversation_id: conversation.id,
+      },
+    }).catch((err) => console.error('[automations] dispatch failed:', err))
   }
 
   logWebhook('info', 'message_processed', {
@@ -635,8 +659,7 @@ async function processMessage(
     meta_message_id: maskId(message.id),
     conversation_id: maskId(conversation.id),
     contact_id: maskId(contactRecord.id),
-    automation_triggered: automationResult.executed,
-    flow_dispatched: flowResult.handled,
+    flow_consumed: flowConsumed,
   })
 }
 
@@ -812,6 +835,19 @@ async function parseMessageContent(
   let mediaType: string | undefined
   let interactiveReplyId: string | undefined
 
+  const verifyAndBuildUrl = async (mediaId: string): Promise<string | undefined> => {
+    try {
+      await getMediaUrl({ mediaId, accessToken })
+      return `/api/whatsapp/media/${mediaId}`
+    } catch (error) {
+      console.error(
+        `Failed to verify media ${mediaId} with Meta:`,
+        error instanceof Error ? error.message : error
+      )
+      return undefined
+    }
+  }
+
   switch (message.type) {
     case 'text':
       contentText = message.text?.body ?? ''
@@ -821,11 +857,7 @@ async function parseMessageContent(
       contentText = message.image?.caption ?? ''
       mediaType = message.image?.mime_type ?? 'image/jpeg'
       if (message.image?.id) {
-        try {
-          mediaUrl = await getMediaUrl(message.image.id, accessToken)
-        } catch (error) {
-          console.error('Failed to get image URL:', error)
-        }
+        mediaUrl = await verifyAndBuildUrl(message.image.id)
       }
       break
 
@@ -833,11 +865,7 @@ async function parseMessageContent(
       contentText = message.video?.caption ?? ''
       mediaType = message.video?.mime_type ?? 'video/mp4'
       if (message.video?.id) {
-        try {
-          mediaUrl = await getMediaUrl(message.video.id, accessToken)
-        } catch (error) {
-          console.error('Failed to get video URL:', error)
-        }
+        mediaUrl = await verifyAndBuildUrl(message.video.id)
       }
       break
 
@@ -845,11 +873,7 @@ async function parseMessageContent(
     case 'voice':
       mediaType = message.audio?.mime_type ?? 'audio/ogg'
       if (message.audio?.id) {
-        try {
-          mediaUrl = await getMediaUrl(message.audio.id, accessToken)
-        } catch (error) {
-          console.error('Failed to get audio URL:', error)
-        }
+        mediaUrl = await verifyAndBuildUrl(message.audio.id)
       }
       break
 
@@ -857,22 +881,14 @@ async function parseMessageContent(
       contentText = message.document?.caption ?? ''
       mediaType = message.document?.mime_type ?? 'application/pdf'
       if (message.document?.id) {
-        try {
-          mediaUrl = await getMediaUrl(message.document.id, accessToken)
-        } catch (error) {
-          console.error('Failed to get document URL:', error)
-        }
+        mediaUrl = await verifyAndBuildUrl(message.document.id)
       }
       break
 
     case 'sticker':
       mediaType = message.sticker?.mime_type ?? 'image/webp'
       if (message.sticker?.id) {
-        try {
-          mediaUrl = await getMediaUrl(message.sticker.id, accessToken)
-        } catch (error) {
-          console.error('Failed to get sticker URL:', error)
-        }
+        mediaUrl = await verifyAndBuildUrl(message.sticker.id)
       }
       break
 
