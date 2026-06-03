@@ -312,9 +312,10 @@ export async function POST(request: Request) {
       duration_ms: Date.now() - startedAt,
     })
 
+    // Process the webhook asynchronously
     const processStartedAt = Date.now()
     processWebhook(body, requestId)
-      .then(() => {
+      .then(async () => {
         logWebhook('info', 'process_complete', {
           request_id: requestId,
           ...summary,
