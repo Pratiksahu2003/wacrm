@@ -229,91 +229,116 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const requestId = newWebhookRequestId()
   const startedAt = Date.now()
-  const admin = supabaseAdmin()
-  const secretSources = await describeWebhookSignatureSources(admin)
-
-  logWebhook('info', 'post_received', {
-    request_id: requestId,
-    method: 'POST',
-    user_agent: request.headers.get('user-agent'),
-    content_type: request.headers.get('content-type'),
-    ...secretSources,
-    debug_verbose: isWebhookDebugEnabled(),
-  })
-
-  // Read raw bytes first so we can HMAC-verify the exact bytes Meta signed.
-  // request.json() / request.text() may re-encode and can break the signature.
-  const rawBodyBytes = Buffer.from(await request.arrayBuffer())
-  const rawBody = rawBodyBytes.toString('utf8')
-  const signature = request.headers.get('x-hub-signature-256')
-  const signatureSecrets = await loadWebhookSignatureSecrets(admin)
-
-  if (!verifyMetaWebhookSignature(rawBodyBytes, signature, signatureSecrets)) {
-    const reason =
-      signatureSecrets.length === 0
-        ? 'no_app_secret'
-        : !signature
-          ? 'missing_signature_header'
-          : 'signature_mismatch'
-
-    logWebhook('warn', 'post_rejected', {
-      request_id: requestId,
-      reason,
-      body_bytes: rawBodyBytes.length,
-      has_signature_header: Boolean(signature),
-      signature_prefix: signature?.slice(0, 12) ?? null,
-      ...secretSources,
-      duration_ms: Date.now() - startedAt,
-    })
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-  }
-
-  logWebhook('info', 'post_signature_ok', {
-    request_id: requestId,
-    body_bytes: rawBodyBytes.length,
-  })
-
-  let body: { object?: string; entry?: WhatsAppWebhookEntry[] }
   try {
-    body = JSON.parse(rawBody)
-  } catch {
-    logWebhook('warn', 'post_rejected', {
+    const admin = supabaseAdmin()
+    const secretSources = await describeWebhookSignatureSources(admin)
+
+    logWebhook('info', 'post_received', {
       request_id: requestId,
-      reason: 'invalid_json',
-      body_bytes: rawBody.length,
+      method: 'POST',
+      user_agent: request.headers.get('user-agent'),
+      content_type: request.headers.get('content-type'),
+      content_length: request.headers.get('content-length'),
+      content_encoding: request.headers.get('content-encoding'),
+      x_forwarded_for: request.headers.get('x-forwarded-for'),
+      x_forwarded_proto: request.headers.get('x-forwarded-proto'),
+      ...secretSources,
+      debug_verbose: isWebhookDebugEnabled(),
+    })
+
+    const rawBodyBytes = new Uint8Array(await request.arrayBuffer())
+    const rawBody = new TextDecoder().decode(rawBodyBytes)
+
+    const signature256 = request.headers.get('x-hub-signature-256')
+    const signature1 = request.headers.get('x-hub-signature')
+    const signature = signature256 ?? signature1
+    const signatureHeaderName = signature256
+      ? 'x-hub-signature-256'
+      : signature1
+        ? 'x-hub-signature'
+        : null
+    const signatureSecrets = await loadWebhookSignatureSecrets(admin)
+
+    const signatureOk = await verifyMetaWebhookSignature(
+      rawBodyBytes,
+      signature,
+      signatureSecrets,
+    )
+    if (!signatureOk) {
+      const reason =
+        signatureSecrets.length === 0
+          ? 'no_app_secret'
+          : !signature
+            ? 'missing_signature_header'
+            : 'signature_mismatch'
+
+      logWebhook('warn', 'post_rejected', {
+        request_id: requestId,
+        reason,
+        body_bytes: rawBodyBytes.byteLength,
+        has_signature_header: Boolean(signature),
+        signature_header: signatureHeaderName,
+        signature_prefix: signature?.slice(0, 12) ?? null,
+        ...secretSources,
+        duration_ms: Date.now() - startedAt,
+      })
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    logWebhook('info', 'post_signature_ok', {
+      request_id: requestId,
+      body_bytes: rawBodyBytes.byteLength,
+      signature_header: signatureHeaderName,
+    })
+
+    let body: { object?: string; entry?: WhatsAppWebhookEntry[] }
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      logWebhook('warn', 'post_rejected', {
+        request_id: requestId,
+        reason: 'invalid_json',
+        body_bytes: rawBodyBytes.byteLength,
+        duration_ms: Date.now() - startedAt,
+      })
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
+
+    const summary = summarizeWebhookBody(body)
+    logWebhook('info', 'post_accepted', {
+      request_id: requestId,
+      body_bytes: rawBodyBytes.byteLength,
+      ...summary,
       duration_ms: Date.now() - startedAt,
     })
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+
+    const processStartedAt = Date.now()
+    processWebhook(body, requestId)
+      .then(() => {
+        logWebhook('info', 'process_complete', {
+          request_id: requestId,
+          ...summary,
+          process_duration_ms: Date.now() - processStartedAt,
+        })
+      })
+      .catch((error) => {
+        logWebhook('error', 'process_failed', {
+          request_id: requestId,
+          ...summary,
+          error: error instanceof Error ? error.message : String(error),
+          process_duration_ms: Date.now() - processStartedAt,
+        })
+      })
+
+    return NextResponse.json({ status: 'received' }, { status: 200 })
+  } catch (error) {
+    logWebhook('error', 'post_exception', {
+      request_id: requestId,
+      error: error instanceof Error ? error.message : String(error),
+      duration_ms: Date.now() - startedAt,
+    })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  const summary = summarizeWebhookBody(body)
-  logWebhook('info', 'post_accepted', {
-    request_id: requestId,
-    body_bytes: rawBodyBytes.length,
-    ...summary,
-    duration_ms: Date.now() - startedAt,
-  })
-
-  // Process asynchronously so we can ack Meta within their timeout.
-  const processStartedAt = Date.now()
-  processWebhook(body, requestId)
-    .then(() => {
-      logWebhook('info', 'process_complete', {
-        request_id: requestId,
-        ...summary,
-        process_duration_ms: Date.now() - processStartedAt,
-      })
-    })
-    .catch((error) => {
-      logWebhook('error', 'process_failed', {
-        request_id: requestId,
-        ...summary,
-        error: error instanceof Error ? error.message : String(error),
-        process_duration_ms: Date.now() - processStartedAt,
-      })
-    })
-
-  return NextResponse.json({ status: 'received' }, { status: 200 })
 }
 
 async function processWebhook(
