@@ -26,6 +26,7 @@ export async function POST(
   const { data: copy, error: copyErr } = await admin
     .from('automations')
     .insert({
+      account_id: original.account_id,
       user_id: user.id,
       name: `${original.name} (Copy)`,
       description: original.description,

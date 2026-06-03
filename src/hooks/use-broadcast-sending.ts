@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { resolveClientAccountId } from '@/lib/auth/client-account';
 import { Contact, MessageTemplate } from '@/types';
 
 export type CustomFieldOperator = 'is' | 'is_not' | 'contains';
@@ -221,6 +222,8 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
       throw new Error('You are not signed in.');
     }
 
+    const accountId = await resolveClientAccountId(supabase, user.id);
+
     // De-duplicate by phone within the CSV (users can paste duplicates).
     const uniqueByPhone = new Map<string, { phone: string; name?: string }>();
     for (const row of csvRows) {
@@ -248,6 +251,7 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
     const missing = phones
       .filter((p) => !byPhone.has(p))
       .map((phone) => ({
+        account_id: accountId,
         user_id: user.id,
         phone,
         name: uniqueByPhone.get(phone)?.name ?? null,
@@ -327,6 +331,8 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
         throw new Error('You are not signed in.');
       }
 
+      const accountId = await resolveClientAccountId(supabase, user.id);
+
       // ── Step 1: Resolve audience contacts ─────────────────────────
       setProgress(5);
       const contacts = await resolveAudience(payload.audience);
@@ -340,6 +346,7 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
       const { data: broadcast, error: broadcastError } = await supabase
         .from('broadcasts')
         .insert({
+          account_id: accountId,
           user_id: user.id,
           name: payload.name,
           template_name: payload.template.name,

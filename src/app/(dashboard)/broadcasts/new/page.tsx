@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { resolveClientAccountId } from '@/lib/auth/client-account';
 import { toast } from 'sonner';
 import { MessageTemplate } from '@/types';
 import { Step1ChooseTemplate } from '@/components/broadcasts/step1-choose-template';
@@ -91,7 +92,16 @@ export default function NewBroadcastPage() {
       return;
     }
 
+    let accountId: string;
+    try {
+      accountId = await resolveClientAccountId(supabase, user.id);
+    } catch {
+      toast.error('Could not load account context');
+      return;
+    }
+
     const { error } = await supabase.from('broadcasts').insert({
+      account_id: accountId,
       user_id: user.id,
       name: name.trim(),
       template_name: template.name,

@@ -49,7 +49,17 @@ export async function POST(request: Request) {
   if (!guard.ok) {
     return NextResponse.json(guard.body, { status: guard.status })
   }
-  const { userId } = guard
+  const { userId, supabase } = guard
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('account_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const accountId = profile?.account_id as string | undefined
+  if (!accountId) {
+    return NextResponse.json({ error: 'Account not linked' }, { status: 403 })
+  }
 
   const body = (await request.json().catch(() => null)) as
     | {
@@ -84,6 +94,7 @@ export async function POST(request: Request) {
     const { data: flow, error: flowErr } = await admin
       .from('flows')
       .insert({
+        account_id: accountId,
         user_id: userId,
         name: body.name?.trim() || template.name,
         description: template.description,
@@ -132,6 +143,7 @@ export async function POST(request: Request) {
   const { data, error } = await admin
     .from('flows')
     .insert({
+      account_id: accountId,
       user_id: userId,
       name: body.name.trim(),
       description: body.description ?? null,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveClientAccountId } from "@/lib/auth/client-account";
 import type { Pipeline, PipelineStage, Deal } from "@/types";
 import { PipelineBoard } from "@/components/pipelines/pipeline-board";
 import { PipelineSettings } from "@/components/pipelines/pipeline-settings";
@@ -112,9 +113,16 @@ export default function PipelinesPage() {
     const user = session?.user;
     if (!user) return null;
 
+    let accountId: string;
+    try {
+      accountId = await resolveClientAccountId(supabase, user.id);
+    } catch {
+      return null;
+    }
+
     const { data: pipeline, error } = await supabase
       .from("pipelines")
-      .insert({ user_id: user.id, name: "Sales Pipeline" })
+      .insert({ account_id: accountId, user_id: user.id, name: "Sales Pipeline" })
       .select()
       .single();
 
@@ -255,9 +263,18 @@ export default function PipelinesPage() {
       return;
     }
 
+    let accountId: string;
+    try {
+      accountId = await resolveClientAccountId(supabase, user.id);
+    } catch {
+      toast.error("Could not load account context");
+      setCreating(false);
+      return;
+    }
+
     const { data: pipeline, error } = await supabase
       .from("pipelines")
-      .insert({ user_id: user.id, name })
+      .insert({ account_id: accountId, user_id: user.id, name })
       .select()
       .single();
 

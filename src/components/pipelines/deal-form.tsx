@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { resolveClientAccountId } from "@/lib/auth/client-account";
 import type {
   Contact,
   Conversation,
@@ -185,9 +186,17 @@ export function DealForm({
         setSaving(false);
         return;
       }
+      let accountId: string;
+      try {
+        accountId = await resolveClientAccountId(supabase, user.id);
+      } catch {
+        toast.error("Could not load account context");
+        setSaving(false);
+        return;
+      }
       const { error } = await supabase
         .from("deals")
-        .insert({ ...payload, user_id: user.id, status: "open" });
+        .insert({ ...payload, account_id: accountId, user_id: user.id, status: "open" });
       if (error) {
         toast.error("Failed to create deal");
         setSaving(false);
