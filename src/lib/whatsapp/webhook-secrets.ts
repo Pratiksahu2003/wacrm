@@ -11,7 +11,8 @@ export async function loadWebhookSignatureSecrets(
   const secrets = new Set<string>()
 
   if (process.env.META_APP_SECRET) {
-    secrets.add(process.env.META_APP_SECRET)
+    const trimmed = process.env.META_APP_SECRET.trim()
+    if (trimmed) secrets.add(trimmed)
   }
 
   const { data: rows, error } = await adminClient
@@ -26,9 +27,10 @@ export async function loadWebhookSignatureSecrets(
       if (!row.meta_app_secret) continue
       try {
         const { plaintext, encrypted } = decryptIfEncrypted(row.meta_app_secret)
-        secrets.add(plaintext)
+        const trimmed = plaintext.trim()
+        if (trimmed) secrets.add(trimmed)
         if (!encrypted) {
-          const encryptedValue = encrypt(plaintext)
+          const encryptedValue = encrypt(trimmed)
           void adminClient
             .from('whatsapp_config')
             .update({ meta_app_secret: encryptedValue })

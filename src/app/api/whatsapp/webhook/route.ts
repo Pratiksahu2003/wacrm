@@ -239,13 +239,14 @@ export async function POST(request: Request) {
     debug_verbose: isWebhookDebugEnabled(),
   })
 
-  // Read raw body first so we can HMAC-verify the exact bytes Meta
-  // signed. request.json() would re-encode and break the signature.
-  const rawBody = await request.text()
+  // Read raw bytes first so we can HMAC-verify the exact bytes Meta signed.
+  // request.json() / request.text() may re-encode and can break the signature.
+  const rawBodyBytes = Buffer.from(await request.arrayBuffer())
+  const rawBody = rawBodyBytes.toString('utf8')
   const signature = request.headers.get('x-hub-signature-256')
   const signatureSecrets = await loadWebhookSignatureSecrets(admin)
 
-  if (!verifyMetaWebhookSignature(rawBody, signature, signatureSecrets)) {
+  if (!verifyMetaWebhookSignature(rawBodyBytes, signature, signatureSecrets)) {
     const reason =
       signatureSecrets.length === 0
         ? 'no_app_secret'
@@ -256,7 +257,7 @@ export async function POST(request: Request) {
     logWebhook('warn', 'post_rejected', {
       request_id: requestId,
       reason,
-      body_bytes: rawBody.length,
+      body_bytes: rawBodyBytes.length,
       has_signature_header: Boolean(signature),
       signature_prefix: signature?.slice(0, 12) ?? null,
       ...secretSources,
@@ -267,7 +268,7 @@ export async function POST(request: Request) {
 
   logWebhook('info', 'post_signature_ok', {
     request_id: requestId,
-    body_bytes: rawBody.length,
+    body_bytes: rawBodyBytes.length,
   })
 
   let body: { object?: string; entry?: WhatsAppWebhookEntry[] }
@@ -286,7 +287,7 @@ export async function POST(request: Request) {
   const summary = summarizeWebhookBody(body)
   logWebhook('info', 'post_accepted', {
     request_id: requestId,
-    body_bytes: rawBody.length,
+    body_bytes: rawBodyBytes.length,
     ...summary,
     duration_ms: Date.now() - startedAt,
   })

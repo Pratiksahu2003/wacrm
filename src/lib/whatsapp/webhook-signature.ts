@@ -18,14 +18,16 @@ import crypto from 'node:crypto'
  *   closed.
  */
 export function verifyMetaWebhookSignature(
-  rawBody: string,
+  rawBody: string | Buffer,
   signatureHeader: string | null,
   secrets?: string[],
 ): boolean {
   const candidates = (
     secrets ??
     (process.env.META_APP_SECRET ? [process.env.META_APP_SECRET] : [])
-  ).filter((s) => s.length > 0)
+  )
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
 
   if (candidates.length === 0) {
     console.error(
