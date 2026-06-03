@@ -34,3 +34,47 @@ export async function loadWebhookSignatureSecrets(
 
   return [...secrets]
 }
+
+/** Counts for production logs — no secret values returned. */
+export async function describeWebhookSignatureSources(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: { from: (table: string) => any },
+): Promise<{
+  env_secret_configured: boolean
+  db_rows_with_secret: number
+  db_secrets_decryptable: number
+  db_secrets_decrypt_failed: number
+  total_candidates: number
+}> {
+  let dbRows = 0
+  let decryptOk = 0
+  let decryptFailed = 0
+
+  const { data: rows, error } = await adminClient
+    .from('whatsapp_config')
+    .select('meta_app_secret')
+    .not('meta_app_secret', 'is', null)
+
+  if (!error) {
+    for (const row of rows ?? []) {
+      if (!row.meta_app_secret) continue
+      dbRows++
+      try {
+        decrypt(row.meta_app_secret)
+        decryptOk++
+      } catch {
+        decryptFailed++
+      }
+    }
+  }
+
+  const envConfigured = Boolean(process.env.META_APP_SECRET?.trim())
+  return {
+    env_secret_configured: envConfigured,
+    db_rows_with_secret: dbRows,
+    db_secrets_decryptable: decryptOk,
+    db_secrets_decrypt_failed: decryptFailed,
+    total_candidates:
+      (envConfigured ? 1 : 0) + decryptOk,
+  }
+}

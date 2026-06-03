@@ -4,7 +4,18 @@ import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { normalizePhone, phonesMatch } from '@/lib/whatsapp/phone-utils'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
-import { loadWebhookSignatureSecrets } from '@/lib/whatsapp/webhook-secrets'
+import {
+  describeWebhookSignatureSources,
+  loadWebhookSignatureSecrets,
+} from '@/lib/whatsapp/webhook-secrets'
+import {
+  isWebhookDebugEnabled,
+  logWebhook,
+  maskId,
+  newWebhookRequestId,
+  summarizeWebhookBody,
+} from '@/lib/whatsapp/webhook-log'
+import type { WhatsAppWebhookEntry } from '@/lib/whatsapp/webhook-types'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import {
@@ -53,33 +64,16 @@ interface WhatsAppMessage {
   context?: { id: string }
 }
 
-interface WhatsAppWebhookEntry {
-  id: string
-  changes: Array<{
-    value: {
-      messaging_product: string
-      metadata: {
-        display_phone_number: string
-        phone_number_id: string
-      }
-      contacts?: Array<{
-        profile: { name: string }
-        wa_id: string
-      }>
-      messages?: WhatsAppMessage[]
-      statuses?: Array<{
-        id: string
-        status: string
-        timestamp: string
-        recipient_id: string
-      }>
-    }
-    field: string
-  }>
-}
-
 // GET - Webhook verification
 export async function GET(request: Request) {
+  const requestId = newWebhookRequestId()
+  const startedAt = Date.now()
+  logWebhook('info', 'verify_request', {
+    request_id: requestId,
+    method: 'GET',
+    user_agent: request.headers.get('user-agent'),
+  })
+
   try {
     const { searchParams } = new URL(request.url)
     const mode = searchParams.get('hub.mode')
@@ -87,6 +81,14 @@ export async function GET(request: Request) {
     const verifyToken = searchParams.get('hub.verify_token')
 
     if (mode !== 'subscribe' || !challenge || !verifyToken) {
+      logWebhook('warn', 'verify_rejected', {
+        request_id: requestId,
+        reason: 'missing_params',
+        mode,
+        has_challenge: Boolean(challenge),
+        has_verify_token: Boolean(verifyToken),
+        duration_ms: Date.now() - startedAt,
+      })
       return NextResponse.json(
         { error: 'Missing verification parameters' },
         { status: 400 }
@@ -99,18 +101,28 @@ export async function GET(request: Request) {
       .select('id, verify_token')
 
     if (configError || !configs) {
-      console.error('Error fetching configs for verification:', configError)
+      logWebhook('error', 'verify_failed', {
+        request_id: requestId,
+        reason: 'config_fetch_error',
+        error: configError?.message ?? 'no rows',
+        duration_ms: Date.now() - startedAt,
+      })
       return NextResponse.json(
         { error: 'Verification failed' },
         { status: 403 }
       )
     }
 
+    const rowsWithToken = configs.filter((c: { verify_token: string | null }) =>
+      Boolean(c.verify_token),
+    ).length
+
     // Check if any config's verify_token matches. Also collect the
     // matching row so we can opportunistically upgrade its token to
     // GCM if it was still in the legacy CBC format.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let matchedConfig: any = null
+    let decryptFailures = 0
     for (const config of configs) {
       if (!config.verify_token) continue
       try {
@@ -119,11 +131,19 @@ export async function GET(request: Request) {
           break
         }
       } catch {
-        // Malformed / wrong-key token row — skip it and keep checking.
+        decryptFailures++
       }
     }
 
     if (matchedConfig) {
+      logWebhook('info', 'verify_ok', {
+        request_id: requestId,
+        config_id: maskId(matchedConfig.id),
+        config_rows: configs.length,
+        rows_with_verify_token: rowsWithToken,
+        verify_token_decrypt_failures: decryptFailures,
+        duration_ms: Date.now() - startedAt,
+      })
       // Fire-and-forget GCM upgrade. Safe to run on every subscribe
       // since it's a no-op once the column is already GCM.
       if (isLegacyFormat(matchedConfig.verify_token)) {
@@ -133,10 +153,11 @@ export async function GET(request: Request) {
           .eq('id', matchedConfig.id)
           .then(({ error }: { error: unknown }) => {
             if (error) {
-              console.warn(
-                '[webhook] verify_token GCM upgrade failed:',
-                (error as { message?: string })?.message ?? error,
-              )
+              logWebhook('warn', 'verify_token_upgrade_failed', {
+                request_id: requestId,
+                config_id: maskId(matchedConfig.id),
+                error: (error as { message?: string })?.message ?? String(error),
+              })
             }
           })
       }
@@ -147,12 +168,24 @@ export async function GET(request: Request) {
       })
     }
 
+    logWebhook('warn', 'verify_rejected', {
+      request_id: requestId,
+      reason: 'token_mismatch',
+      config_rows: configs.length,
+      rows_with_verify_token: rowsWithToken,
+      verify_token_decrypt_failures: decryptFailures,
+      duration_ms: Date.now() - startedAt,
+    })
     return NextResponse.json(
       { error: 'Verification token mismatch' },
       { status: 403 }
     )
   } catch (error) {
-    console.error('Error in webhook GET verification:', error)
+    logWebhook('error', 'verify_exception', {
+      request_id: requestId,
+      error: error instanceof Error ? error.message : String(error),
+      duration_ms: Date.now() - startedAt,
+    })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -162,49 +195,110 @@ export async function GET(request: Request) {
 
 // POST - Receive messages
 export async function POST(request: Request) {
+  const requestId = newWebhookRequestId()
+  const startedAt = Date.now()
+  const admin = supabaseAdmin()
+  const secretSources = await describeWebhookSignatureSources(admin)
+
+  logWebhook('info', 'post_received', {
+    request_id: requestId,
+    method: 'POST',
+    user_agent: request.headers.get('user-agent'),
+    content_type: request.headers.get('content-type'),
+    ...secretSources,
+    debug_verbose: isWebhookDebugEnabled(),
+  })
+
   // Read raw body first so we can HMAC-verify the exact bytes Meta
   // signed. request.json() would re-encode and break the signature.
   const rawBody = await request.text()
   const signature = request.headers.get('x-hub-signature-256')
-  const signatureSecrets = await loadWebhookSignatureSecrets(supabaseAdmin())
+  const signatureSecrets = await loadWebhookSignatureSecrets(admin)
 
   if (!verifyMetaWebhookSignature(rawBody, signature, signatureSecrets)) {
-    // 401 (not 200) — we want Meta's delivery dashboard to show failures
-    // loudly if a misconfiguration causes signatures to stop matching,
-    // rather than silently eating events.
-    if (signatureSecrets.length === 0) {
-      console.warn(
-        '[webhook] rejected request — no Meta App Secret configured. ' +
-          'Save it in Settings → App Secret or set META_APP_SECRET on the server.',
-      )
-    } else if (!signature) {
-      console.warn('[webhook] rejected request — missing x-hub-signature-256 header')
-    } else {
-      console.warn(
-        '[webhook] rejected request — signature mismatch. ' +
-          'Confirm the App Secret matches the Meta app that owns this webhook.',
-      )
-    }
+    const reason =
+      signatureSecrets.length === 0
+        ? 'no_app_secret'
+        : !signature
+          ? 'missing_signature_header'
+          : 'signature_mismatch'
+
+    logWebhook('warn', 'post_rejected', {
+      request_id: requestId,
+      reason,
+      body_bytes: rawBody.length,
+      has_signature_header: Boolean(signature),
+      signature_prefix: signature?.slice(0, 12) ?? null,
+      ...secretSources,
+      duration_ms: Date.now() - startedAt,
+    })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
-  let body: { entry?: WhatsAppWebhookEntry[] }
+  logWebhook('info', 'post_signature_ok', {
+    request_id: requestId,
+    body_bytes: rawBody.length,
+  })
+
+  let body: { object?: string; entry?: WhatsAppWebhookEntry[] }
   try {
     body = JSON.parse(rawBody)
   } catch {
+    logWebhook('warn', 'post_rejected', {
+      request_id: requestId,
+      reason: 'invalid_json',
+      body_bytes: rawBody.length,
+      duration_ms: Date.now() - startedAt,
+    })
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  // Process asynchronously so we can ack Meta within their timeout.
-  processWebhook(body).catch((error) => {
-    console.error('Error processing webhook:', error)
+  const summary = summarizeWebhookBody(body)
+  logWebhook('info', 'post_accepted', {
+    request_id: requestId,
+    body_bytes: rawBody.length,
+    ...summary,
+    duration_ms: Date.now() - startedAt,
   })
+
+  // Process asynchronously so we can ack Meta within their timeout.
+  const processStartedAt = Date.now()
+  processWebhook(body, requestId)
+    .then(() => {
+      logWebhook('info', 'process_complete', {
+        request_id: requestId,
+        ...summary,
+        process_duration_ms: Date.now() - processStartedAt,
+      })
+    })
+    .catch((error) => {
+      logWebhook('error', 'process_failed', {
+        request_id: requestId,
+        ...summary,
+        error: error instanceof Error ? error.message : String(error),
+        process_duration_ms: Date.now() - processStartedAt,
+      })
+    })
 
   return NextResponse.json({ status: 'received' }, { status: 200 })
 }
 
-async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
-  if (!body.entry) return
+async function processWebhook(
+  body: { entry?: WhatsAppWebhookEntry[] },
+  requestId: string,
+) {
+  if (!body.entry) {
+    logWebhook('warn', 'process_skipped', {
+      request_id: requestId,
+      reason: 'no_entry_array',
+    })
+    return
+  }
+
+  logWebhook('info', 'process_start', {
+    request_id: requestId,
+    ...summarizeWebhookBody(body),
+  })
 
   for (const entry of body.entry) {
     for (const change of entry.changes) {
@@ -214,6 +308,10 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       // dedicated handler. Skip the messaging branches below so we
       // don't try to read message-shaped fields off a template event.
       if (isTemplateWebhookField(change.field)) {
+        logWebhook('info', 'change_template', {
+          request_id: requestId,
+          field: change.field,
+        })
         await handleTemplateWebhookChange(
           { field: change.field, value: change.value as unknown },
           supabaseAdmin(),
@@ -225,6 +323,11 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
 
       // Handle status updates
       if (value.statuses) {
+        logWebhook('info', 'change_statuses', {
+          request_id: requestId,
+          count: value.statuses.length,
+          phone_number_id: maskId(value.metadata?.phone_number_id),
+        })
         for (const status of value.statuses) {
           await handleStatusUpdate(status)
         }
@@ -234,6 +337,13 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       if (!value.messages || !value.contacts) continue
 
       const phoneNumberId = value.metadata.phone_number_id
+
+      logWebhook('info', 'change_messages', {
+        request_id: requestId,
+        phone_number_id: maskId(phoneNumberId),
+        message_count: value.messages.length,
+        message_types: value.messages.map((m) => m.type),
+      })
 
       // Find user's config by phone_number_id. `.single()` returns
       // PGRST116 for both 0 rows AND ≥2 rows — distinguish them so
@@ -246,6 +356,11 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
         .eq('phone_number_id', phoneNumberId)
 
       if (configError) {
+        logWebhook('error', 'config_lookup_failed', {
+          request_id: requestId,
+          phone_number_id: maskId(phoneNumberId),
+          message: configError.message,
+        })
         console.error(
           'Error fetching whatsapp_config for phone_number_id:',
           phoneNumberId,
@@ -255,11 +370,21 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       }
 
       if (!configRows || configRows.length === 0) {
+        logWebhook('warn', 'config_not_found', {
+          request_id: requestId,
+          phone_number_id: maskId(phoneNumberId),
+          hint: 'Save this Phone Number ID in Settings → WhatsApp Config',
+        })
         console.error('No config found for phone_number_id:', phoneNumberId)
         continue
       }
 
       if (configRows.length > 1) {
+        logWebhook('error', 'config_duplicate', {
+          request_id: requestId,
+          phone_number_id: maskId(phoneNumberId),
+          row_count: configRows.length,
+        })
         console.error(
           `Multiple configs (${configRows.length}) found for phone_number_id:`,
           phoneNumberId,
@@ -272,11 +397,24 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
 
       const config = configRows[0]
 
+      logWebhook('info', 'config_matched', {
+        request_id: requestId,
+        account_id: maskId(config.account_id),
+        phone_number_id: maskId(phoneNumberId),
+        registered: Boolean(config.registered_at),
+      })
+
       const decryptedAccessToken = decrypt(config.access_token)
 
       for (let i = 0; i < value.messages.length; i++) {
         const message = value.messages[i]
         const contact = value.contacts[i] || value.contacts[0]
+
+        logWebhook('info', 'message_processing', {
+          request_id: requestId,
+          meta_message_id: maskId(message.id),
+          type: message.type,
+        })
 
         await processMessage(
           message,
@@ -288,7 +426,8 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
           // inserts that need it for NOT NULL FK compliance. Always
           // the admin who saved the WhatsApp config.
           config.user_id,
-          decryptedAccessToken
+          decryptedAccessToken,
+          requestId,
         )
       }
     }
@@ -522,7 +661,8 @@ async function processMessage(
   // (contacts, conversations). Always the admin who saved the
   // WhatsApp config; the choice is arbitrary post-017 but stable.
   configOwnerUserId: string,
-  accessToken: string
+  accessToken: string,
+  requestId: string,
 ) {
   const senderPhone = normalizePhone(message.from)
   const contactName = contact.profile.name
@@ -534,7 +674,15 @@ async function processMessage(
     senderPhone,
     contactName
   )
-  if (!contactOutcome) return
+  if (!contactOutcome) {
+    logWebhook('warn', 'message_skipped', {
+      request_id: requestId,
+      reason: 'contact_create_failed',
+      meta_message_id: maskId(message.id),
+      type: message.type,
+    })
+    return
+  }
   const contactRecord = contactOutcome.contact
 
   // Find or create conversation
@@ -543,13 +691,25 @@ async function processMessage(
     configOwnerUserId,
     contactRecord.id
   )
-  if (!conversation) return
+  if (!conversation) {
+    logWebhook('warn', 'message_skipped', {
+      request_id: requestId,
+      reason: 'conversation_create_failed',
+      meta_message_id: maskId(message.id),
+      type: message.type,
+    })
+    return
+  }
 
   // Reactions short-circuit here — they aren't messages. We never insert
   // into `messages`, never bump unread_count, never update last_message_text.
   // Done before parseMessageContent so the media-URL fetch is skipped.
   if (message.type === 'reaction') {
     await handleReaction(message, conversation.id, contactRecord.id)
+    logWebhook('info', 'message_reaction_handled', {
+      request_id: requestId,
+      meta_message_id: maskId(message.id),
+    })
     return
   }
 
@@ -625,9 +785,27 @@ async function processMessage(
   })
 
   if (msgError) {
+    logWebhook('error', 'message_insert_failed', {
+      request_id: requestId,
+      meta_message_id: maskId(message.id),
+      type: message.type,
+      content_type: contentType,
+      error: msgError.message,
+      code: msgError.code,
+    })
     console.error('Error inserting message:', msgError)
     return
   }
+
+  logWebhook('info', 'message_saved', {
+    request_id: requestId,
+    meta_message_id: maskId(message.id),
+    type: message.type,
+    content_type: contentType,
+    conversation_id: maskId(conversation.id),
+    first_inbound: isFirstInboundMessage,
+    new_contact: contactOutcome.wasCreated,
+  })
 
   // Update conversation
   const { error: convError } = await supabaseAdmin()

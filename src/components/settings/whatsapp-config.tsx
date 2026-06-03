@@ -839,6 +839,11 @@ export function WhatsAppConfig() {
                     <li>Enter the same <strong className="text-slate-200">Verify Token</strong> you set here</li>
                     <li>Subscribe to &quot;messages&quot; webhook field</li>
                     <li>
+                      Set the webhook API version to{' '}
+                      <strong className="text-slate-200">v25.0</strong> in Meta
+                      (must match wacrm&apos;s Graph API version)
+                    </li>
+                    <li>
                       Save your{' '}
                       <Link
                         href="/settings?tab=app-secret"
