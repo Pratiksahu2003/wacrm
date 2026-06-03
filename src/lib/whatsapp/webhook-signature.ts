@@ -12,22 +12,26 @@ import crypto from 'node:crypto'
  *   https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verify-payloads
  *
  * Contract:
- *   `META_APP_SECRET` is **required**. If it's missing we fail closed —
- *   every request is rejected until the operator configures the
- *   secret. A previous version fell open with a warning log, which is
- *   unsafe for a public template: anyone who forgets the env var would
- *   be running a fully spoofable webhook.
+ *   At least one secret must be supplied — typically the account's
+ *   encrypted `meta_app_secret` from Settings and/or the optional
+ *   `META_APP_SECRET` env fallback. If none are configured we fail
+ *   closed.
  */
 export function verifyMetaWebhookSignature(
   rawBody: string,
   signatureHeader: string | null,
+  secrets?: string[],
 ): boolean {
-  const secret = process.env.META_APP_SECRET
-  if (!secret) {
+  const candidates = (
+    secrets ??
+    (process.env.META_APP_SECRET ? [process.env.META_APP_SECRET] : [])
+  ).filter((s) => s.length > 0)
+
+  if (candidates.length === 0) {
     console.error(
-      '[webhook] META_APP_SECRET is not set — rejecting request. ' +
-        'Configure the env var (Meta → App Settings → Basic → App Secret) ' +
-        'to enable signature verification.',
+      '[webhook] No Meta App Secret configured — rejecting request. ' +
+        'Add your App Secret in Settings → WhatsApp Config, or set ' +
+        'META_APP_SECRET in the environment.',
     )
     return false
   }
@@ -35,13 +39,16 @@ export function verifyMetaWebhookSignature(
   if (!signatureHeader) return false
   if (!signatureHeader.startsWith('sha256=')) return false
 
-  const expected =
-    'sha256=' +
-    crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
+  for (const secret of candidates) {
+    const expected =
+      'sha256=' +
+      crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
 
-  const a = Buffer.from(signatureHeader)
-  const b = Buffer.from(expected)
-  // Bail if lengths differ — timingSafeEqual throws otherwise.
-  if (a.length !== b.length) return false
-  return crypto.timingSafeEqual(a, b)
+    const a = Buffer.from(signatureHeader)
+    const b = Buffer.from(expected)
+    if (a.length !== b.length) continue
+    if (crypto.timingSafeEqual(a, b)) return true
+  }
+
+  return false
 }

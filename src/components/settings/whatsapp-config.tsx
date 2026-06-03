@@ -95,7 +95,9 @@ export function WhatsAppConfig() {
       // remains accurate.
       const { data, error } = await supabase
         .from('whatsapp_config')
-        .select('*')
+        .select(
+          'id, user_id, account_id, phone_number_id, waba_id, access_token, verify_token, status, connected_at, registered_at, subscribed_apps_at, last_registration_error, created_at, updated_at',
+        )
         .eq('account_id', acctId)
         .maybeSingle();
 

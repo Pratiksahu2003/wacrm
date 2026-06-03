@@ -8,6 +8,7 @@ import {
   User,
   Palette,
   UsersRound,
+  Shield,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
@@ -18,11 +19,13 @@ import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsCard } from '@/components/settings/sessions-card';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { MembersTab } from '@/components/settings/members-tab';
+import { MetaAppSecretPanel } from '@/components/settings/meta-app-secret-panel';
 import { useAuth } from '@/hooks/use-auth';
 
 const BASE_TAB_VALUES = [
   'profile',
   'whatsapp',
+  'app-secret',
   'templates',
   'tags',
   'appearance',
@@ -100,6 +103,13 @@ export default function SettingsPage() {
             WhatsApp Config
           </TabsTrigger>
           <TabsTrigger
+            value="app-secret"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+          >
+            <Shield className="size-4" />
+            App Secret
+          </TabsTrigger>
+          <TabsTrigger
             value="templates"
             className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
@@ -142,6 +152,10 @@ export default function SettingsPage() {
 
         <TabsContent value="whatsapp">
           <WhatsAppConfig />
+        </TabsContent>
+
+        <TabsContent value="app-secret">
+          <MetaAppSecretPanel />
         </TabsContent>
 
         <TabsContent value="templates">

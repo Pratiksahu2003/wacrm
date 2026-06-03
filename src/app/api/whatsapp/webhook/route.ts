@@ -4,6 +4,7 @@ import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { normalizePhone, phonesMatch } from '@/lib/whatsapp/phone-utils'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
+import { loadWebhookSignatureSecrets } from '@/lib/whatsapp/webhook-secrets'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import {
@@ -165,8 +166,9 @@ export async function POST(request: Request) {
   // signed. request.json() would re-encode and break the signature.
   const rawBody = await request.text()
   const signature = request.headers.get('x-hub-signature-256')
+  const signatureSecrets = await loadWebhookSignatureSecrets(supabaseAdmin())
 
-  if (!verifyMetaWebhookSignature(rawBody, signature)) {
+  if (!verifyMetaWebhookSignature(rawBody, signature, signatureSecrets)) {
     // 401 (not 200) — we want Meta's delivery dashboard to show failures
     // loudly if a misconfiguration causes signatures to stop matching,
     // rather than silently eating events.

@@ -206,6 +206,8 @@ export interface WhatsAppConfig {
   waba_id?: string;
   access_token: string;
   verify_token?: string;
+  /** Encrypted Meta App Secret — server/webhook only; never sent to the client. */
+  meta_app_secret?: string;
   status: 'connected' | 'disconnected';
   connected_at?: string;
   /**

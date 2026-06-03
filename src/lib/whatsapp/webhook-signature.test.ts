@@ -49,6 +49,16 @@ describe("verifyMetaWebhookSignature", () => {
     expect(verifyMetaWebhookSignature("{}", "sha256=tooshort")).toBe(false);
   });
 
+  it("accepts when any secret in the list matches", () => {
+    const body = '{"entry":[]}';
+    expect(
+      verifyMetaWebhookSignature(body, signedHeader(body, "tenant-a"), [
+        "tenant-b",
+        "tenant-a",
+      ]),
+    ).toBe(true);
+  });
+
   describe("fail-closed when secret is missing", () => {
     const originalSecret = process.env.META_APP_SECRET;
     beforeEach(() => {
@@ -60,10 +70,9 @@ describe("verifyMetaWebhookSignature", () => {
 
     it("rejects even a correctly-formed signature when no secret is configured", () => {
       const body = "{}";
-      // Use the original secret to produce the header so we can verify
-      // the rejection is solely due to missing config.
       const header = signedHeader(body, originalSecret!);
       expect(verifyMetaWebhookSignature(body, header)).toBe(false);
+      expect(verifyMetaWebhookSignature(body, header, [])).toBe(false);
     });
   });
 });

@@ -274,7 +274,7 @@ export async function POST(request: Request) {
     // /register when the user didn't provide a PIN this time around.
     const { data: existing } = await supabase
       .from('whatsapp_config')
-      .select('id, registered_at, phone_number_id')
+      .select('id, registered_at, phone_number_id, meta_app_secret')
       .eq('account_id', accountId)
       .maybeSingle()
 
@@ -351,6 +351,11 @@ export async function POST(request: Request) {
       waba_id: waba_id || null,
       access_token: encryptedAccessToken,
       verify_token: encryptedVerifyToken,
+      // Preserve App Secret when saving credentials — it is managed via
+      // PUT /api/whatsapp/config/app-secret.
+      ...(existing?.meta_app_secret
+        ? { meta_app_secret: existing.meta_app_secret }
+        : {}),
       status: registrationError ? 'disconnected' : 'connected',
       connected_at: registrationError ? null : new Date().toISOString(),
       registered_at: registrationError ? null : registeredAt,
