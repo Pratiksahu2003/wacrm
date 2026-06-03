@@ -22,7 +22,6 @@ import { createClient } from '@supabase/supabase-js'
 import {
   decryptIfEncrypted,
   encrypt,
-  isLegacyFormat,
 } from '@/lib/whatsapp/encryption'
 import { getMediaUrl } from '@/lib/whatsapp/meta-api'
 import { normalizePhone, phonesMatch } from '@/lib/whatsapp/phone-utils'
@@ -190,7 +189,7 @@ export async function POST(request: Request) {
     request.headers.forEach((value, key) => {
       headers[key] = value
     })
-    logWebhook('debug', 'post_headers', { request_id: requestId, headers })
+    logWebhook('info', 'post_headers', { request_id: requestId, headers })
   }
 
   // Verify webhook signature
