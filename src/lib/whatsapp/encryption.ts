@@ -34,6 +34,41 @@ const GCM_IV_LENGTH = 12
 const CBC_IV_LENGTH = 16
 const AUTH_TAG_LENGTH = 16
 
+function isHex(s: string): boolean {
+  return /^[0-9a-f]+$/i.test(s)
+}
+
+export function looksEncryptedToken(value: string): boolean {
+  const parts = value.split(':')
+  if (parts.length !== 2 && parts.length !== 3) return false
+  if (!parts.every(isHex)) return false
+
+  if (parts.length === 3) {
+    const [ivHex, _ctHex, tagHex] = parts
+    if (ivHex.length !== GCM_IV_LENGTH * 2) return false
+    if (tagHex.length !== AUTH_TAG_LENGTH * 2) return false
+    return true
+  }
+
+  const [ivHex] = parts
+  return ivHex.length === CBC_IV_LENGTH * 2
+}
+
+export function decryptIfEncrypted(value: string): {
+  plaintext: string
+  encrypted: boolean
+  legacy: boolean
+} {
+  if (!looksEncryptedToken(value)) {
+    return { plaintext: value, encrypted: false, legacy: false }
+  }
+  return {
+    plaintext: decrypt(value),
+    encrypted: true,
+    legacy: isLegacyFormat(value),
+  }
+}
+
 export function encrypt(text: string): string {
   const iv = crypto.randomBytes(GCM_IV_LENGTH)
   const cipher = crypto.createCipheriv(

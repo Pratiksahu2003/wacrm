@@ -1,4 +1,4 @@
-import { decrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 
 /**
  * Collect every App Secret that may have signed an inbound webhook:
@@ -16,7 +16,7 @@ export async function loadWebhookSignatureSecrets(
 
   const { data: rows, error } = await adminClient
     .from('whatsapp_config')
-    .select('meta_app_secret')
+    .select('id, meta_app_secret')
     .not('meta_app_secret', 'is', null)
 
   if (error) {
@@ -25,7 +25,15 @@ export async function loadWebhookSignatureSecrets(
     for (const row of rows ?? []) {
       if (!row.meta_app_secret) continue
       try {
-        secrets.add(decrypt(row.meta_app_secret))
+        const { plaintext, encrypted } = decryptIfEncrypted(row.meta_app_secret)
+        secrets.add(plaintext)
+        if (!encrypted) {
+          const encryptedValue = encrypt(plaintext)
+          void adminClient
+            .from('whatsapp_config')
+            .update({ meta_app_secret: encryptedValue })
+            .eq('id', row.id)
+        }
       } catch {
         // Wrong key or corrupted row — skip so other tenants still verify.
       }
@@ -60,7 +68,7 @@ export async function describeWebhookSignatureSources(
       if (!row.meta_app_secret) continue
       dbRows++
       try {
-        decrypt(row.meta_app_secret)
+        decryptIfEncrypted(row.meta_app_secret)
         decryptOk++
       } catch {
         decryptFailed++

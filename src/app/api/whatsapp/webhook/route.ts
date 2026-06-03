@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
+import {
+  decryptIfEncrypted,
+  encrypt,
+  isLegacyFormat,
+} from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { normalizePhone, phonesMatch } from '@/lib/whatsapp/phone-utils'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
@@ -95,6 +99,28 @@ export async function GET(request: Request) {
       )
     }
 
+    const envVerifyTokens = [
+      process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
+      process.env.META_WEBHOOK_VERIFY_TOKEN,
+    ]
+      .map((t) => (typeof t === 'string' ? t.trim() : ''))
+      .filter(Boolean)
+
+    if (envVerifyTokens.includes(verifyToken)) {
+      logWebhook('info', 'verify_ok', {
+        request_id: requestId,
+        config_id: null,
+        config_rows: 0,
+        rows_with_verify_token: 0,
+        verify_token_decrypt_failures: 0,
+        duration_ms: Date.now() - startedAt,
+      })
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    }
+
     // Fetch all whatsapp configs to check verify tokens
     const { data: configs, error: configError } = await supabaseAdmin()
       .from('whatsapp_config')
@@ -122,12 +148,16 @@ export async function GET(request: Request) {
     // GCM if it was still in the legacy CBC format.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let matchedConfig: any = null
+    let shouldUpgradeToken = false
     let decryptFailures = 0
     for (const config of configs) {
       if (!config.verify_token) continue
       try {
-        if (decrypt(config.verify_token) === verifyToken) {
+        const decoded = decryptIfEncrypted(config.verify_token)
+        if (decoded.plaintext === verifyToken) {
           matchedConfig = config
+          shouldUpgradeToken =
+            !decoded.encrypted || decoded.legacy || isLegacyFormat(config.verify_token)
           break
         }
       } catch {
@@ -146,7 +176,7 @@ export async function GET(request: Request) {
       })
       // Fire-and-forget GCM upgrade. Safe to run on every subscribe
       // since it's a no-op once the column is already GCM.
-      if (isLegacyFormat(matchedConfig.verify_token)) {
+      if (shouldUpgradeToken) {
         void supabaseAdmin()
           .from('whatsapp_config')
           .update({ verify_token: encrypt(verifyToken) })
@@ -404,7 +434,25 @@ async function processWebhook(
         registered: Boolean(config.registered_at),
       })
 
-      const decryptedAccessToken = decrypt(config.access_token)
+      let decryptedAccessToken: string
+      try {
+        const decodedToken = decryptIfEncrypted(config.access_token)
+        decryptedAccessToken = decodedToken.plaintext
+        if (!decodedToken.encrypted || decodedToken.legacy) {
+          void supabaseAdmin()
+            .from('whatsapp_config')
+            .update({ access_token: encrypt(decryptedAccessToken) })
+            .eq('id', config.id)
+        }
+      } catch (err) {
+        logWebhook('error', 'access_token_decrypt_failed', {
+          request_id: requestId,
+          phone_number_id: maskId(phoneNumberId),
+          account_id: maskId(config.account_id),
+          error: err instanceof Error ? err.message : String(err),
+        })
+        continue
+      }
 
       for (let i = 0; i < value.messages.length; i++) {
         const message = value.messages[i]

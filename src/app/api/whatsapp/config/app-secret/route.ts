@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { encrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 
 async function resolveAccountId(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -51,9 +51,20 @@ export async function GET() {
       )
     }
 
+    let decryptable = false
+    if (config?.meta_app_secret) {
+      try {
+        decryptIfEncrypted(config.meta_app_secret)
+        decryptable = true
+      } catch {
+        decryptable = false
+      }
+    }
+
     return NextResponse.json({
       has_config: Boolean(config),
-      configured: Boolean(config?.meta_app_secret),
+      configured: decryptable,
+      corrupted: Boolean(config?.meta_app_secret) && !decryptable,
       // True when META_APP_SECRET is set on this server — webhooks
       // verify even if the account hasn't saved a secret in Settings.
       server_env_fallback: Boolean(process.env.META_APP_SECRET),
