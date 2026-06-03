@@ -166,13 +166,21 @@ export async function POST(request: Request) {
     // the loop would N+1 against Supabase for every recipient.
     // Guard against a malformed local row crashing every send in
     // the loop with the same opaque TypeError — fail loudly once.
-    const { data: rawTemplateRow } = await supabase
+    const { data: rawTemplateRow, error: templateError } = await supabase
       .from('message_templates')
       .select('*')
       .eq('account_id', accountId)
       .eq('name', template_name)
       .eq('language', template_language || 'en_US')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
+    if (templateError && templateError.code !== 'PGRST116') {
+      return NextResponse.json(
+        { error: `Failed to load template row: ${templateError.message}` },
+        { status: 500 },
+      )
+    }
     if (rawTemplateRow && !isMessageTemplate(rawTemplateRow)) {
       return NextResponse.json(
         {

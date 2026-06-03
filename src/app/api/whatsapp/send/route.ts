@@ -208,13 +208,21 @@ export async function POST(request: Request) {
     // crashing the send-builder later in the stack.
     let templateRow: MessageTemplate | null = null
     if (message_type === 'template' && template_name) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('message_templates')
         .select('*')
         .eq('account_id', accountId)
         .eq('name', template_name)
         .eq('language', template_language || 'en_US')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
+      if (error && error.code !== 'PGRST116') {
+        return NextResponse.json(
+          { error: `Failed to load template row: ${error.message}` },
+          { status: 500 },
+        )
+      }
       if (data && !isMessageTemplate(data)) {
         return NextResponse.json(
           {

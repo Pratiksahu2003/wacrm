@@ -82,7 +82,7 @@ function buildHeaderComponent(
     // header component required on send.
     const varCount = extractVariableIndices(template.header_content ?? '').length;
     if (varCount === 0) return null;
-    const value = params.headerText;
+    const value = params.headerText ?? template.sample_values?.header?.[0];
     if (!value || !value.trim()) {
       throw new Error(
         'Header text variable {{1}} requires a value — pass headerText.',
@@ -167,7 +167,8 @@ function buildButtonComponent(
     case 'URL': {
       // Each URL button is its own component with sub_type=url and
       // the button's index in the template's buttons array.
-      if (!override || !override.trim()) {
+      const urlValue = override?.trim() || button.example?.trim();
+      if (!urlValue) {
         throw new Error(
           `URL button #${index + 1} uses {{1}} — requires a buttonParams[${index}] value.`,
         );
@@ -176,7 +177,7 @@ function buildButtonComponent(
         type: 'button',
         sub_type: 'url',
         index: String(index),
-        parameters: [{ type: 'text', text: override }],
+        parameters: [{ type: 'text', text: urlValue }],
       };
     }
     case 'COPY_CODE': {
