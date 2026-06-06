@@ -5,6 +5,7 @@ import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { META_API_BASE } from '@/lib/whatsapp/meta-api-version'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { resolveUploadHandleToMediaId } from '@/lib/whatsapp/meta-api'
+import { normalizeSyncedHeaderMedia } from '@/lib/whatsapp/header-media-source'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
 export const runtime = 'nodejs'
@@ -244,11 +245,15 @@ export async function POST() {
 
       const headerHandle = header?.example?.header_handle?.[0] ?? null
       const headerMediaUrl = header?.example?.header_url?.[0] ?? null
+      const normalizedHeader = normalizeSyncedHeaderMedia({
+        header_handle: headerHandle,
+        header_url: headerMediaUrl,
+      })
 
       let headerMediaId: string | null = null
       if (
-        headerHandle &&
-        !headerMediaUrl &&
+        normalizedHeader.header_handle &&
+        !normalizedHeader.header_media_url &&
         headerType &&
         (headerType === 'image' ||
           headerType === 'video' ||
@@ -256,7 +261,7 @@ export async function POST() {
       ) {
         try {
           headerMediaId = await resolveUploadHandleToMediaId(
-            headerHandle,
+            normalizedHeader.header_handle,
             accessToken,
           )
         } catch {
@@ -275,8 +280,8 @@ export async function POST() {
         language: t.language,
         header_type: headerType,
         header_content: header?.text ?? null,
-        header_handle: headerHandle,
-        header_media_url: headerMediaUrl,
+        header_handle: normalizedHeader.header_handle,
+        header_media_url: normalizedHeader.header_media_url,
         header_media_id: headerMediaId,
         body_text: body?.text ?? '',
         footer_text: footer?.text ?? null,

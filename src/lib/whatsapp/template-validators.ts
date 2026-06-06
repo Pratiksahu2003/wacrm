@@ -20,6 +20,7 @@ import type {
   TemplateButton,
   TemplateSampleValues,
 } from '@/types';
+import { pickHeaderMediaLink, pickUploadHandle } from './header-media-source';
 
 export const TEMPLATE_LIMITS = {
   bodyMaxLength: 1024,
@@ -354,8 +355,8 @@ export function canSendMediaHeader(
 ): boolean {
   const ht = template.header_type;
   if (!ht || !MEDIA_HEADER_TYPES.has(ht)) return true;
-  if (Boolean(template.header_media_url?.trim())) return true;
+  if (pickHeaderMediaLink(template)) return true;
   if (Boolean(template.header_media_id?.trim())) return true;
-  if (Boolean(template.header_handle?.trim())) return true;
+  if (pickUploadHandle(template)) return true;
   return false;
 }

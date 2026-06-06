@@ -4,6 +4,7 @@ import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import type { SendTimeParams } from '@/lib/whatsapp/template-send-builder'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
+import type { MessageTemplate } from '@/types'
 import {
   sanitizePhoneForMeta,
   isValidE164,
@@ -166,15 +167,39 @@ export async function POST(request: Request) {
     // the loop would N+1 against Supabase for every recipient.
     // Guard against a malformed local row crashing every send in
     // the loop with the same opaque TypeError — fail loudly once.
-    const { data: rawTemplateRow, error: templateError } = await supabase
+    let rawTemplateRow: MessageTemplate | null = null
+    let templateError: { code?: string; message: string } | null = null
+
+    let templateQuery = supabase
       .from('message_templates')
       .select('*')
       .eq('account_id', accountId)
       .eq('name', template_name)
-      .eq('language', template_language || 'en_US')
+    if (template_language) {
+      templateQuery = templateQuery.eq('language', template_language)
+    }
+    const primary = await templateQuery
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+    rawTemplateRow = primary.data ?? null
+    templateError = primary.error
+
+    if (!rawTemplateRow && template_language) {
+      const fallback = await supabase
+        .from('message_templates')
+        .select('*')
+        .eq('account_id', accountId)
+        .eq('name', template_name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      rawTemplateRow = fallback.data ?? null
+      templateError = fallback.error
+    }
+
+    const metaTemplateLanguage =
+      rawTemplateRow?.language || template_language || 'en_US'
     if (templateError && templateError.code !== 'PGRST116') {
       return NextResponse.json(
         { error: `Failed to load template row: ${templateError.message}` },
@@ -222,7 +247,7 @@ export async function POST(request: Request) {
             accessToken,
             to: variant,
             templateName: template_name,
-            language: template_language || 'en_US',
+            language: metaTemplateLanguage,
             template: templateRow ?? undefined,
             messageParams: recipient.messageParams,
             params: recipient.params ?? [],

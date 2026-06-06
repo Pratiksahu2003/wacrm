@@ -210,15 +210,34 @@ export async function POST(request: Request) {
     // crashing the send-builder later in the stack.
     let templateRow: MessageTemplate | null = null
     if (message_type === 'template' && template_name) {
-      const { data, error } = await supabase
+      // Prefer exact language from the client; fall back to any locale for
+      // this template name so `en` vs missing `en_US` default doesn't drop
+      // the row and send a header-less payload to Meta.
+      let query = supabase
         .from('message_templates')
         .select('*')
         .eq('account_id', accountId)
         .eq('name', template_name)
-        .eq('language', template_language || 'en_US')
+      if (template_language) {
+        query = query.eq('language', template_language)
+      }
+      let { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
+
+      if (!data && template_language) {
+        const fallback = await supabase
+          .from('message_templates')
+          .select('*')
+          .eq('account_id', accountId)
+          .eq('name', template_name)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        data = fallback.data
+        error = fallback.error
+      }
       if (error && error.code !== 'PGRST116') {
         return NextResponse.json(
           { error: `Failed to load template row: ${error.message}` },
@@ -259,6 +278,9 @@ export async function POST(request: Request) {
       }
     }
 
+    const metaTemplateLanguage =
+      templateRow?.language || template_language || 'en_US'
+
     const attempt = async (phone: string): Promise<string> => {
       if (message_type === 'template') {
         const result = await sendTemplateMessage({
@@ -266,7 +288,7 @@ export async function POST(request: Request) {
           accessToken,
           to: phone,
           templateName: template_name,
-          language: template_language || 'en_US',
+          language: metaTemplateLanguage,
           template: templateRow ?? undefined,
           messageParams: template_message_params ?? undefined,
           // Legacy body-only fallback — only consulted when

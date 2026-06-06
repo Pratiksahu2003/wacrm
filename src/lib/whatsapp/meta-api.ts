@@ -928,6 +928,11 @@ export async function resolveUploadHandleToMediaId(
   if (!trimmed) {
     throw new Error('Upload handle is empty.')
   }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    throw new Error(
+      'Value is a media URL, not a Resumable Upload handle — use header_media_url or image.link instead.',
+    )
+  }
 
   const response = await fetch(`${META_API_BASE}/${trimmed}`, {
     headers: { Authorization: `Bearer ${accessToken}` },

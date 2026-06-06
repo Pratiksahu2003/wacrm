@@ -32,6 +32,7 @@
 
 import type { MessageTemplate, TemplateButton } from '@/types';
 import { extractVariableIndices } from './template-validators';
+import { pickHeaderMediaLink, pickUploadHandle } from './header-media-source';
 
 export interface SendTimeParams {
   /** Values for body {{1}}, {{2}}, … indexed by variable position. */
@@ -144,7 +145,7 @@ function buildHeaderComponent(
   }
 
   // image / video / document
-  const link = params.headerMediaUrl ?? template.header_media_url;
+  const link = pickHeaderMediaLink(template, params.headerMediaUrl);
   const mediaId = params.headerMediaId ?? template.header_media_id;
 
   if (!link?.trim() && !mediaId?.trim()) {
@@ -310,13 +311,13 @@ export async function prepareSendComponents(
     return buildSendComponents(template, params);
   }
 
-  const link = params.headerMediaUrl ?? template.header_media_url;
+  const link = pickHeaderMediaLink(template, params.headerMediaUrl);
   const mediaId = params.headerMediaId ?? template.header_media_id;
-  if (link?.trim() || mediaId?.trim()) {
+  if (link || mediaId?.trim()) {
     return buildSendComponents(template, params);
   }
 
-  const handle = template.header_handle?.trim();
+  const handle = pickUploadHandle(template);
   if (!handle) {
     return buildSendComponents(template, params);
   }

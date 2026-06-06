@@ -151,6 +151,27 @@ describe('buildSendComponents — header', () => {
     });
   });
 
+  it('uses WhatsApp CDN URL stored in header_handle as send link', () => {
+    const components = buildSendComponents(
+      row({
+        header_type: 'image',
+        header_handle:
+          'https://scontent.whatsapp.net/v/t61.29466-34/example.png',
+      }),
+    );
+    expect(components[0]).toEqual({
+      type: 'header',
+      parameters: [
+        {
+          type: 'image',
+          image: {
+            link: 'https://scontent.whatsapp.net/v/t61.29466-34/example.png',
+          },
+        },
+      ],
+    });
+  });
+
   it('throws when only a template creation handle is stored locally', () => {
     expect(() =>
       buildSendComponents(
