@@ -12,7 +12,10 @@
  * only need to supply values for the variable-bearing fields:
  *
  *   - Static IMAGE/VIDEO/DOCUMENT headers ride along automatically
- *     using the template's `header_media_url` (or `header_handle`).
+ *     using the template's `header_media_url` or a numeric media id
+ *     from a prior upload. `header_handle` (Resumable Upload handle
+ *     used at template creation) is NOT valid on send — Meta v25
+ *     expects `image.id` as an integer or a public `link`.
  *     Meta requires the media component on every send even though
  *     the URL hasn't changed since approval.
  *   - TEXT headers with `{{1}}` need `headerText` from the caller.
@@ -61,13 +64,62 @@ export type MetaSendComponent =
       parameters: MetaSendParameter[];
     };
 
+type MediaSendPayload = { link: string } | { id: number };
+
 type MetaSendParameter =
   | { type: 'text'; text: string }
-  | { type: 'image'; image: { link?: string; id?: string } }
-  | { type: 'video'; video: { link?: string; id?: string } }
-  | { type: 'document'; document: { link?: string; id?: string } }
+  | { type: 'image'; image: MediaSendPayload }
+  | { type: 'video'; video: MediaSendPayload }
+  | { type: 'document'; document: MediaSendPayload }
   | { type: 'coupon_code'; coupon_code: string }
   | { type: 'payload'; payload: string };
+
+/** Resumable-upload handles (4::…) are for template creation only. */
+function isTemplateCreationHandle(value: string): boolean {
+  return value.includes('::');
+}
+
+function isNumericMediaId(value: string): boolean {
+  return /^\d+$/.test(value.trim());
+}
+
+/**
+ * Resolve send-time media for IMAGE/VIDEO/DOCUMENT headers.
+ * Prefers public HTTPS link; falls back to numeric Cloud API media id.
+ */
+export function resolveMediaSendPayload(
+  link?: string | null,
+  mediaId?: string | null,
+  headerType = 'media',
+): MediaSendPayload {
+  const trimmedLink = link?.trim();
+  if (trimmedLink) {
+    return { link: trimmedLink };
+  }
+
+  const trimmedId = mediaId?.trim();
+  if (trimmedId && isNumericMediaId(trimmedId)) {
+    return { id: parseInt(trimmedId, 10) };
+  }
+
+  if (trimmedId && isTemplateCreationHandle(trimmedId)) {
+    throw new Error(
+      `${headerType} header cannot be sent using the template creation handle. ` +
+        'Add a public sample URL (header_media_url) on the template, or pass headerMediaUrl at send time.',
+    );
+  }
+
+  if (trimmedId) {
+    throw new Error(
+      `${headerType} header media id must be numeric. Got a non-numeric value — use headerMediaUrl with a public HTTPS URL instead.`,
+    );
+  }
+
+  throw new Error(
+    `${headerType} header requires a media link or numeric media id at send time — ` +
+      'set header_media_url on the template or pass headerMediaUrl/headerMediaId.',
+  );
+}
 
 function buildHeaderComponent(
   template: MessageTemplate,
@@ -95,16 +147,18 @@ function buildHeaderComponent(
   }
 
   // image / video / document — Meta requires the media component on
-  // every send. Prefer the caller's explicit override; fall back to
-  // the template's stored sample.
+  // every send. Never use header_handle here — it is creation-only.
   const link = params.headerMediaUrl ?? template.header_media_url;
-  const id = params.headerMediaId ?? template.header_handle;
-  if (!link && !id) {
+  const mediaId = params.headerMediaId;
+
+  if (!link?.trim() && !mediaId?.trim() && template.header_handle?.trim()) {
     throw new Error(
-      `${headerType} header requires a media link or id at send time — set header_media_url on the template or pass headerMediaUrl/headerMediaId.`,
+      `${headerType} header cannot be sent using the template creation handle. ` +
+        'Add a public sample URL (header_media_url) on the template, or pass headerMediaUrl at send time.',
     );
   }
-  const mediaPayload: { link?: string; id?: string } = id ? { id } : { link };
+
+  const mediaPayload = resolveMediaSendPayload(link, mediaId, headerType);
   return {
     type: 'header',
     parameters: [

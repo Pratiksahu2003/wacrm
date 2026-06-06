@@ -44,6 +44,7 @@ import { templateStatusConfig } from '@/lib/template-status';
 import {
   extractVariableIndices,
   TEMPLATE_LIMITS,
+  canSendMediaHeader,
 } from '@/lib/whatsapp/template-validators';
 
 const CATEGORIES = ['Marketing', 'Utility', 'Authentication'] as const;
@@ -543,6 +544,17 @@ export function TemplateManager() {
                         </span>
                       </div>
                     )}
+                    {statusKey === 'APPROVED' && !canSendMediaHeader(template) && (
+                      <div className="flex items-start gap-1.5 text-xs text-amber-300 bg-amber-950/20 border border-amber-900/40 rounded px-2 py-1.5">
+                        <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          Media header has no public send URL — add{' '}
+                          <strong className="font-medium">header_media_url</strong>{' '}
+                          (Edit) or re-sync from Meta. Templates synced with only
+                          a creation handle cannot be sent until a URL is set.
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0 ml-2">
                     {statusKey === 'APPROVED' && (
@@ -777,6 +789,9 @@ export function TemplateManager() {
 
               {headerNeedsMedia && (
                 <div className="space-y-2 mt-2">
+                  <Label className="text-slate-300 text-sm">
+                    Public sample URL (required to send)
+                  </Label>
                   <Input
                     placeholder={`https://… (public link to a sample ${form.header_format})`}
                     value={form.header_media_url}
@@ -785,6 +800,14 @@ export function TemplateManager() {
                     }
                     className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                   />
+                  {!form.header_media_url.trim() && (
+                    <p className="text-[11px] text-amber-400 leading-relaxed">
+                      Without a public HTTPS URL, approved templates with a media
+                      header cannot be sent from the inbox or broadcasts. The
+                      Resumable Upload handle (if any) is only used when
+                      submitting to Meta for review.
+                    </p>
+                  )}
                   <p className="text-[11px] text-slate-500 leading-relaxed">
                     Must be publicly accessible HTTPS. Meta fetches it once
                     during review, so the file needs to stay live for ~24 hrs.

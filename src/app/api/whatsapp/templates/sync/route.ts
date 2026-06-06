@@ -36,6 +36,7 @@ interface MetaTemplateComponent {
   example?: {
     header_text?: string[]
     header_handle?: string[]
+    header_url?: string[]
     body_text?: string[][]
   }
 }
@@ -251,6 +252,7 @@ export async function POST() {
         header_type: headerType,
         header_content: header?.text ?? null,
         header_handle: header?.example?.header_handle?.[0] ?? null,
+        header_media_url: header?.example?.header_url?.[0] ?? null,
         body_text: body?.text ?? '',
         footer_text: footer?.text ?? null,
         buttons: parsedButtons.length ? parsedButtons : null,
@@ -263,7 +265,7 @@ export async function POST() {
 
       const { data: existing, error: lookupErr } = await supabase
         .from('message_templates')
-        .select('id')
+        .select('id, header_media_url')
         .eq('account_id', accountId)
         .eq('name', t.name)
         .eq('language', t.language)
@@ -278,10 +280,19 @@ export async function POST() {
         continue
       }
 
+      // Keep a user-entered send URL when Meta sync omits header_url.
+      const syncRow = existing?.id
+        ? {
+            ...row,
+            header_media_url:
+              row.header_media_url ?? existing.header_media_url ?? null,
+          }
+        : row
+
       if (existing?.id) {
         const { error: updErr } = await supabase
           .from('message_templates')
-          .update(row)
+          .update(syncRow)
           .eq('id', existing.id)
         if (updErr) {
           errors.push({
@@ -295,7 +306,7 @@ export async function POST() {
       } else {
         const { error: insErr } = await supabase
           .from('message_templates')
-          .insert(row)
+          .insert(syncRow)
         if (insErr) {
           errors.push({
             name: t.name,

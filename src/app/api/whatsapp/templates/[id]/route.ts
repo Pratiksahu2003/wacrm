@@ -10,6 +10,7 @@ import {
   type TemplatePayload,
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
+import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 
 export const runtime = 'nodejs'
 
@@ -175,7 +176,7 @@ export async function PATCH(
             last_submitted_at: new Date().toISOString(),
           })
           .eq('id', id)
-        return NextResponse.json({ error: message }, { status: 502 })
+        return NextResponse.json({ error: message }, { status: metaApiErrorStatus(message) })
       }
     }
 
@@ -303,7 +304,7 @@ export async function DELETE(
         })
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Meta delete failed.'
-        return NextResponse.json({ error: message }, { status: 502 })
+        return NextResponse.json({ error: message }, { status: metaApiErrorStatus(message) })
       }
     }
 

@@ -336,3 +336,17 @@ export function validateTemplatePayload(payload: TemplatePayload): {
     headerVarCount: headerResult.variableCount,
   };
 }
+
+const MEDIA_HEADER_TYPES = new Set(['image', 'video', 'document']);
+
+/** Whether an APPROVED media-header template can be sent via Cloud API. */
+export function canSendMediaHeader(
+  template: Pick<
+    MessageTemplate,
+    'header_type' | 'header_media_url'
+  >,
+): boolean {
+  const ht = template.header_type;
+  if (!ht || !MEDIA_HEADER_TYPES.has(ht)) return true;
+  return Boolean(template.header_media_url?.trim());
+}

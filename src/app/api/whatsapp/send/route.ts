@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
+import { buildSendComponents } from '@/lib/whatsapp/template-send-builder'
+import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import {
@@ -235,6 +237,25 @@ export async function POST(request: Request) {
       templateRow = data ?? null
     }
 
+    if (message_type === 'template' && templateRow) {
+      try {
+        buildSendComponents(templateRow, {
+          body: template_message_params?.body ?? template_params ?? [],
+          headerText: template_message_params?.headerText,
+          headerMediaUrl: template_message_params?.headerMediaUrl,
+          headerMediaId: template_message_params?.headerMediaId,
+          buttonParams: template_message_params?.buttonParams,
+        })
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Invalid template send parameters'
+        return NextResponse.json(
+          { error: message },
+          { status: metaApiErrorStatus(message) },
+        )
+      }
+    }
+
     const attempt = async (phone: string): Promise<string> => {
       if (message_type === 'template') {
         const result = await sendTemplateMessage({
@@ -291,7 +312,7 @@ export async function POST(request: Request) {
       console.error('Meta API send failed for all variants:', message)
       return NextResponse.json(
         { error: `Meta API error: ${message}` },
-        { status: 502 }
+        { status: metaApiErrorStatus(message) },
       )
     }
 

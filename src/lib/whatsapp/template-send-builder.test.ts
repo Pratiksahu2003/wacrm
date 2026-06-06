@@ -116,7 +116,7 @@ describe('buildSendComponents — header', () => {
     });
   });
 
-  it('prefers media id over url when both are available', () => {
+  it('prefers link over template creation handle when both are available', () => {
     const components = buildSendComponents(
       row({
         header_type: 'document',
@@ -126,14 +126,33 @@ describe('buildSendComponents — header', () => {
     );
     expect(components[0]).toEqual({
       type: 'header',
-      parameters: [{ type: 'document', document: { id: '4::aBc' } }],
+      parameters: [{ type: 'document', document: { link: 'https://x.com/doc.pdf' } }],
     });
+  });
+
+  it('uses numeric media id when no link is available', () => {
+    const components = buildSendComponents(
+      row({ header_type: 'image' }),
+      { headerMediaId: '1234567890' },
+    );
+    expect(components[0]).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { id: 1234567890 } }],
+    });
+  });
+
+  it('throws when only a template creation handle is available', () => {
+    expect(() =>
+      buildSendComponents(
+        row({ header_type: 'image', header_handle: '4::aBc' }),
+      ),
+    ).toThrow(/template creation handle/);
   });
 
   it('throws on media header with no link OR id available', () => {
     expect(() =>
       buildSendComponents(row({ header_type: 'image' })),
-    ).toThrow(/requires a media link or id/);
+    ).toThrow(/requires a media link or numeric media id/);
   });
 });
 
