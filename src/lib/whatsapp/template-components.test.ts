@@ -47,16 +47,27 @@ describe('buildMetaTemplatePayload', () => {
     });
   });
 
-  it('uses header_url for media headers when no handle is set', () => {
+  it('throws when media header has URL but no upload handle', () => {
+    expect(() =>
+      buildMetaTemplatePayload({
+        ...base,
+        header_type: 'image',
+        header_media_url: 'https://example.com/img.jpg',
+      }),
+    ).toThrow(/upload handle/);
+  });
+
+  it('uses header_handle for media headers', () => {
     const payload = buildMetaTemplatePayload({
       ...base,
       header_type: 'image',
+      header_handle: '4::aW1hZ2U',
       header_media_url: 'https://example.com/img.jpg',
     });
     expect(payload.components[0]).toEqual({
       type: 'HEADER',
       format: 'IMAGE',
-      example: { header_url: ['https://example.com/img.jpg'] },
+      example: { header_handle: ['4::aW1hZ2U'] },
     });
   });
 

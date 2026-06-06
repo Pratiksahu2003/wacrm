@@ -10,6 +10,7 @@ import {
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
+import { prepareTemplatePayloadForMetaSubmit } from '@/lib/whatsapp/template-header-upload'
 
 export const runtime = 'nodejs'
 
@@ -140,16 +141,23 @@ export async function POST(request: Request) {
       )
     }
 
-    const metaPayload = buildMetaTemplatePayload(payload)
-
     const dryRun =
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === 'true' ||
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === '1'
 
+    let submitPayload: TemplatePayload = payload
     let metaTemplateId: string
     let metaStatus: string
 
     if (dryRun) {
+      if (
+        payload.header_type &&
+        payload.header_type !== 'text' &&
+        payload.header_media_url &&
+        !payload.header_handle
+      ) {
+        submitPayload = { ...payload, header_handle: 'dry-run-handle' }
+      }
       metaTemplateId = `dry-run-${crypto.randomUUID()}`
       metaStatus = 'PENDING'
     } else {
@@ -185,6 +193,30 @@ export async function POST(request: Request) {
           .update({ access_token: encrypt(accessToken) })
           .eq('id', config.id)
       }
+
+      try {
+        submitPayload = await prepareTemplatePayloadForMetaSubmit(
+          payload,
+          accessToken,
+        )
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Failed to upload header media.'
+        return NextResponse.json(
+          { error: message },
+          { status: metaApiErrorStatus(message) },
+        )
+      }
+
+      let metaPayload
+      try {
+        metaPayload = buildMetaTemplatePayload(submitPayload)
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Invalid template payload.'
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
+
       try {
         const meta = await submitMessageTemplate({
           wabaId: config.waba_id,
@@ -199,7 +231,7 @@ export async function POST(request: Request) {
         // until they fix and re-submit.
         await upsertTemplateRow(
           supabase,
-          buildUpsertRow(accountId, user.id, payload, {
+          buildUpsertRow(accountId, user.id, submitPayload, {
             status: 'DRAFT',
             metaTemplateId: null,
             submissionError: message,
@@ -217,9 +249,19 @@ export async function POST(request: Request) {
       }
     }
 
+    if (dryRun) {
+      try {
+        buildMetaTemplatePayload(submitPayload)
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Invalid template payload.'
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
+    }
+
     const { data: row, error: upsertErr } = await upsertTemplateRow(
       supabase,
-      buildUpsertRow(accountId, user.id, payload, {
+      buildUpsertRow(accountId, user.id, submitPayload, {
         status: normalizeStatus(metaStatus),
         metaTemplateId,
         submissionError: null,
@@ -246,12 +288,11 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Error submitting template:', error)
+    const message =
+      error instanceof Error ? error.message : 'Failed to submit template.'
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : 'Failed to submit template.',
-      },
-      { status: 500 },
+      { error: message },
+      { status: metaApiErrorStatus(message) },
     )
   }
 }

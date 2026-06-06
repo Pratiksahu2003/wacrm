@@ -14,7 +14,12 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('(#132000)') ||
     m.includes('(#132001)') ||
     m.includes('(#132012)') ||
+    m.includes('(#132018)') ||
+    m.includes('(#132019)') ||
     m.includes('format does not match') ||
+    m.includes('content') ||
+    m.includes('policy') ||
+    m.includes('template') && m.includes('invalid') ||
     m.includes('violat') ||
     m.includes('not valid')
   ) {
@@ -42,7 +47,11 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('sample value') ||
     m.includes('header_media_url') ||
     m.includes('upload handle') ||
-    m.includes('could not be resolved')
+    m.includes('could not be resolved') ||
+    m.includes('meta_app_id') ||
+    m.includes('resumable upload') ||
+    m.includes('header media') ||
+    m.includes('download header')
   ) {
     return 400
   }

@@ -58,10 +58,19 @@ function buildHeaderComponent(payload: TemplatePayload): MetaComponent | null {
         ? 'VIDEO'
         : 'DOCUMENT';
   const component: MetaComponent = { type: 'HEADER', format };
-  if (header_handle) {
-    component.example = { header_handle: [header_handle] };
-  } else if (header_media_url) {
-    component.example = { header_url: [header_media_url] };
+  if (header_handle?.trim()) {
+    component.example = { header_handle: [header_handle.trim()] };
+  } else if (header_media_url?.trim()) {
+    // Call prepareTemplatePayloadForMetaSubmit() before building — Meta
+    // rejects header_url for media headers on most WABAs.
+    throw new Error(
+      `${header_type} header requires a Meta upload handle. ` +
+        'The submit route uploads header_media_url automatically — do not call buildMetaTemplatePayload with a bare URL.',
+    );
+  } else {
+    throw new Error(
+      `${header_type} header requires header_media_url or header_handle.`,
+    );
   }
   return component;
 }

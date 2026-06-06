@@ -801,10 +801,10 @@ export function TemplateManager() {
               {headerNeedsMedia && (
                 <div className="space-y-2 mt-2">
                   <Label className="text-slate-300 text-sm">
-                    Public sample URL (required to send)
+                    Public sample URL (required for media headers)
                   </Label>
                   <Input
-                    placeholder={`https://… (public link to a sample ${form.header_format})`}
+                    placeholder={`https://… (public HTTPS link to a sample ${form.header_format})`}
                     value={form.header_media_url}
                     onChange={(e) =>
                       setForm({ ...form, header_media_url: e.target.value })
@@ -813,22 +813,20 @@ export function TemplateManager() {
                   />
                   {!form.header_media_url.trim() && (
                     <p className="text-[11px] text-amber-400 leading-relaxed">
-                      Without a public HTTPS URL, approved templates with a media
-                      header cannot be sent from the inbox or broadcasts. The
-                      Resumable Upload handle (if any) is only used when
-                      submitting to Meta for review.
+                      Image, video, and document headers need a public HTTPS
+                      sample URL. wacrm uploads it to Meta automatically when
+                      you submit the template for review.
                     </p>
                   )}
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Must be publicly accessible HTTPS. Meta fetches it once
-                    during review, so the file needs to stay live for ~24 hrs.
+                    Must be publicly accessible over HTTPS — Meta downloads it
+                    during submit and again at send time. Keep the file live.
                     {form.header_format === 'image' &&
                       ' Recommended: JPEG or PNG, ≥800×418 px, ≤5 MB.'}
                     {form.header_format === 'video' &&
                       ' Recommended: MP4 / 3GPP, ≤16 MB, ≤60 seconds.'}
                     {form.header_format === 'document' &&
                       ' Recommended: PDF, ≤100 MB.'}
-                    {' '}Direct file upload is coming in a follow-up.
                   </p>
                 </div>
               )}

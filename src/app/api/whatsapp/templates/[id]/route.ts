@@ -11,6 +11,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
+import { prepareTemplatePayloadForMetaSubmit } from '@/lib/whatsapp/template-header-upload'
 
 export const runtime = 'nodejs'
 
@@ -139,7 +140,7 @@ export async function PATCH(
       )
     }
 
-    const metaPayload = buildMetaTemplatePayload(payload)
+    let submitPayload: TemplatePayload = payload
 
     if (!isDryRun()) {
       const { data: config, error: configError } = await supabase
@@ -161,6 +162,30 @@ export async function PATCH(
           .update({ access_token: encrypt(accessToken) })
           .eq('id', config.id)
       }
+
+      try {
+        submitPayload = await prepareTemplatePayloadForMetaSubmit(
+          payload,
+          accessToken,
+        )
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Failed to upload header media.'
+        return NextResponse.json(
+          { error: message },
+          { status: metaApiErrorStatus(message) },
+        )
+      }
+
+      let metaPayload
+      try {
+        metaPayload = buildMetaTemplatePayload(submitPayload)
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Invalid template payload.'
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
+
       try {
         await editMessageTemplate({
           metaTemplateId: existing.meta_template_id,
@@ -178,21 +203,28 @@ export async function PATCH(
           .eq('id', id)
         return NextResponse.json({ error: message }, { status: metaApiErrorStatus(message) })
       }
+    } else if (
+      payload.header_type &&
+      payload.header_type !== 'text' &&
+      payload.header_media_url &&
+      !payload.header_handle
+    ) {
+      submitPayload = { ...payload, header_handle: 'dry-run-handle' }
     }
 
     // Meta accepted the edit — status flips back to PENDING for review.
     const { data: row, error: updErr } = await supabase
       .from('message_templates')
       .update({
-        category: payload.category,
-        header_type: payload.header_type ?? null,
-        header_content: payload.header_content ?? null,
-        header_media_url: payload.header_media_url ?? null,
-        header_handle: payload.header_handle ?? null,
-        body_text: payload.body_text,
-        footer_text: payload.footer_text ?? null,
-        buttons: payload.buttons ?? null,
-        sample_values: payload.sample_values ?? null,
+        category: submitPayload.category,
+        header_type: submitPayload.header_type ?? null,
+        header_content: submitPayload.header_content ?? null,
+        header_media_url: submitPayload.header_media_url ?? null,
+        header_handle: submitPayload.header_handle ?? null,
+        body_text: submitPayload.body_text,
+        footer_text: submitPayload.footer_text ?? null,
+        buttons: submitPayload.buttons ?? null,
+        sample_values: submitPayload.sample_values ?? null,
         status: 'PENDING',
         submission_error: null,
         rejection_reason: null,
