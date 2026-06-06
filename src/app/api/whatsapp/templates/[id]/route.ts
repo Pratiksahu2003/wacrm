@@ -94,7 +94,9 @@ export async function PATCH(
     // meta_template_id and status — fetch explicitly.
     const { data: existing, error: lookupErr } = await supabase
       .from('message_templates')
-      .select('id, name, status, meta_template_id, language')
+      .select(
+        'id, name, status, meta_template_id, language, header_type, header_handle, header_media_url, category',
+      )
       .eq('id', id)
       .eq('account_id', accountId)
       .maybeSingle()
@@ -167,6 +169,11 @@ export async function PATCH(
         submitPayload = await prepareTemplatePayloadForMetaSubmit(
           payload,
           accessToken,
+          {
+            existingHeaderHandle: existing.header_handle,
+            existingHeaderMediaUrl: existing.header_media_url,
+            metaTemplateId: existing.meta_template_id,
+          },
         )
       } catch (e) {
         const message =
@@ -191,6 +198,10 @@ export async function PATCH(
           metaTemplateId: existing.meta_template_id,
           accessToken,
           components: metaPayload.components,
+          category:
+            submitPayload.category !== existing.category
+              ? metaPayload.category
+              : undefined,
         })
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Meta edit failed.'

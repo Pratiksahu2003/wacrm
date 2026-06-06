@@ -11,6 +11,17 @@ export function isHttpMediaUrl(value?: string | null): boolean {
   }
 }
 
+/** Meta sample assets synced from WhatsApp Manager often use this CDN host. */
+export function isWhatsAppCdnUrl(value?: string | null): boolean {
+  if (!isHttpMediaUrl(value)) return false;
+  try {
+    const host = new URL(value!.trim()).hostname.toLowerCase();
+    return host === 'scontent.whatsapp.net' || host.endsWith('.whatsapp.net');
+  } catch {
+    return false;
+  }
+}
+
 export function isNumericMediaId(value?: string | null): boolean {
   return Boolean(value?.trim() && /^\d+$/.test(value.trim()));
 }

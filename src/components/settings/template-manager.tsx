@@ -65,6 +65,7 @@ interface TemplateFormData {
   header_format: HeaderFormat;
   header_content: string;
   header_media_url: string;
+  header_handle: string;
   header_sample: string;
   body_text: string;
   body_samples: string[];
@@ -79,6 +80,7 @@ const emptyForm: TemplateFormData = {
   header_format: 'none',
   header_content: '',
   header_media_url: '',
+  header_handle: '',
   header_sample: '',
   body_text: '',
   body_samples: [],
@@ -214,6 +216,10 @@ export function TemplateManager() {
         form.header_format !== 'none' && form.header_format !== 'text'
           ? form.header_media_url.trim() || undefined
           : undefined,
+      header_handle:
+        form.header_format !== 'none' && form.header_format !== 'text'
+          ? form.header_handle.trim() || undefined
+          : undefined,
       body_text: form.body_text.trim(),
       footer_text: form.footer_text.trim() || undefined,
       buttons: form.buttons.length > 0 ? form.buttons : undefined,
@@ -231,6 +237,7 @@ export function TemplateManager() {
       header_format: (template.header_type ?? 'none') as HeaderFormat,
       header_content: template.header_content ?? '',
       header_media_url: template.header_media_url ?? '',
+      header_handle: template.header_handle ?? '',
       header_sample: template.sample_values?.header?.[0] ?? '',
       body_text: template.body_text,
       body_samples: template.sample_values?.body ?? [],
@@ -807,7 +814,11 @@ export function TemplateManager() {
                     placeholder={`https://… (public HTTPS link to a sample ${form.header_format})`}
                     value={form.header_media_url}
                     onChange={(e) =>
-                      setForm({ ...form, header_media_url: e.target.value })
+                      setForm({
+                        ...form,
+                        header_media_url: e.target.value,
+                        header_handle: '',
+                      })
                     }
                     className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                   />

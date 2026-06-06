@@ -508,6 +508,15 @@ export async function submitMessageTemplate(
   }
 }
 
+export interface MetaTemplateHeaderComponent {
+  type?: string
+  format?: string
+  example?: {
+    header_handle?: string[]
+    header_url?: string[]
+  }
+}
+
 export interface EditMessageTemplateArgs {
   /** Meta's template id (stored locally as `meta_template_id`). */
   metaTemplateId: string
@@ -516,6 +525,28 @@ export interface EditMessageTemplateArgs {
   components: MetaTemplateSubmitPayload['components']
   /** Optional — only certain category transitions are allowed by Meta. */
   category?: MetaTemplateSubmitPayload['category']
+}
+
+/**
+ * Fetch a single message template's components from Meta.
+ * Used on edit when the local row lacks a Resumable Upload handle.
+ */
+export async function getMessageTemplateComponents(
+  metaTemplateId: string,
+  accessToken: string,
+): Promise<MetaTemplateHeaderComponent[]> {
+  const url = new URL(`${META_API_BASE}/${metaTemplateId}`)
+  url.searchParams.set('fields', 'components')
+
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    await throwMetaError(response, `Failed to fetch template from Meta: ${response.status}`)
+  }
+
+  const data = (await response.json()) as { components?: MetaTemplateHeaderComponent[] }
+  return data.components ?? []
 }
 
 export interface EditMessageTemplateResult {

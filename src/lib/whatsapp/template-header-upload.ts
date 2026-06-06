@@ -9,6 +9,12 @@
  */
 
 import { META_API_BASE } from './meta-api-version'
+import { getMessageTemplateComponents } from './meta-api'
+import {
+  isHttpMediaUrl,
+  isWhatsAppCdnUrl,
+  pickUploadHandle,
+} from './header-media-source'
 import type { TemplatePayload } from './template-validators'
 
 const HEADER_MIME: Record<'image' | 'video' | 'document', string> = {
@@ -79,18 +85,26 @@ async function downloadMediaBytes(
   url: string,
   accessToken: string,
 ): Promise<{ bytes: ArrayBuffer; contentType: string | null }> {
-  let response = await fetch(url)
-  if (!response.ok) {
-    response = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+  const authHeaders = { Authorization: `Bearer ${accessToken}` }
+  const attempts: RequestInit[] = isWhatsAppCdnUrl(url)
+    ? [{ headers: authHeaders }, {}, { headers: authHeaders }]
+    : [{}, { headers: authHeaders }]
+
+  let response: Response | null = null
+  for (const init of attempts) {
+    response = await fetch(url, init)
+    if (response.ok) break
   }
-  if (!response.ok) {
+
+  if (!response?.ok) {
     throw new Error(
-      `Could not download header media from URL (HTTP ${response.status}). ` +
-        'Use a public HTTPS URL that Meta can fetch.',
+      `Could not download header media from URL (HTTP ${response?.status ?? 'unknown'}). ` +
+        (isWhatsAppCdnUrl(url)
+          ? 'WhatsApp CDN sample URLs expire — upload a new public HTTPS image for the header, or run Sync from Meta and try again.'
+          : 'Use a public HTTPS URL that Meta can fetch.'),
     )
   }
+
   return {
     bytes: await response.arrayBuffer(),
     contentType: response.headers.get('content-type'),
@@ -165,13 +179,83 @@ export async function uploadHeaderMediaForTemplateCreation(
   return uploadData.h.trim()
 }
 
+/** Context from an existing template row — used on PATCH edit. */
+export interface PrepareTemplateMediaContext {
+  existingHeaderHandle?: string | null
+  existingHeaderMediaUrl?: string | null
+  metaTemplateId?: string | null
+}
+
+async function fetchHeaderHandleFromMeta(
+  metaTemplateId: string,
+  accessToken: string,
+): Promise<string | undefined> {
+  const components = await getMessageTemplateComponents(metaTemplateId, accessToken)
+  const header = components.find((c) => c.type?.toUpperCase() === 'HEADER')
+  const rawHandle = header?.example?.header_handle?.[0]?.trim()
+  if (rawHandle && !isHttpMediaUrl(rawHandle)) {
+    return rawHandle
+  }
+  return undefined
+}
+
+async function resolveHeaderHandle(
+  payload: TemplatePayload,
+  accessToken: string,
+  context?: PrepareTemplateMediaContext,
+): Promise<string | undefined> {
+  const fromPayload = pickUploadHandle({ header_handle: payload.header_handle })
+  if (fromPayload) return fromPayload
+
+  const mediaUrl = payload.header_media_url?.trim()
+  if (!mediaUrl) return undefined
+
+  const headerType = payload.header_type
+  if (
+    !headerType ||
+    (headerType !== 'image' && headerType !== 'video' && headerType !== 'document')
+  ) {
+    return undefined
+  }
+
+  const existingUrl = context?.existingHeaderMediaUrl?.trim()
+  const unchanged = Boolean(existingUrl && mediaUrl === existingUrl)
+
+  if (unchanged) {
+    const fromDb = pickUploadHandle({
+      header_handle: context?.existingHeaderHandle ?? undefined,
+    })
+    if (fromDb) return fromDb
+
+    if (context?.metaTemplateId) {
+      const fromMeta = await fetchHeaderHandleFromMeta(
+        context.metaTemplateId,
+        accessToken,
+      )
+      if (fromMeta) return fromMeta
+    }
+  }
+
+  const appId = await resolveMetaAppId(accessToken)
+  return uploadHeaderMediaForTemplateCreation({
+    appId,
+    accessToken,
+    sourceUrl: mediaUrl,
+    headerType,
+  })
+}
+
 /**
  * When the user supplied `header_media_url`, upload it to Meta and attach
  * the resulting `header_handle` before building the template submit payload.
+ *
+ * On edit, reuses a stored handle or fetches one from Meta when the sample
+ * URL is unchanged — avoids re-downloading expiring WhatsApp CDN URLs.
  */
 export async function prepareTemplatePayloadForMetaSubmit(
   payload: TemplatePayload,
   accessToken: string,
+  context?: PrepareTemplateMediaContext,
 ): Promise<TemplatePayload> {
   const headerType = payload.header_type
   if (
@@ -181,26 +265,19 @@ export async function prepareTemplatePayloadForMetaSubmit(
     return payload
   }
 
-  if (payload.header_handle?.trim()) {
-    return payload
-  }
-
   const mediaUrl = payload.header_media_url?.trim()
-  if (!mediaUrl) {
+  if (!mediaUrl && !payload.header_handle?.trim()) {
     return payload
   }
 
-  const appId = await resolveMetaAppId(accessToken)
-  const header_handle = await uploadHeaderMediaForTemplateCreation({
-    appId,
-    accessToken,
-    sourceUrl: mediaUrl,
-    headerType,
-  })
+  const header_handle = await resolveHeaderHandle(payload, accessToken, context)
+  if (!header_handle) {
+    return payload
+  }
 
   return {
     ...payload,
     header_handle,
-    header_media_url: mediaUrl,
+    header_media_url: mediaUrl ?? payload.header_media_url,
   }
 }

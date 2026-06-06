@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isHttpMediaUrl,
+  isWhatsAppCdnUrl,
   normalizeSyncedHeaderMedia,
   pickHeaderMediaLink,
   pickUploadHandle,
@@ -50,5 +51,12 @@ describe('header-media-source', () => {
       header_handle: null,
       header_media_url: 'https://scontent.whatsapp.net/img.png',
     });
+  });
+
+  it('detects WhatsApp CDN URLs', () => {
+    expect(
+      isWhatsAppCdnUrl('https://scontent.whatsapp.net/v/t61.29466-34/foo'),
+    ).toBe(true);
+    expect(isWhatsAppCdnUrl('https://example.com/a.jpg')).toBe(false);
   });
 });
