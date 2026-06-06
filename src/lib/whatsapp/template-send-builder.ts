@@ -11,10 +11,10 @@
  * Auto-fills as much as possible from the template row so callers
  * only need to supply values for the variable-bearing fields:
  *
- *   - Static IMAGE/VIDEO/DOCUMENT headers use `header_media_url` or a
- *     numeric media id when overriding at send time. Templates approved
- *     on Meta (meta_template_id / header_handle from sync) embed the
- *     media in the template — no send-time header component needed.
+ *   - Static IMAGE/VIDEO/DOCUMENT headers require a send-time header
+ *     component with a public HTTPS link or numeric media id. Use
+ *     `prepareSendComponents()` to resolve `header_handle` from Meta
+ *     sync into a media id before building the payload.
  *   - TEXT headers with `{{1}}` need `headerText` from the caller.
  *   - Body variables come in as `body: string[]`, indexed by {{N}}.
  *   - URL buttons with `{{1}}` need `buttonUrlParams[i]` keyed by
@@ -145,17 +145,12 @@ function buildHeaderComponent(
 
   // image / video / document
   const link = params.headerMediaUrl ?? template.header_media_url;
-  const mediaId = params.headerMediaId;
+  const mediaId = params.headerMediaId ?? template.header_media_id;
 
   if (!link?.trim() && !mediaId?.trim()) {
-    // Media uploaded during Meta template approval is stored on Meta's
-    // side. Omit the header component — same as static TEXT headers.
-    if (template.meta_template_id) {
-      return null;
-    }
     throw new Error(
       `${headerType} header requires a media link or numeric media id at send time — ` +
-        'set header_media_url on the template, pass headerMediaUrl at send time, or submit the template to Meta first.',
+        'set header_media_url on the template, pass headerMediaUrl at send time, or sync from Meta so the upload handle can be resolved.',
     );
   }
 
@@ -288,4 +283,63 @@ export function buildSendComponents(
     });
   }
   return out;
+}
+
+export interface PrepareSendComponentsOptions {
+  /** Required to resolve `header_handle` into a numeric media id. */
+  resolveHandle?: (handle: string) => Promise<string>;
+}
+
+/**
+ * Async wrapper around `buildSendComponents` that resolves Meta upload
+ * handles (from synced templates) into sendable media ids when no
+ * public URL or override id was supplied.
+ */
+export async function prepareSendComponents(
+  template: MessageTemplate,
+  params: SendTimeParams = {},
+  options: PrepareSendComponentsOptions = {},
+): Promise<MetaSendComponent[]> {
+  const headerType = template.header_type;
+  const isMediaHeader =
+    headerType === 'image' ||
+    headerType === 'video' ||
+    headerType === 'document';
+
+  if (!isMediaHeader) {
+    return buildSendComponents(template, params);
+  }
+
+  const link = params.headerMediaUrl ?? template.header_media_url;
+  const mediaId = params.headerMediaId ?? template.header_media_id;
+  if (link?.trim() || mediaId?.trim()) {
+    return buildSendComponents(template, params);
+  }
+
+  const handle = template.header_handle?.trim();
+  if (!handle) {
+    return buildSendComponents(template, params);
+  }
+
+  if (!options.resolveHandle) {
+    throw new Error(
+      `${headerType} header has a Meta upload handle but no send URL — ` +
+        'set header_media_url on the template or pass headerMediaUrl at send time.',
+    );
+  }
+
+  try {
+    const resolvedId = await options.resolveHandle(handle);
+    return buildSendComponents(template, {
+      ...params,
+      headerMediaId: resolvedId,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `${headerType} header could not be resolved from Meta upload handle — ` +
+        'add a public HTTPS header_media_url via Edit, then retry. ' +
+        `(${detail})`,
+    );
+  }
 }

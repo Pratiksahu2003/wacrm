@@ -4,6 +4,7 @@ import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { META_API_BASE } from '@/lib/whatsapp/meta-api-version'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
+import { resolveUploadHandleToMediaId } from '@/lib/whatsapp/meta-api'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
 export const runtime = 'nodejs'
@@ -241,6 +242,28 @@ export async function POST() {
           ? headerFormat.toLowerCase()
           : null
 
+      const headerHandle = header?.example?.header_handle?.[0] ?? null
+      const headerMediaUrl = header?.example?.header_url?.[0] ?? null
+
+      let headerMediaId: string | null = null
+      if (
+        headerHandle &&
+        !headerMediaUrl &&
+        headerType &&
+        (headerType === 'image' ||
+          headerType === 'video' ||
+          headerType === 'document')
+      ) {
+        try {
+          headerMediaId = await resolveUploadHandleToMediaId(
+            headerHandle,
+            accessToken,
+          )
+        } catch {
+          // Send path re-resolves at delivery time; user can also set URL.
+        }
+      }
+
       const row = {
         // Account tenancy + user audit, same split as the submit
         // route. account_id is NOT NULL on message_templates
@@ -252,8 +275,9 @@ export async function POST() {
         language: t.language,
         header_type: headerType,
         header_content: header?.text ?? null,
-        header_handle: header?.example?.header_handle?.[0] ?? null,
-        header_media_url: header?.example?.header_url?.[0] ?? null,
+        header_handle: headerHandle,
+        header_media_url: headerMediaUrl,
+        header_media_id: headerMediaId,
         body_text: body?.text ?? '',
         footer_text: footer?.text ?? null,
         buttons: parsedButtons.length ? parsedButtons : null,
@@ -266,7 +290,7 @@ export async function POST() {
 
       const { data: existing, error: lookupErr } = await supabase
         .from('message_templates')
-        .select('id, header_media_url')
+        .select('id, header_media_url, header_media_id')
         .eq('account_id', accountId)
         .eq('name', t.name)
         .eq('language', t.language)
@@ -287,6 +311,8 @@ export async function POST() {
             ...row,
             header_media_url:
               row.header_media_url ?? existing.header_media_url ?? null,
+            header_media_id:
+              row.header_media_id ?? existing.header_media_id ?? null,
           }
         : row
 

@@ -342,25 +342,20 @@ const MEDIA_HEADER_TYPES = new Set(['image', 'video', 'document']);
 /**
  * Whether a media-header template can be sent via Cloud API.
  *
- * Meta-approved templates created in WhatsApp Manager (or synced into
- * wacrm) store the header image/video/document in the template itself.
- * Those do NOT need a local header_media_url — send omits the header
- * component and Meta uses the embedded approved asset.
- *
- * A public URL is only required when the template was created locally
- * in wacrm without a Meta submission, or when overriding media at
- * send time.
+ * Requires a public send URL (`header_media_url`) or a Meta upload
+ * handle (`header_handle`) that can be resolved to a media id at send
+ * time via the Resumable Upload API.
  */
 export function canSendMediaHeader(
   template: Pick<
     MessageTemplate,
-    'header_type' | 'header_media_url' | 'header_handle' | 'meta_template_id'
+    'header_type' | 'header_media_url' | 'header_media_id' | 'header_handle'
   >,
 ): boolean {
   const ht = template.header_type;
   if (!ht || !MEDIA_HEADER_TYPES.has(ht)) return true;
   if (Boolean(template.header_media_url?.trim())) return true;
-  // Submitted to Meta — approved media lives on Meta's side.
-  if (Boolean(template.meta_template_id)) return true;
+  if (Boolean(template.header_media_id?.trim())) return true;
+  if (Boolean(template.header_handle?.trim())) return true;
   return false;
 }

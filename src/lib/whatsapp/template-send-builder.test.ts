@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { buildSendComponents } from './template-send-builder';
+import { describe, expect, it, vi } from 'vitest';
+import { buildSendComponents, prepareSendComponents } from './template-send-builder';
 import type { MessageTemplate } from '@/types';
 
 function row(overrides: Partial<MessageTemplate> = {}): MessageTemplate {
@@ -141,8 +141,18 @@ describe('buildSendComponents — header', () => {
     });
   });
 
-  it('omits header for Meta-approved static media (handle only, no URL)', () => {
-    expect(
+  it('uses cached header_media_id stored on the template row', () => {
+    const components = buildSendComponents(
+      row({ header_type: 'image', header_media_id: '1234567890' }),
+    );
+    expect(components[0]).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { id: 1234567890 } }],
+    });
+  });
+
+  it('throws when only a template creation handle is stored locally', () => {
+    expect(() =>
       buildSendComponents(
         row({
           header_type: 'image',
@@ -150,7 +160,39 @@ describe('buildSendComponents — header', () => {
           meta_template_id: '999888777',
         }),
       ),
-    ).toEqual([]);
+    ).toThrow(/requires a media link or numeric media id/);
+  });
+
+  it('resolves Meta upload handle via prepareSendComponents', async () => {
+    const resolveHandle = vi.fn().mockResolvedValue('9876543210');
+    const components = await prepareSendComponents(
+      row({
+        header_type: 'image',
+        header_handle: '4::aBc',
+        meta_template_id: '999888777',
+      }),
+      {},
+      { resolveHandle },
+    );
+    expect(resolveHandle).toHaveBeenCalledWith('4::aBc');
+    expect(components).toEqual([
+      {
+        type: 'header',
+        parameters: [{ type: 'image', image: { id: 9876543210 } }],
+      },
+    ]);
+  });
+
+  it('throws when handle cannot be resolved and no URL is available', async () => {
+    await expect(
+      prepareSendComponents(
+        row({ header_type: 'image', header_handle: '4::aBc' }),
+        {},
+        {
+          resolveHandle: vi.fn().mockRejectedValue(new Error('Meta 404')),
+        },
+      ),
+    ).rejects.toThrow(/could not be resolved from Meta upload handle/);
   });
 
   it('throws when media header was never submitted to Meta', () => {
@@ -158,7 +200,7 @@ describe('buildSendComponents — header', () => {
       buildSendComponents(
         row({ header_type: 'image', header_handle: '4::aBc' }),
       ),
-    ).toThrow(/submit the template to Meta first/);
+    ).toThrow(/requires a media link or numeric media id/);
   });
 
   it('throws on media header with no link OR id available', () => {

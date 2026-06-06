@@ -13,7 +13,8 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('(#131009)') ||
     m.includes('(#132000)') ||
     m.includes('(#132001)') ||
-    m.includes('(#132015)') ||
+    m.includes('(#132012)') ||
+    m.includes('format does not match') ||
     m.includes('violat') ||
     m.includes('not valid')
   ) {
@@ -40,7 +41,8 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('not configured') ||
     m.includes('sample value') ||
     m.includes('header_media_url') ||
-    m.includes('requires either a public')
+    m.includes('upload handle') ||
+    m.includes('could not be resolved')
   ) {
     return 400
   }

@@ -558,10 +558,11 @@ export function TemplateManager() {
                       <div className="flex items-start gap-1.5 text-xs text-amber-300 bg-amber-950/20 border border-amber-900/40 rounded px-2 py-1.5">
                         <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
                         <span>
-                          This template has a media header but was never submitted
-                          to Meta — add a public{' '}
+                          This template has a media header but no sendable media
+                          source — add a public{' '}
                           <strong className="font-medium">header_media_url</strong>{' '}
-                          via Edit before sending from the inbox.
+                          via Edit, or run &quot;Sync from Meta&quot; if the
+                          template was created in WhatsApp Manager.
                         </span>
                       </div>
                     )}

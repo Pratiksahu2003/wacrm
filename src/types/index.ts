@@ -257,6 +257,8 @@ export interface MessageTemplate {
   header_content?: string;
   header_handle?: string;
   header_media_url?: string;
+  /** Numeric Cloud API media id resolved from header_handle (sync/send). */
+  header_media_id?: string;
   body_text: string;
   footer_text?: string;
   buttons?: TemplateButton[];

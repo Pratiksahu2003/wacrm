@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
-import { buildSendComponents } from '@/lib/whatsapp/template-send-builder'
+import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId } from '@/lib/whatsapp/meta-api'
+import { prepareSendComponents } from '@/lib/whatsapp/template-send-builder'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
@@ -239,12 +239,15 @@ export async function POST(request: Request) {
 
     if (message_type === 'template' && templateRow) {
       try {
-        buildSendComponents(templateRow, {
+        await prepareSendComponents(templateRow, {
           body: template_message_params?.body ?? template_params ?? [],
           headerText: template_message_params?.headerText,
           headerMediaUrl: template_message_params?.headerMediaUrl,
           headerMediaId: template_message_params?.headerMediaId,
           buttonParams: template_message_params?.buttonParams,
+        }, {
+          resolveHandle: (handle) =>
+            resolveUploadHandleToMediaId(handle, accessToken),
         })
       } catch (err) {
         const message =

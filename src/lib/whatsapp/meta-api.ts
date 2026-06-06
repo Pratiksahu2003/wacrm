@@ -320,7 +320,7 @@ export async function sendMediaMessage(
 
 import type { MessageTemplate } from '@/types'
 import {
-  buildSendComponents,
+  prepareSendComponents,
   type SendTimeParams,
 } from './template-send-builder'
 
@@ -388,15 +388,22 @@ export async function sendTemplateMessage(
   }
 
   if (template) {
-    const components = buildSendComponents(template, {
-      // Legacy callers pass body values in `params`; fold them into
-      // `messageParams.body` so the new path covers them too.
-      body: messageParams?.body ?? params,
-      headerText: messageParams?.headerText,
-      headerMediaUrl: messageParams?.headerMediaUrl,
-      headerMediaId: messageParams?.headerMediaId,
-      buttonParams: messageParams?.buttonParams,
-    })
+    const components = await prepareSendComponents(
+      template,
+      {
+        // Legacy callers pass body values in `params`; fold them into
+        // `messageParams.body` so the new path covers them too.
+        body: messageParams?.body ?? params,
+        headerText: messageParams?.headerText,
+        headerMediaUrl: messageParams?.headerMediaUrl,
+        headerMediaId: messageParams?.headerMediaId,
+        buttonParams: messageParams?.buttonParams,
+      },
+      {
+        resolveHandle: (handle) =>
+          resolveUploadHandleToMediaId(handle, accessToken),
+      },
+    )
     if (components.length > 0) {
       templatePayload.components = components
     }
@@ -901,6 +908,46 @@ function validateInteractiveHeaderFooter(
 // ============================================================
 // Media
 // ============================================================
+
+interface UploadHandleResolveResponse {
+  media?: { id?: string }
+  id?: string
+}
+
+/**
+ * Convert a Resumable Upload handle (e.g. `4::aW…` from template
+ * `header_handle`) into a WhatsApp Cloud API media id for send payloads.
+ *
+ * Meta docs: GET /{upload_handle} → { media: { id: "…" } }
+ */
+export async function resolveUploadHandleToMediaId(
+  handle: string,
+  accessToken: string,
+): Promise<string> {
+  const trimmed = handle.trim()
+  if (!trimmed) {
+    throw new Error('Upload handle is empty.')
+  }
+
+  const response = await fetch(`${META_API_BASE}/${trimmed}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    await throwMetaError(response, `Failed to resolve upload handle: ${response.status}`)
+  }
+
+  const data = (await response.json()) as UploadHandleResolveResponse
+  const mediaId = data.media?.id
+  if (mediaId && /^\d+$/.test(String(mediaId))) {
+    return String(mediaId)
+  }
+
+  if (data.id && /^\d+$/.test(String(data.id))) {
+    return String(data.id)
+  }
+
+  throw new Error('Upload handle response did not include a numeric media id.')
+}
 
 export interface GetMediaUrlArgs {
   mediaId: string
