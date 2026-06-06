@@ -10,9 +10,22 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('invalid parameter') ||
     m.includes('parameter value is not valid') ||
     m.includes('(#100)') ||
-    m.includes('(#131009)')
+    m.includes('(#131009)') ||
+    m.includes('(#132000)') ||
+    m.includes('(#132001)') ||
+    m.includes('(#132015)') ||
+    m.includes('violat') ||
+    m.includes('not valid')
   ) {
     return 422
+  }
+
+  if (
+    m.includes('already exist') ||
+    m.includes('duplicate') ||
+    m.includes('name is already')
+  ) {
+    return 409
   }
 
   if (
@@ -24,9 +37,20 @@ export function metaApiErrorStatus(message: string): number {
     m.includes('url button') ||
     m.includes('coupon code') ||
     m.includes('malformed') ||
-    m.includes('not configured')
+    m.includes('not configured') ||
+    m.includes('sample value') ||
+    m.includes('header_media_url') ||
+    m.includes('requires either a public')
   ) {
     return 400
+  }
+
+  if (m.includes('permission') || m.includes('(#200)')) {
+    return 403
+  }
+
+  if (m.includes('rate limit') || m.includes('(#4)')) {
+    return 429
   }
 
   return 502

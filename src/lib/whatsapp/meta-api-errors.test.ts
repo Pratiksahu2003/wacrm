@@ -18,6 +18,14 @@ describe('metaApiErrorStatus', () => {
     ).toBe(400)
   })
 
+  it('returns 409 for duplicate template names', () => {
+    expect(metaApiErrorStatus('Template name already exists')).toBe(409)
+  })
+
+  it('returns 429 for rate limit errors', () => {
+    expect(metaApiErrorStatus('(#4) Application request limit reached')).toBe(429)
+  })
+
   it('returns 502 for unknown upstream failures', () => {
     expect(metaApiErrorStatus('Service temporarily unavailable')).toBe(502)
   })

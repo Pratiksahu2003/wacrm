@@ -141,12 +141,24 @@ describe('buildSendComponents — header', () => {
     });
   });
 
-  it('throws when only a template creation handle is available', () => {
+  it('omits header for Meta-approved static media (handle only, no URL)', () => {
+    expect(
+      buildSendComponents(
+        row({
+          header_type: 'image',
+          header_handle: '4::aBc',
+          meta_template_id: '999888777',
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('throws when media header was never submitted to Meta', () => {
     expect(() =>
       buildSendComponents(
         row({ header_type: 'image', header_handle: '4::aBc' }),
       ),
-    ).toThrow(/template creation handle/);
+    ).toThrow(/submit the template to Meta first/);
   });
 
   it('throws on media header with no link OR id available', () => {

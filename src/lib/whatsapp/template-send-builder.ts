@@ -11,13 +11,10 @@
  * Auto-fills as much as possible from the template row so callers
  * only need to supply values for the variable-bearing fields:
  *
- *   - Static IMAGE/VIDEO/DOCUMENT headers ride along automatically
- *     using the template's `header_media_url` or a numeric media id
- *     from a prior upload. `header_handle` (Resumable Upload handle
- *     used at template creation) is NOT valid on send — Meta v25
- *     expects `image.id` as an integer or a public `link`.
- *     Meta requires the media component on every send even though
- *     the URL hasn't changed since approval.
+ *   - Static IMAGE/VIDEO/DOCUMENT headers use `header_media_url` or a
+ *     numeric media id when overriding at send time. Templates approved
+ *     on Meta (meta_template_id / header_handle from sync) embed the
+ *     media in the template — no send-time header component needed.
  *   - TEXT headers with `{{1}}` need `headerText` from the caller.
  *   - Body variables come in as `body: string[]`, indexed by {{N}}.
  *   - URL buttons with `{{1}}` need `buttonUrlParams[i]` keyed by
@@ -104,8 +101,8 @@ export function resolveMediaSendPayload(
 
   if (trimmedId && isTemplateCreationHandle(trimmedId)) {
     throw new Error(
-      `${headerType} header cannot be sent using the template creation handle. ` +
-        'Add a public sample URL (header_media_url) on the template, or pass headerMediaUrl at send time.',
+      `${headerType} header cannot use a template creation handle as send media id. ` +
+        'Use headerMediaUrl with a public HTTPS URL or a numeric media id from POST /media.',
     );
   }
 
@@ -146,15 +143,19 @@ function buildHeaderComponent(
     };
   }
 
-  // image / video / document — Meta requires the media component on
-  // every send. Never use header_handle here — it is creation-only.
+  // image / video / document
   const link = params.headerMediaUrl ?? template.header_media_url;
   const mediaId = params.headerMediaId;
 
-  if (!link?.trim() && !mediaId?.trim() && template.header_handle?.trim()) {
+  if (!link?.trim() && !mediaId?.trim()) {
+    // Media uploaded during Meta template approval is stored on Meta's
+    // side. Omit the header component — same as static TEXT headers.
+    if (template.meta_template_id) {
+      return null;
+    }
     throw new Error(
-      `${headerType} header cannot be sent using the template creation handle. ` +
-        'Add a public sample URL (header_media_url) on the template, or pass headerMediaUrl at send time.',
+      `${headerType} header requires a media link or numeric media id at send time — ` +
+        'set header_media_url on the template, pass headerMediaUrl at send time, or submit the template to Meta first.',
     );
   }
 

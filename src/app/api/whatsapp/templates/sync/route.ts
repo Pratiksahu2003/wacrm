@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { META_API_BASE } from '@/lib/whatsapp/meta-api-version'
+import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
 export const runtime = 'nodejs'
@@ -207,7 +208,7 @@ export async function POST() {
         } catch {
           // response wasn't JSON — keep the fallback
         }
-        return NextResponse.json({ error: metaErr }, { status: 502 })
+        return NextResponse.json({ error: metaErr }, { status: metaApiErrorStatus(metaErr) })
       }
 
       const metaBody: {

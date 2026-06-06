@@ -9,6 +9,7 @@ import {
 } from '@/lib/whatsapp/template-validators'
 import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
+import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 
 export const runtime = 'nodejs'
 
@@ -204,14 +205,14 @@ export async function POST(request: Request) {
             submissionError: message,
           }),
         )
-        const isRateLimit = /\b429\b/.test(message)
+        const isRateLimit = /\b429\b/.test(message) || metaApiErrorStatus(message) === 429
         return NextResponse.json(
           {
             error: isRateLimit
               ? 'Meta rate limit hit (100 template creates per hour). Try again later.'
               : message,
           },
-          { status: isRateLimit ? 429 : 502 },
+          { status: isRateLimit ? 429 : metaApiErrorStatus(message) },
         )
       }
     }

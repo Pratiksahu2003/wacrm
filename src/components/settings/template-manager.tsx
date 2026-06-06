@@ -45,6 +45,7 @@ import {
   extractVariableIndices,
   TEMPLATE_LIMITS,
   canSendMediaHeader,
+  validateTemplatePayload,
 } from '@/lib/whatsapp/template-validators';
 
 const CATEGORIES = ['Marketing', 'Utility', 'Authentication'] as const;
@@ -195,10 +196,10 @@ export function TemplateManager() {
 
   function buildSubmitPayload() {
     const sample_values: TemplateSampleValues = {};
-    if (form.body_samples.some((v) => v.trim())) {
+    if (bodyVarCount > 0) {
       sample_values.body = form.body_samples.map((v) => v.trim());
     }
-    if (form.header_format === 'text' && form.header_sample.trim()) {
+    if (form.header_format === 'text' && headerVarCount > 0) {
       sample_values.header = [form.header_sample.trim()];
     }
 
@@ -249,6 +250,15 @@ export function TemplateManager() {
     // AUTHENTICATION is blocked by the persistent banner + disabled
     // submit button; this is a defensive second line of defense.
     if (form.category === 'Authentication') return;
+
+    const payload = buildSubmitPayload();
+    try {
+      validateTemplatePayload(payload);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Validation failed');
+      return;
+    }
+
     try {
       setSubmitting(true);
       const isEdit = editingId !== null;
@@ -258,7 +268,7 @@ export function TemplateManager() {
       const res = await fetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildSubmitPayload()),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -548,10 +558,10 @@ export function TemplateManager() {
                       <div className="flex items-start gap-1.5 text-xs text-amber-300 bg-amber-950/20 border border-amber-900/40 rounded px-2 py-1.5">
                         <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
                         <span>
-                          Media header has no public send URL — add{' '}
+                          This template has a media header but was never submitted
+                          to Meta — add a public{' '}
                           <strong className="font-medium">header_media_url</strong>{' '}
-                          (Edit) or re-sync from Meta. Templates synced with only
-                          a creation handle cannot be sent until a URL is set.
+                          via Edit before sending from the inbox.
                         </span>
                       </div>
                     )}
