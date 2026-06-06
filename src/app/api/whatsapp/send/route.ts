@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId } from '@/lib/whatsapp/meta-api'
+import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId, uploadWhatsAppMediaFromUrl } from '@/lib/whatsapp/meta-api'
 import { prepareSendComponents } from '@/lib/whatsapp/template-send-builder'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
@@ -267,6 +267,13 @@ export async function POST(request: Request) {
         }, {
           resolveHandle: (handle) =>
             resolveUploadHandleToMediaId(handle, accessToken),
+          uploadMediaFromUrl: (url, headerType) =>
+            uploadWhatsAppMediaFromUrl({
+              phoneNumberId: config.phone_number_id,
+              accessToken,
+              url,
+              mediaKind: headerType,
+            }),
         })
       } catch (err) {
         const message =

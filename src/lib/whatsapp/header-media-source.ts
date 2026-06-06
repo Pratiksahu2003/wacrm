@@ -11,6 +11,12 @@ export function isHttpMediaUrl(value?: string | null): boolean {
   }
 }
 
+export function isNumericMediaId(value?: string | null): boolean {
+  return Boolean(value?.trim() && /^\d+$/.test(value.trim()));
+}
+
+export type MediaHeaderType = 'image' | 'video' | 'document';
+
 /**
  * Resolve the public link to use for an IMAGE/VIDEO/DOCUMENT header at send time.
  * Meta sync may store sample media in `header_media_url`, `header_handle` (CDN URL),

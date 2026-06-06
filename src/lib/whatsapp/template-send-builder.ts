@@ -32,7 +32,7 @@
 
 import type { MessageTemplate, TemplateButton } from '@/types';
 import { extractVariableIndices } from './template-validators';
-import { pickHeaderMediaLink, pickUploadHandle } from './header-media-source';
+import { pickHeaderMediaLink, pickUploadHandle, isNumericMediaId, type MediaHeaderType } from './header-media-source';
 
 export interface SendTimeParams {
   /** Values for body {{1}}, {{2}}, … indexed by variable position. */
@@ -75,10 +75,6 @@ type MetaSendParameter =
 /** Resumable-upload handles (4::…) are for template creation only. */
 function isTemplateCreationHandle(value: string): boolean {
   return value.includes('::');
-}
-
-function isNumericMediaId(value: string): boolean {
-  return /^\d+$/.test(value.trim());
 }
 
 /**
@@ -287,8 +283,35 @@ export function buildSendComponents(
 }
 
 export interface PrepareSendComponentsOptions {
-  /** Required to resolve `header_handle` into a numeric media id. */
+  /** Resolve `4::…` upload handles into numeric media ids. */
   resolveHandle?: (handle: string) => Promise<string>;
+  /**
+   * Re-upload a header URL via POST /{phone_number_id}/media.
+   * Required for marketing templates — CDN links fail delivery.
+   */
+  uploadMediaFromUrl?: (
+    url: string,
+    headerType: MediaHeaderType,
+  ) => Promise<string>;
+}
+
+function withMediaId(
+  template: MessageTemplate,
+  params: SendTimeParams,
+  mediaId: string,
+): MetaSendComponent[] {
+  return buildSendComponents(
+    {
+      ...template,
+      header_media_url: undefined,
+      header_handle: undefined,
+    },
+    {
+      ...params,
+      headerMediaId: mediaId,
+      headerMediaUrl: undefined,
+    },
+  );
 }
 
 /**
@@ -307,40 +330,54 @@ export async function prepareSendComponents(
     headerType === 'video' ||
     headerType === 'document';
 
-  if (!isMediaHeader) {
+  if (!isMediaHeader || !headerType) {
     return buildSendComponents(template, params);
+  }
+
+  const explicitId = params.headerMediaId?.trim();
+  if (explicitId && isNumericMediaId(explicitId)) {
+    return withMediaId(template, params, explicitId);
   }
 
   const link = pickHeaderMediaLink(template, params.headerMediaUrl);
-  const mediaId = params.headerMediaId ?? template.header_media_id;
-  if (link || mediaId?.trim()) {
-    return buildSendComponents(template, params);
+
+  // Upload URL → fresh media id. CDN links from Meta sync expire and
+  // cause silent delivery failures on marketing templates.
+  if (link && options.uploadMediaFromUrl) {
+    try {
+      const uploadedId = await options.uploadMediaFromUrl(link, headerType);
+      return withMediaId(template, params, uploadedId);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `${headerType} header media upload failed — use a stable public HTTPS URL in header_media_url. (${detail})`,
+      );
+    }
+  }
+
+  const cachedId = template.header_media_id?.trim();
+  if (cachedId && isNumericMediaId(cachedId)) {
+    return withMediaId(template, params, cachedId);
   }
 
   const handle = pickUploadHandle(template);
-  if (!handle) {
+  if (handle && options.resolveHandle) {
+    try {
+      const resolvedId = await options.resolveHandle(handle);
+      return withMediaId(template, params, resolvedId);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `${headerType} header could not be resolved from Meta upload handle — ` +
+          'add a public HTTPS header_media_url via Edit, then retry. ' +
+          `(${detail})`,
+      );
+    }
+  }
+
+  if (link) {
     return buildSendComponents(template, params);
   }
 
-  if (!options.resolveHandle) {
-    throw new Error(
-      `${headerType} header has a Meta upload handle but no send URL — ` +
-        'set header_media_url on the template or pass headerMediaUrl at send time.',
-    );
-  }
-
-  try {
-    const resolvedId = await options.resolveHandle(handle);
-    return buildSendComponents(template, {
-      ...params,
-      headerMediaId: resolvedId,
-    });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `${headerType} header could not be resolved from Meta upload handle — ` +
-        'add a public HTTPS header_media_url via Edit, then retry. ' +
-        `(${detail})`,
-    );
-  }
+  return buildSendComponents(template, params);
 }

@@ -318,11 +318,11 @@ export async function sendMediaMessage(
   return { messageId: data.messages[0].id }
 }
 
-import type { MessageTemplate } from '@/types'
 import {
   prepareSendComponents,
   type SendTimeParams,
 } from './template-send-builder'
+import type { MessageTemplate } from '@/types'
 
 export interface SendTemplateMessageArgs {
   phoneNumberId: string
@@ -402,6 +402,13 @@ export async function sendTemplateMessage(
       {
         resolveHandle: (handle) =>
           resolveUploadHandleToMediaId(handle, accessToken),
+        uploadMediaFromUrl: (url, headerType) =>
+          uploadWhatsAppMediaFromUrl({
+            phoneNumberId,
+            accessToken,
+            url,
+            mediaKind: headerType,
+          }),
       },
     )
     if (components.length > 0) {
@@ -952,6 +959,95 @@ export async function resolveUploadHandleToMediaId(
   }
 
   throw new Error('Upload handle response did not include a numeric media id.')
+}
+
+export interface UploadWhatsAppMediaFromUrlArgs {
+  phoneNumberId: string
+  accessToken: string
+  url: string
+  mediaKind?: 'image' | 'video' | 'document'
+}
+
+const DEFAULT_MEDIA_MIME: Record<
+  NonNullable<UploadWhatsAppMediaFromUrlArgs['mediaKind']>,
+  string
+> = {
+  image: 'image/jpeg',
+  video: 'video/mp4',
+  document: 'application/pdf',
+}
+
+const DEFAULT_MEDIA_FILENAME: Record<
+  NonNullable<UploadWhatsAppMediaFromUrlArgs['mediaKind']>,
+  string
+> = {
+  image: 'header.jpg',
+  video: 'header.mp4',
+  document: 'header.pdf',
+}
+
+/**
+ * Download a header asset and re-upload via POST /{phone_number_id}/media.
+ *
+ * Marketing templates with IMAGE/VIDEO/DOCUMENT headers fail delivery when
+ * sent with expiring WhatsApp CDN links (`scontent.whatsapp.net`). Meta
+ * accepts the API call but the webhook later reports `failed`. A fresh
+ * Cloud API media id is required for reliable delivery.
+ */
+export async function uploadWhatsAppMediaFromUrl(
+  args: UploadWhatsAppMediaFromUrlArgs,
+): Promise<string> {
+  const {
+    phoneNumberId,
+    accessToken,
+    url,
+    mediaKind = 'image',
+  } = args
+
+  let downloadRes = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!downloadRes.ok) {
+    downloadRes = await fetch(url)
+  }
+  if (!downloadRes.ok) {
+    await throwMetaError(
+      downloadRes,
+      `Failed to download template header media: ${downloadRes.status}`,
+    )
+  }
+
+  const bytes = await downloadRes.arrayBuffer()
+  let contentType = downloadRes.headers.get('content-type')?.split(';')[0]?.trim()
+  if (!contentType || contentType === 'application/octet-stream') {
+    contentType = DEFAULT_MEDIA_MIME[mediaKind]
+  }
+
+  const form = new FormData()
+  form.append('messaging_product', 'whatsapp')
+  form.append(
+    'file',
+    new Blob([bytes], { type: contentType }),
+    DEFAULT_MEDIA_FILENAME[mediaKind],
+  )
+
+  const uploadRes = await fetch(`${META_API_BASE}/${phoneNumberId}/media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  if (!uploadRes.ok) {
+    await throwMetaError(
+      uploadRes,
+      `Failed to upload template header media: ${uploadRes.status}`,
+    )
+  }
+
+  const data = (await uploadRes.json()) as { id?: string }
+  if (!data.id || !/^\d+$/.test(String(data.id))) {
+    throw new Error('Media upload response did not include a numeric media id.')
+  }
+  return String(data.id)
 }
 
 export interface GetMediaUrlArgs {

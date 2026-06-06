@@ -4,7 +4,7 @@ import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 import { META_API_BASE } from '@/lib/whatsapp/meta-api-version'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
-import { resolveUploadHandleToMediaId } from '@/lib/whatsapp/meta-api'
+import { resolveUploadHandleToMediaId, uploadWhatsAppMediaFromUrl } from '@/lib/whatsapp/meta-api'
 import { normalizeSyncedHeaderMedia } from '@/lib/whatsapp/header-media-source'
 import type { TemplateButton, TemplateSampleValues } from '@/types'
 
@@ -266,6 +266,27 @@ export async function POST() {
           )
         } catch {
           // Send path re-resolves at delivery time; user can also set URL.
+        }
+      }
+
+      if (
+        !headerMediaId &&
+        normalizedHeader.header_media_url &&
+        config.phone_number_id &&
+        headerType &&
+        (headerType === 'image' ||
+          headerType === 'video' ||
+          headerType === 'document')
+      ) {
+        try {
+          headerMediaId = await uploadWhatsAppMediaFromUrl({
+            phoneNumberId: config.phone_number_id,
+            accessToken,
+            url: normalizedHeader.header_media_url,
+            mediaKind: headerType,
+          })
+        } catch {
+          // Send path uploads at delivery time.
         }
       }
 

@@ -172,6 +172,28 @@ describe('buildSendComponents — header', () => {
     });
   });
 
+  it('uploads header URL to media id via prepareSendComponents', async () => {
+    const uploadMediaFromUrl = vi
+      .fn()
+      .mockResolvedValue('5556667778');
+    const components = await prepareSendComponents(
+      row({
+        header_type: 'image',
+        header_media_url: 'https://scontent.whatsapp.net/v/t61.29466-34/example.png',
+      }),
+      {},
+      { uploadMediaFromUrl },
+    );
+    expect(uploadMediaFromUrl).toHaveBeenCalledWith(
+      'https://scontent.whatsapp.net/v/t61.29466-34/example.png',
+      'image',
+    );
+    expect(components[0]).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { id: 5556667778 } }],
+    });
+  });
+
   it('throws when only a template creation handle is stored locally', () => {
     expect(() =>
       buildSendComponents(
