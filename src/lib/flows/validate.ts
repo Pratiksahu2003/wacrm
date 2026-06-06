@@ -430,6 +430,16 @@ function validateNode(
           field: "button_label",
           message: "Send-list needs a button label (the tap-to-expand text).",
         });
+      } else if (
+        cfg.button_label.length > INTERACTIVE_LIMITS.buttonTitleMaxLength
+      ) {
+        issues.push({
+          severity: "error",
+          scope: "node",
+          node_key: node.node_key,
+          field: "button_label",
+          message: `Button label exceeds ${INTERACTIVE_LIMITS.buttonTitleMaxLength} chars (WhatsApp limit). Shorten it — e.g. "Choose option".`,
+        });
       }
       const sections = cfg.sections ?? [];
       const totalRows = sections.reduce(

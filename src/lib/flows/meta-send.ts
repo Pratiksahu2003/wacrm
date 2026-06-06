@@ -7,7 +7,7 @@ import {
   type InteractiveListSection,
   type MediaKind,
 } from '@/lib/whatsapp/meta-api'
-import { decrypt } from '@/lib/whatsapp/encryption'
+import { decryptIfEncrypted } from '@/lib/whatsapp/encryption'
 import {
   sanitizePhoneForMeta,
   isValidE164,
@@ -86,7 +86,7 @@ export async function engineSendText(
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decryptIfEncrypted(config.access_token).plaintext
 
   const attempt = async (phone: string): Promise<string> => {
     const r = await sendTextMessage({
@@ -195,7 +195,7 @@ export async function engineSendMedia(
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decryptIfEncrypted(config.access_token).plaintext
 
   const attempt = async (phone: string): Promise<string> => {
     const r = await sendMediaMessage({
@@ -347,7 +347,7 @@ async function sendInteractiveViaMeta(
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decryptIfEncrypted(config.access_token).plaintext
 
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'buttons') {

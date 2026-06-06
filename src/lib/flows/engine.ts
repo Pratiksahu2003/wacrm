@@ -733,7 +733,16 @@ async function advanceFromNodeKey(
       continue;
     }
     if (node.node_type === "send_buttons") {
-      await sendButtonsAndSuspend(db, run, node);
+      try {
+        await sendButtonsAndSuspend(db, run, node);
+      } catch (err) {
+        await logEvent(db, run.id, "error", node.node_key, {
+          reason: "send_buttons_failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+        await endRun(db, run.id, "failed", "send_buttons_failed");
+        return { outcome: "completed" };
+      }
       // Persist the new current_node_key via optimistic UPDATE.
       const advanced = await advanceCurrentNodeKey(
         db,
@@ -749,7 +758,16 @@ async function advanceFromNodeKey(
       return { outcome: "advanced" };
     }
     if (node.node_type === "send_list") {
-      await sendListAndSuspend(db, run, node);
+      try {
+        await sendListAndSuspend(db, run, node);
+      } catch (err) {
+        await logEvent(db, run.id, "error", node.node_key, {
+          reason: "send_list_failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
+        await endRun(db, run.id, "failed", "send_list_failed");
+        return { outcome: "completed" };
+      }
       const advanced = await advanceCurrentNodeKey(
         db,
         run.id,
@@ -857,6 +875,27 @@ export async function dispatchInboundToFlows(
       // One SELECT for the whole flow's nodes — advance loop is now
       // in-memory. See loadAllNodes.
       const nodes = await loadAllNodes(db, activeRun.flow_id);
+
+      // Heal runs orphaned on auto-advance nodes (e.g. send_list threw
+      // before current_node_key was updated on a prior deploy).
+      const currentNode = activeRun.current_node_key
+        ? nodes.get(activeRun.current_node_key)
+        : undefined;
+      if (currentNode && isAutoAdvancing(currentNode.node_type)) {
+        const outcome = await advanceFromNodeKey(
+          db,
+          activeRun,
+          activeRun.current_node_key!,
+          nodes,
+        );
+        return {
+          consumed: true,
+          flow_run_id: activeRun.id,
+          outcome:
+            outcome.outcome === "advanced" ? "started" : outcome.outcome,
+        };
+      }
+
       return handleReplyForActiveRun(db, activeRun, input.message, nodes);
     }
 
@@ -1108,10 +1147,28 @@ async function startNewRun(
   }
 
   // Run the advance loop starting from the entry node.
-  const outcome = await advanceFromNodeKey(db, run, flow.entry_node_id!, nodes);
-  return {
-    consumed: true,
-    flow_run_id: run.id,
-    outcome: outcome.outcome === "advanced" ? "started" : outcome.outcome,
-  };
+  try {
+    const outcome = await advanceFromNodeKey(
+      db,
+      run,
+      flow.entry_node_id!,
+      nodes,
+    );
+    return {
+      consumed: true,
+      flow_run_id: run.id,
+      outcome: outcome.outcome === "advanced" ? "started" : outcome.outcome,
+    };
+  } catch (err) {
+    console.error(
+      "[flows] startNewRun advance threw:",
+      err instanceof Error ? err.message : err,
+    );
+    await logEvent(db, run.id, "error", flow.entry_node_id, {
+      reason: "advance_unhandled_error",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+    await endRun(db, run.id, "failed", "advance_unhandled_error");
+    return { consumed: false, outcome: "no_match" };
+  }
 }

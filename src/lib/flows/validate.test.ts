@@ -385,6 +385,43 @@ describe("validateFlowForActivation — nodes", () => {
     ).toBe(true);
   });
 
+  it("flags list button label over 20 chars", () => {
+    const nodes = [
+      { node_key: "s", node_type: "start", config: { next_node_key: "l" } },
+      {
+        node_key: "l",
+        node_type: "send_list",
+        config: {
+          text: "Pick one",
+          button_label: "Choose an option below to continue",
+          sections: [
+            {
+              rows: [
+                {
+                  reply_id: "x",
+                  title: "Option A",
+                  next_node_key: "h",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      { node_key: "h", node_type: "handoff", config: {} },
+    ];
+    const issues = validateFlowForActivation(
+      { ...validFlow, entry_node_id: "s" },
+      nodes,
+    );
+    expect(
+      issues.some(
+        (i) =>
+          i.field === "button_label" &&
+          i.message.includes("20 chars"),
+      ),
+    ).toBe(true);
+  });
+
   it("warns about unreachable nodes", () => {
     const nodes = [
       { node_key: "s", node_type: "start", config: { next_node_key: "h" } },
