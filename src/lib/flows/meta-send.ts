@@ -12,6 +12,7 @@ import {
   phoneVariants,
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
+import { withMetaRetry } from '@/lib/whatsapp/meta-send-retry'
 import { resolveContactPhoneForMeta } from '@/lib/whatsapp/resolve-contact-phone'
 import { supabaseAdmin } from './admin-client'
 
@@ -104,7 +105,7 @@ export async function engineSendText(
   let lastError: unknown = null
   for (const v of variants) {
     try {
-      waMessageId = await attempt(v)
+      waMessageId = await withMetaRetry(() => attempt(v))
       workingPhone = v
       lastError = null
       break
@@ -217,7 +218,7 @@ export async function engineSendMedia(
   let lastError: unknown = null
   for (const v of variants) {
     try {
-      waMessageId = await attempt(v)
+      waMessageId = await withMetaRetry(() => attempt(v))
       workingPhone = v
       lastError = null
       break
@@ -386,7 +387,7 @@ async function sendInteractiveViaMeta(
   let lastError: unknown = null
   for (const v of variants) {
     try {
-      waMessageId = await attempt(v)
+      waMessageId = await withMetaRetry(() => attempt(v))
       workingPhone = v
       lastError = null
       break

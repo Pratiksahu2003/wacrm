@@ -33,6 +33,7 @@
  */
 
 import { supabaseAdmin } from "./admin-client";
+import { validateCollectedInput } from "./collect-input-validation";
 import {
   engineSendInteractiveButtons,
   engineSendInteractiveList,
@@ -844,6 +845,64 @@ async function advanceCurrentNodeKey(
 // Public entry point — the webhook calls this on every inbound.
 // ============================================================
 
+/**
+ * Start an active flow for a contact from the dashboard (manual
+ * trigger flows, or re-running a welcome flow after a failed run).
+ */
+export async function startFlowForContact(args: {
+  accountId: string;
+  flowId: string;
+  contactId: string;
+  conversationId: string;
+  userId: string;
+}): Promise<DispatchInboundResult> {
+  const db = supabaseAdmin();
+  try {
+    const activeRun = await loadActiveRunForContact(
+      db,
+      args.accountId,
+      args.contactId,
+    );
+    if (activeRun) {
+      return {
+        consumed: false,
+        flow_run_id: activeRun.id,
+        outcome: "no_match",
+      };
+    }
+
+    const flow = await loadFlow(db, args.flowId);
+    if (
+      !flow ||
+      flow.account_id !== args.accountId ||
+      flow.status !== "active" ||
+      !flow.entry_node_id
+    ) {
+      return { consumed: false, outcome: "no_match" };
+    }
+
+    const nodes = await loadAllNodes(db, flow.id);
+    const input: DispatchInboundInput = {
+      accountId: args.accountId,
+      userId: args.userId,
+      contactId: args.contactId,
+      conversationId: args.conversationId,
+      message: {
+        kind: "text",
+        text: "",
+        meta_message_id: `manual:${crypto.randomUUID()}`,
+      },
+    };
+    return startNewRun(db, flow, input, nodes);
+  } catch (err) {
+    console.error(
+      "[flows] startFlowForContact threw:",
+      err instanceof Error ? err.message : err,
+    );
+    return { consumed: false, outcome: "no_match" };
+  }
+}
+
 export async function dispatchInboundToFlows(
   input: DispatchInboundInput & { isFirstInboundMessage: boolean },
 ): Promise<DispatchInboundResult> {
@@ -975,7 +1034,8 @@ async function handleReplyForActiveRun(
   ) {
     const cfg = currentNode.config as unknown as CollectInputNodeConfig;
     const captured = message.text.trim();
-    if (captured.length > 0 && cfg.var_key) {
+    const validation = validateCollectedInput(captured, cfg);
+    if (validation.ok && cfg.var_key) {
       // Persist captured value + reset reprompt count atomically.
       const newVars = { ...run.vars, [cfg.var_key]: captured };
       const { error: capErr } = await db
@@ -1169,6 +1229,6 @@ async function startNewRun(
       detail: err instanceof Error ? err.message : String(err),
     });
     await endRun(db, run.id, "failed", "advance_unhandled_error");
-    return { consumed: false, outcome: "no_match" };
+    return { consumed: true, flow_run_id: run.id };
   }
 }

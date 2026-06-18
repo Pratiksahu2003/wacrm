@@ -126,8 +126,7 @@ export interface CollectInputNodeConfig {
    */
   var_key: string;
   /**
-   * Reserved for v2. Accepted on the config but ignored by the v1.5
-   * runner — captures any non-empty text.
+   * How to validate the captured text. Defaults to `any` (non-empty).
    */
   validation?: "any" | "email" | "phone" | "regex";
   /** Used only when `validation === 'regex'`. */

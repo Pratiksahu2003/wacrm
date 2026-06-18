@@ -47,16 +47,17 @@ export async function GET(request: Request) {
 
   const admin = supabaseAdmin()
   const now = new Date()
+  // Coarse pre-filter: only load runs idle for at least 1 hour. Per-flow
+  // `on_timeout_hours` is applied in the loop below (default 24h).
+  const coarseCutoff = new Date(now.getTime() - 60 * 60 * 1000).toISOString()
 
-  // Pull all currently-active runs along with their parent flow's
-  // fallback_policy. Joined in one query — the small set of active
-  // runs per tenant keeps this cheap.
   const { data: runs, error } = await admin
     .from('flow_runs')
     .select(
       'id, flow_id, user_id, contact_id, last_advanced_at, flows ( fallback_policy )',
     )
     .eq('status', 'active')
+    .lt('last_advanced_at', coarseCutoff)
 
   if (error) {
     console.error('[flows-cron] active-run scan failed:', error.message)

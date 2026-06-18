@@ -119,6 +119,15 @@ export function validateFlowForActivation(
   // entry. Done after per-node validation so we don't double-report
   // when a node has bad config AND is unreachable.
   if (flow.entry_node_id && keys.has(flow.entry_node_id)) {
+    const cycleKey = detectCycle(flow.entry_node_id, nodes);
+    if (cycleKey) {
+      issues.push({
+        severity: "error",
+        scope: "flow",
+        message: `Infinite loop detected in the graph (cycle includes "${cycleKey}").`,
+      });
+    }
+
     const reached = reachableFromEntry(flow.entry_node_id, nodes);
     for (const n of nodes) {
       if (!reached.has(n.node_key)) {
@@ -547,6 +556,8 @@ function validateNode(
         prompt_text?: string;
         var_key?: string;
         next_node_key?: string;
+        validation?: "any" | "email" | "phone" | "regex";
+        regex?: string;
       };
       if (!cfg.prompt_text?.trim()) {
         issues.push({
@@ -590,6 +601,29 @@ function validateNode(
           field: "next_node_key",
           message: `Collect-input points to non-existent node "${cfg.next_node_key}".`,
         });
+      }
+      if (cfg.validation === "regex") {
+        if (!cfg.regex?.trim()) {
+          issues.push({
+            severity: "error",
+            scope: "node",
+            node_key: node.node_key,
+            field: "regex",
+            message: "Regex validation needs a pattern.",
+          });
+        } else {
+          try {
+            new RegExp(cfg.regex);
+          } catch {
+            issues.push({
+              severity: "error",
+              scope: "node",
+              node_key: node.node_key,
+              field: "regex",
+              message: "Regex pattern is invalid.",
+            });
+          }
+        }
       }
       break;
     }
@@ -753,6 +787,39 @@ export function reachableFromEntry(
     }
   }
   return visited;
+}
+
+/**
+ * DFS cycle detection from the entry node. Returns the first node_key
+ * on a back-edge, or null when the graph is acyclic.
+ */
+export function detectCycle(
+  entryKey: string,
+  nodes: NodeInput[],
+): string | null {
+  const byKey = new Map<string, NodeInput>();
+  for (const n of nodes) byKey.set(n.node_key, n);
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+
+  function dfs(key: string): string | null {
+    if (visiting.has(key)) return key;
+    if (visited.has(key)) return null;
+    visiting.add(key);
+    const node = byKey.get(key);
+    if (node) {
+      for (const next of outgoingEdges(node)) {
+        const hit = dfs(next);
+        if (hit) return hit;
+      }
+    }
+    visiting.delete(key);
+    visited.add(key);
+    return null;
+  }
+
+  return dfs(entryKey);
 }
 
 function outgoingEdges(node: NodeInput): string[] {

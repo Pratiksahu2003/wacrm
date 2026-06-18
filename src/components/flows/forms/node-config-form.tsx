@@ -158,6 +158,39 @@ export function NodeConfigForm({
               .
             </p>
           </div>
+          <div>
+            <label className="mb-1 block text-xs text-slate-400">
+              Validate reply as
+            </label>
+            <Select
+              value={
+                (cfg as { validation?: string }).validation ?? "any"
+              }
+              onValueChange={(v) =>
+                onUpdateConfig({
+                  validation: v,
+                  ...(v !== "regex" ? { regex: undefined } : {}),
+                })
+              }
+            >
+              <SelectTrigger className="bg-slate-800">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any non-empty text</SelectItem>
+                <SelectItem value="email">Email address</SelectItem>
+                <SelectItem value="phone">Phone number</SelectItem>
+                <SelectItem value="regex">Custom regex</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(cfg as { validation?: string }).validation === "regex" && (
+            <TextRow
+              label="Regex pattern"
+              value={(cfg as { regex?: string }).regex ?? ""}
+              onChange={(v) => onUpdateConfig({ regex: v })}
+            />
+          )}
           <NextNodeRow
             value={(cfg as { next_node_key?: string }).next_node_key ?? ""}
             allNodes={allNodes}

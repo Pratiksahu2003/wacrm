@@ -56,7 +56,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Eye } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useFlowEditor } from "./flow-editor-state";
 import { NodeConfigForm } from "./forms/node-config-form";
+import { canPreviewNode } from "./node-preview";
+import { NodePreviewDialog } from "./node-preview-dialog";
 
 // React-Flow node `data` payload — the bits our custom renderer needs.
 interface NodeData extends Record<string, unknown> {
@@ -548,6 +550,7 @@ function NodeEditSheet({
   // Sheet is controlled — opens when a node is selected, closes via
   // Esc / overlay / close button (all delegated to onClose).
   const open = node !== null;
+  const [previewOpen, setPreviewOpen] = useState(false);
   if (!node) {
     return (
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -557,7 +560,9 @@ function NodeEditSheet({
   }
   const meta = NODE_META[node.node_type];
   const Icon = meta.icon;
+  const showPreview = canPreviewNode(node);
   return (
+    <>
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
@@ -588,13 +593,24 @@ function NodeEditSheet({
         </div>
 
         <SheetFooter className="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
-          {!isEntry ? (
-            <Button variant="ghost" size="sm" onClick={onSetEntry}>
-              Set as entry
-            </Button>
-          ) : (
-            <span />
-          )}
+          <div className="flex items-center gap-2">
+            {!isEntry ? (
+              <Button variant="ghost" size="sm" onClick={onSetEntry}>
+                Set as entry
+              </Button>
+            ) : null}
+            {showPreview && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-700 text-slate-300"
+                onClick={() => setPreviewOpen(true)}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Preview
+              </Button>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -607,6 +623,12 @@ function NodeEditSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+    <NodePreviewDialog
+      node={node}
+      open={previewOpen}
+      onOpenChange={setPreviewOpen}
+    />
+    </>
   );
 }
 

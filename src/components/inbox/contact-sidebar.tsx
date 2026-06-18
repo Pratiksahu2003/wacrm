@@ -10,15 +10,16 @@ import {
   Mail,
   Copy,
   Check,
-  User,
   Tag as TagIcon,
   DollarSign,
   StickyNote,
   Plus,
+  Workflow,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { StartFlowPanel } from "./start-flow-panel";
 
 interface ContactSidebarProps {
   contact: Contact | null;
@@ -175,6 +176,20 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 <span className="truncate">{contact.email}</span>
               </div>
             )}
+          </div>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-slate-800" />
+
+          {/* Flows */}
+          <div>
+            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <Workflow className="h-3 w-3" />
+              Flows
+            </div>
+            <div className="mt-2">
+              <StartFlowPanel contact={contact} />
+            </div>
           </div>
 
           {/* Divider */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateFlowForActivation, reachableFromEntry } from "./validate";
+import { validateFlowForActivation, reachableFromEntry, detectCycle } from "./validate";
 
 const validFlow = {
   name: "Welcome",
@@ -582,5 +582,41 @@ describe("reachableFromEntry", () => {
     ];
     const set = reachableFromEntry("a", nodes);
     expect(set).toEqual(new Set(["a", "b"]));
+  });
+});
+
+describe("detectCycle", () => {
+  it("returns null on an acyclic graph", () => {
+    expect(detectCycle("start", validNodes)).toBeNull();
+  });
+
+  it("detects a simple cycle", () => {
+    const nodes = [
+      { node_key: "a", node_type: "start", config: { next_node_key: "b" } },
+      {
+        node_key: "b",
+        node_type: "send_message",
+        config: { text: "x", next_node_key: "a" },
+      },
+    ];
+    expect(detectCycle("a", nodes)).toBe("a");
+  });
+});
+
+describe("validateFlowForActivation — cycles", () => {
+  it("flags infinite loops at activation", () => {
+    const nodes = [
+      { node_key: "start", node_type: "start", config: { next_node_key: "loop" } },
+      {
+        node_key: "loop",
+        node_type: "send_message",
+        config: { text: "again", next_node_key: "start" },
+      },
+    ];
+    const issues = validateFlowForActivation(
+      { ...validFlow, entry_node_id: "start" },
+      nodes,
+    );
+    expect(issues.some((i) => i.message.includes("Infinite loop"))).toBe(true);
   });
 });

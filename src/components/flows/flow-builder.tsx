@@ -25,6 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
   CornerDownRight,
+  Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,8 @@ import {
   useFlowEditor,
   type BuilderState,
 } from "./flow-editor-state";
+import { canPreviewNode } from "./node-preview";
+import { NodePreviewDialog } from "./node-preview-dialog";
 
 // ============================================================
 // Local state shape — mirrors the DB but the configs are typed
@@ -156,6 +159,8 @@ export function FlowBuilder() {
         setState={setState}
         triggerIssues={issues.filter((i) => i.scope === "trigger")}
       />
+
+      <FallbackPolicyPanel state={state} setState={setState} />
 
       <EntryPicker state={state} setState={setState} />
 
@@ -289,6 +294,137 @@ function TriggerPanel({
 }
 
 // ============================================================
+// Fallback policy panel
+// ============================================================
+
+function FallbackPolicyPanel({
+  state,
+  setState,
+}: {
+  state: BuilderState;
+  setState: React.Dispatch<React.SetStateAction<BuilderState>>;
+}) {
+  const p = state.fallback_policy;
+
+  return (
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <h2 className="mb-1 text-sm font-semibold text-white">
+        Fallback policy
+      </h2>
+      <p className="mb-3 text-xs text-slate-400">
+        What happens when a customer sends an unexpected reply, or
+        abandons the flow.
+      </p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs text-slate-400">
+            On unknown reply
+          </label>
+          <Select
+            value={p.on_unknown_reply}
+            onValueChange={(v) =>
+              setState((s) => ({
+                ...s,
+                fallback_policy: {
+                  ...s.fallback_policy,
+                  on_unknown_reply: v as typeof p.on_unknown_reply,
+                },
+              }))
+            }
+          >
+            <SelectTrigger className="bg-slate-800">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reprompt">Re-send the prompt</SelectItem>
+              <SelectItem value="handoff">Hand off immediately</SelectItem>
+              <SelectItem value="ignore">Ignore the message</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {p.on_unknown_reply === "reprompt" && (
+          <>
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">
+                Max reprompts
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={10}
+                value={p.max_reprompts}
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    fallback_policy: {
+                      ...s.fallback_policy,
+                      max_reprompts: Math.max(
+                        0,
+                        Math.min(10, Number(e.target.value) || 0),
+                      ),
+                    },
+                  }))
+                }
+                className="bg-slate-800"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-slate-400">
+                After max reprompts
+              </label>
+              <Select
+                value={p.on_exhaust}
+                onValueChange={(v) =>
+                  setState((s) => ({
+                    ...s,
+                    fallback_policy: {
+                      ...s.fallback_policy,
+                      on_exhaust: v as typeof p.on_exhaust,
+                    },
+                  }))
+                }
+              >
+                <SelectTrigger className="bg-slate-800">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="handoff">Hand off to agent</SelectItem>
+                  <SelectItem value="end">End the flow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+        <div>
+          <label className="mb-1 block text-xs text-slate-400">
+            Abandon timeout (hours)
+          </label>
+          <Input
+            type="number"
+            min={1}
+            max={168}
+            value={p.on_timeout_hours}
+            onChange={(e) =>
+              setState((s) => ({
+                ...s,
+                fallback_policy: {
+                  ...s.fallback_policy,
+                  on_timeout_hours: Math.max(
+                    1,
+                    Math.min(168, Number(e.target.value) || 1),
+                  ),
+                },
+              }))
+            }
+            className="bg-slate-800"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
 // Entry-node picker
 // ============================================================
 
@@ -351,7 +487,11 @@ function NodeCard({
   const meta = NODE_META[node.node_type];
   const hasError = issues.some((i) => i.severity === "error");
   const preview = summarizeNode(node);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const showPreview = canPreviewNode(node);
+
   return (
+    <>
     <div
       ref={cardRef}
       className={cn(
@@ -397,6 +537,21 @@ function NodeCard({
         {hasError && (
           <CircleAlert className="h-3.5 w-3.5 shrink-0 text-red-400" />
         )}
+        {showPreview && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0 text-slate-400 hover:text-primary"
+            title="Fullscreen customer preview"
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreviewOpen(true);
+            }}
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+        )}
         {expanded ? (
           <ChevronUp className="h-4 w-4 text-slate-500" />
         ) : (
@@ -405,6 +560,20 @@ function NodeCard({
       </button>
       {expanded && (
         <div className="border-t border-slate-800 px-4 py-4">
+          {showPreview && (
+            <div className="mb-4 flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-slate-700 text-slate-300"
+                onClick={() => setPreviewOpen(true)}
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Fullscreen preview
+              </Button>
+            </div>
+          )}
           <NodeConfigWithAdvanced
             node={node}
             allNodes={allNodes}
@@ -439,6 +608,12 @@ function NodeCard({
         </div>
       )}
     </div>
+    <NodePreviewDialog
+      node={node}
+      open={previewOpen}
+      onOpenChange={setPreviewOpen}
+    />
+    </>
   );
 }
 
