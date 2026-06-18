@@ -117,10 +117,13 @@ export const RATE_LIMITS = {
   /** Individual message send. 60/min per user = one per second
    *  sustained, comfortable for a live human typing. */
   send: { limit: 60, windowMs: 60_000 },
-  /** Broadcast dispatch. 5/min per user — even a 1 000-recipient
-   *  broadcast is one call; this caps the rate at which a single user
-   *  can launch campaigns, not the messages inside one. */
+  /** Broadcast dispatch. 5/min per user caps how often a user can
+   *  *launch* a new campaign. Continuation batches (same broadcast_id)
+   *  skip this gate — see broadcast/route.ts. */
   broadcast: { limit: 5, windowMs: 60_000 },
+  /** Per-batch fan-out inside an in-flight broadcast. High enough
+   *  for large audiences (10 recipients/batch → 600/min = 6 000/hr). */
+  broadcastBatch: { limit: 600, windowMs: 60_000 },
   /** Reaction add/swap/remove. More permissive than send — users
    *  fidget with reactions and a single "swap" is actually two calls
    *  (remove + add) under the hood. */

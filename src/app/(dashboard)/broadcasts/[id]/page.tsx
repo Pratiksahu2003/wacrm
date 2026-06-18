@@ -188,6 +188,30 @@ export default function BroadcastDetailPage() {
     fetchData();
   }, [broadcastId]);
 
+  // Live refresh while the background processor is sending.
+  useEffect(() => {
+    if (!broadcast || broadcast.status !== 'sending') return;
+
+    const supabase = createClient();
+    const interval = setInterval(async () => {
+      const { data: bc } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('id', broadcastId)
+        .single();
+      if (bc) setBroadcast(bc);
+
+      const { data: recs } = await supabase
+        .from('broadcast_recipients')
+        .select('*, contact:contacts(*)')
+        .eq('broadcast_id', broadcastId)
+        .order('created_at', { ascending: false });
+      if (recs) setRecipients(recs);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [broadcast?.status, broadcastId]);
+
   const filteredRecipients = useMemo(
     () =>
       statusFilter === 'all'
@@ -263,6 +287,15 @@ export default function BroadcastDetailPage() {
   }
 
   const status = getBroadcastStatus(broadcast.status);
+
+  const sendProgress =
+    broadcast.total_recipients > 0
+      ? Math.round(
+          ((broadcast.sent_count + broadcast.failed_count) /
+            broadcast.total_recipients) *
+            100,
+        )
+      : 0;
 
   const funnelSteps: FunnelStep[] = [
     { label: 'Sent', value: broadcast.sent_count, color: 'bg-primary' },
@@ -346,6 +379,38 @@ export default function BroadcastDetailPage() {
           </Button>
         )}
       </div>
+
+      {broadcast.status === 'sending' && (
+        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />
+              <p className="text-sm font-medium text-white">
+                Sending in background…
+              </p>
+            </div>
+            <span className="text-xs font-medium text-yellow-400">
+              {sendProgress}%
+            </span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-slate-800">
+            <div
+              className="h-1.5 rounded-full bg-yellow-500 transition-all duration-500"
+              style={{ width: `${sendProgress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            {broadcast.sent_count.toLocaleString()} sent ·{' '}
+            {broadcast.failed_count.toLocaleString()} failed ·{' '}
+            {(
+              broadcast.total_recipients -
+              broadcast.sent_count -
+              broadcast.failed_count
+            ).toLocaleString()}{' '}
+            queued
+          </p>
+        </div>
+      )}
 
       {/* Stats — 6 cards: Total / Sent / Delivered / Read / Replied / Failed */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

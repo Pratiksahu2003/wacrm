@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId, uploadWhatsAppMediaFromUrl } from '@/lib/whatsapp/meta-api'
+import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId, uploadWhatsAppMediaFromUrl, verifyPhoneNumber } from '@/lib/whatsapp/meta-api'
 import { prepareSendComponents } from '@/lib/whatsapp/template-send-builder'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
@@ -10,6 +10,8 @@ import {
   isValidE164,
   phoneVariants,
   isRecipientNotAllowedError,
+  extractCountryCallingCode,
+  normalizeToInternational,
 } from '@/lib/whatsapp/phone-utils'
 import {
   checkRateLimit,
@@ -118,16 +120,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Sanitize and validate phone
-    const sanitizedPhone = sanitizePhoneForMeta(contact.phone)
-    if (!isValidE164(sanitizedPhone)) {
-      return NextResponse.json(
-        { error: 'Invalid phone number format' },
-        { status: 400 }
-      )
-    }
-
-    // Fetch and decrypt WhatsApp config
+    // Fetch and decrypt WhatsApp config (needed for country-code inference)
     const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
@@ -157,6 +150,29 @@ export async function POST(request: Request) {
             )
           }
         })
+    }
+
+    let defaultCountryCode: string | undefined
+    try {
+      const phoneInfo = await verifyPhoneNumber({
+        phoneNumberId: config.phone_number_id,
+        accessToken,
+      })
+      defaultCountryCode =
+        extractCountryCallingCode(phoneInfo.display_phone_number) ?? undefined
+    } catch {
+      // Non-fatal — validation below will still catch truly invalid numbers.
+    }
+
+    const sanitizedPhone = normalizeToInternational(
+      contact.phone,
+      defaultCountryCode,
+    )
+    if (!isValidE164(sanitizedPhone)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400 }
+      )
     }
 
     // Resolve the reply target (if any) to its Meta message_id, which is

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractCountryCallingCode,
   isRecipientNotAllowedError,
   isValidE164,
   normalizePhone,
+  normalizeToInternational,
   phoneVariants,
   phonesMatch,
   sanitizePhoneForMeta,
@@ -133,6 +135,44 @@ describe("phoneVariants", () => {
   it("returns just the original when the number is too short for any CC slice", () => {
     // 1-char input is shorter than all ccLen values; both loops skip.
     expect(phoneVariants("1")).toEqual(["1"]);
+  });
+});
+
+describe("extractCountryCallingCode", () => {
+  it("extracts common country codes from display numbers", () => {
+    expect(extractCountryCallingCode("+66 83 568 64658")).toBe("66");
+    expect(extractCountryCallingCode("+1 (415) 555-1212")).toBe("1");
+    expect(extractCountryCallingCode("+370 6 394 9836")).toBe("370");
+  });
+
+  it("returns null for invalid or empty input", () => {
+    expect(extractCountryCallingCode("")).toBeNull();
+    expect(extractCountryCallingCode("08356864658")).toBeNull();
+  });
+});
+
+describe("normalizeToInternational", () => {
+  it("converts Thai domestic mobile numbers to international form", () => {
+    expect(normalizeToInternational("08356864658", "66")).toBe("668356864658");
+    expect(normalizeToInternational("09890055883", "66")).toBe("669890055883");
+    expect(normalizeToInternational("07715878344", "66")).toBe("667715878344");
+  });
+
+  it("strips 00 international prefix", () => {
+    expect(normalizeToInternational("00668356864658", "66")).toBe("668356864658");
+  });
+
+  it("leaves already-international numbers unchanged", () => {
+    expect(normalizeToInternational("668356864658", "66")).toBe("668356864658");
+    expect(normalizeToInternational("+14155551212", "1")).toBe("14155551212");
+  });
+
+  it("prepends country code when missing and no leading 0", () => {
+    expect(normalizeToInternational("8356864658", "66")).toBe("668356864658");
+  });
+
+  it("returns sanitized digits when normalization cannot produce E.164", () => {
+    expect(normalizeToInternational("123", "66")).toBe("123");
   });
 });
 

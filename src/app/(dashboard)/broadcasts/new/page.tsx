@@ -22,7 +22,7 @@ const steps = [
 
 export default function NewBroadcastPage() {
   const router = useRouter();
-  const { createAndSendBroadcast, isProcessing, progress } = useBroadcastSending();
+  const { createAndSendBroadcast, isProcessing } = useBroadcastSending();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [template, setTemplate] = useState<MessageTemplate | null>(null);
@@ -58,6 +58,7 @@ export default function NewBroadcastPage() {
         },
         variables,
       });
+      toast.success('Broadcast queued — sending in the background');
       router.push(`/broadcasts/${broadcastId}`);
     } catch (err) {
       // Previously swallowed with console.error — the wizard would
@@ -222,7 +223,6 @@ export default function NewBroadcastPage() {
               onSaveDraft={handleSaveDraft}
               onBack={() => setCurrentStep(2)}
               isProcessing={isProcessing}
-              progress={progress}
             />
           )}
         </div>

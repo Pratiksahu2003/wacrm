@@ -31,7 +31,6 @@ interface Step4Props {
   onSaveDraft?: () => void;
   onBack: () => void;
   isProcessing: boolean;
-  progress: number;
 }
 
 export function Step4ScheduleSend({
@@ -43,7 +42,6 @@ export function Step4ScheduleSend({
   onSaveDraft,
   onBack,
   isProcessing,
-  progress,
 }: Step4Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [estimatedReach, setEstimatedReach] = useState<number>(0);
@@ -145,19 +143,14 @@ export function Step4ScheduleSend({
       {/* Processing overlay */}
       {isProcessing && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <p className="text-sm font-medium text-white">Sending broadcast...</p>
-            </div>
-            <span className="text-xs font-medium text-primary">{progress}%</span>
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <p className="text-sm font-medium text-white">Queueing broadcast…</p>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-slate-800">
-            <div
-              className="h-1.5 rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            You&apos;ll be redirected to track progress while messages send in the
+            background.
+          </p>
         </div>
       )}
 
