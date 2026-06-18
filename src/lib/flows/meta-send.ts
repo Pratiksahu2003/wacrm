@@ -9,11 +9,10 @@ import {
 } from '@/lib/whatsapp/meta-api'
 import { decryptIfEncrypted } from '@/lib/whatsapp/encryption'
 import {
-  sanitizePhoneForMeta,
-  isValidE164,
   phoneVariants,
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
+import { resolveContactPhoneForMeta } from '@/lib/whatsapp/resolve-contact-phone'
 import { supabaseAdmin } from './admin-client'
 
 // ------------------------------------------------------------
@@ -72,10 +71,11 @@ export async function engineSendText(
     throw new Error('contact not found for this account')
   }
 
-  const sanitized = sanitizePhoneForMeta(contact.phone)
-  if (!isValidE164(sanitized)) {
-    throw new Error(`contact phone invalid: ${contact.phone}`)
-  }
+  const sanitized = await resolveContactPhoneForMeta(
+    db,
+    args.accountId,
+    contact.phone,
+  )
 
   const { data: config, error: configErr } = await db
     .from('whatsapp_config')
@@ -181,10 +181,11 @@ export async function engineSendMedia(
     throw new Error('contact not found for this account')
   }
 
-  const sanitized = sanitizePhoneForMeta(contact.phone)
-  if (!isValidE164(sanitized)) {
-    throw new Error(`contact phone invalid: ${contact.phone}`)
-  }
+  const sanitized = await resolveContactPhoneForMeta(
+    db,
+    args.accountId,
+    contact.phone,
+  )
 
   const { data: config, error: configErr } = await db
     .from('whatsapp_config')
@@ -333,10 +334,11 @@ async function sendInteractiveViaMeta(
     throw new Error('contact not found for this account')
   }
 
-  const sanitized = sanitizePhoneForMeta(contact.phone)
-  if (!isValidE164(sanitized)) {
-    throw new Error(`contact phone invalid: ${contact.phone}`)
-  }
+  const sanitized = await resolveContactPhoneForMeta(
+    db,
+    input.accountId,
+    contact.phone,
+  )
 
   const { data: config, error: configErr } = await db
     .from('whatsapp_config')
