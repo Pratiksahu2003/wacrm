@@ -11,7 +11,8 @@ import { triggerBroadcastProcessingHttp } from '@/lib/broadcasts/trigger';
 import type { AudienceConfig, VariableMapping } from '@/lib/broadcasts/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+/** Large audiences need time to insert recipient rows before returning. */
+export const maxDuration = 300;
 
 interface StartBroadcastBody {
   name: string;

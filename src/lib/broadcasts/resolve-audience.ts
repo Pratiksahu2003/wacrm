@@ -1,12 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Contact } from '@/types';
 import type { AudienceConfig } from './types';
+import {
+  fetchAllContactsForAccount,
+  fetchContactIdsForCustomField,
+  fetchContactIdsForTags,
+  fetchContactsByIds,
+} from './paginate-contacts';
 
 const INSERT_CHUNK = 200;
 
 /**
  * Resolve an audience config to contact rows. Runs server-side during
  * broadcast queue setup so the client can return immediately.
+ *
+ * All fetches are paginated — Supabase/PostgREST silently caps bare
+ * `.select()` calls at 1 000 rows, which previously limited "All
+ * Contacts" broadcasts to ~995 recipients even when 70k+ existed.
  */
 export async function resolveBroadcastAudience(
   supabase: SupabaseClient,
@@ -17,36 +27,17 @@ export async function resolveBroadcastAudience(
   let contacts: Contact[] = [];
 
   if (audience.type === 'all') {
-    const { data, error } = await supabase
-      .from('contacts')
-      .select('*')
-      .eq('account_id', accountId);
-    if (error) throw new Error(`Failed to fetch contacts: ${error.message}`);
-    contacts = data ?? [];
+    contacts = await fetchAllContactsForAccount(supabase, accountId);
   } else if (
     audience.type === 'tags' &&
     audience.tagIds &&
     audience.tagIds.length > 0
   ) {
-    const { data: contactTags, error: tagError } = await supabase
-      .from('contact_tags')
-      .select('contact_id')
-      .in('tag_id', audience.tagIds);
-
-    if (tagError) {
-      throw new Error(`Failed to fetch contact tags: ${tagError.message}`);
-    }
-
-    if (contactTags && contactTags.length > 0) {
-      const uniqueContactIds = [
-        ...new Set(contactTags.map((ct) => ct.contact_id)),
-      ];
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .in('id', uniqueContactIds);
-      if (error) throw new Error(`Failed to fetch contacts: ${error.message}`);
-      contacts = data ?? [];
+    const uniqueContactIds = [
+      ...await fetchContactIdsForTags(supabase, audience.tagIds),
+    ];
+    if (uniqueContactIds.length > 0) {
+      contacts = await fetchContactsByIds(supabase, uniqueContactIds);
     }
   } else if (audience.type === 'custom_field' && audience.customField) {
     contacts = await resolveCustomFieldAudience(supabase, audience.customField);
@@ -60,11 +51,10 @@ export async function resolveBroadcastAudience(
   }
 
   if (audience.excludeTagIds && audience.excludeTagIds.length > 0) {
-    const { data: excludeRows } = await supabase
-      .from('contact_tags')
-      .select('contact_id')
-      .in('tag_id', audience.excludeTagIds);
-    const excludedIds = new Set((excludeRows ?? []).map((r) => r.contact_id));
+    const excludedIds = await fetchContactIdsForTags(
+      supabase,
+      audience.excludeTagIds,
+    );
     contacts = contacts.filter((c) => !excludedIds.has(c.id));
   }
 
@@ -85,18 +75,21 @@ async function upsertCsvContacts(
   }
   const phones = [...uniqueByPhone.keys()];
 
-  const { data: existing, error: lookupErr } = await supabase
-    .from('contacts')
-    .select('*')
-    .eq('account_id', accountId)
-    .in('phone', phones);
-  if (lookupErr) {
-    throw new Error(`Failed to look up CSV contacts: ${lookupErr.message}`);
-  }
-
   const byPhone = new Map<string, Contact>();
-  for (const c of (existing ?? []) as Contact[]) {
-    if (c.phone) byPhone.set(c.phone, c);
+
+  for (let i = 0; i < phones.length; i += 500) {
+    const phoneSlice = phones.slice(i, i + 500);
+    const { data: existing, error: lookupErr } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('account_id', accountId)
+      .in('phone', phoneSlice);
+    if (lookupErr) {
+      throw new Error(`Failed to look up CSV contacts: ${lookupErr.message}`);
+    }
+    for (const c of (existing ?? []) as Contact[]) {
+      if (c.phone) byPhone.set(c.phone, c);
+    }
   }
 
   const missing = phones
@@ -133,27 +126,13 @@ async function resolveCustomFieldAudience(
 ): Promise<Contact[]> {
   const { fieldId, operator, value } = filter;
 
-  let query = supabase
-    .from('contact_custom_values')
-    .select('contact_id')
-    .eq('custom_field_id', fieldId);
-
-  if (operator === 'is') query = query.eq('value', value);
-  else if (operator === 'is_not') query = query.neq('value', value);
-  else if (operator === 'contains') query = query.ilike('value', `%${value}%`);
-
-  const { data: matches, error: matchErr } = await query;
-  if (matchErr) {
-    throw new Error(`Custom-field filter failed: ${matchErr.message}`);
-  }
-
-  const contactIds = [...new Set((matches ?? []).map((m) => m.contact_id))];
+  const contactIds = await fetchContactIdsForCustomField(
+    supabase,
+    fieldId,
+    operator,
+    value,
+  );
   if (contactIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from('contacts')
-    .select('*')
-    .in('id', contactIds);
-  if (error) throw new Error(`Failed to fetch contacts: ${error.message}`);
-  return data ?? [];
+  return fetchContactsByIds(supabase, contactIds);
 }
