@@ -433,7 +433,7 @@ function NodeCard({
       className={cn(
         "rounded-lg border bg-slate-900 transition-shadow duration-500",
         hasError
-          ? "border-red-500/40"
+          ? "border-red-500/70 bg-red-500/20 ring-1 ring-red-500/45"
           : isEntry
             ? "border-primary/50"
             : "border-slate-800",

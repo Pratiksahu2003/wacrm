@@ -123,7 +123,8 @@ export function validateFlowForActivation(
     if (cycleKey) {
       issues.push({
         severity: "error",
-        scope: "flow",
+        scope: "node",
+        node_key: cycleKey,
         message: `Infinite loop detected in the graph (cycle includes "${cycleKey}").`,
       });
     }

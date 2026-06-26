@@ -57,7 +57,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Maximize2, Minimize2, Plus, Trash2, Eye, X } from "lucide-react";
+import { Maximize2, Minimize2, Plus, Trash2, Eye, X, CircleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,8 @@ import { NodePreviewDialog } from "./node-preview-dialog";
 interface NodeData extends Record<string, unknown> {
   node: BuilderNode;
   isEntry: boolean;
+  /** Validator error — persistent red highlight on the canvas card. */
+  hasError: boolean;
   /** Validator's "look here" pulse — flashes the card border for
    *  ~1.6s. Drives a CSS animation, doesn't change layout. */
   isFlashed: boolean;
@@ -110,7 +112,7 @@ const NODE_HEIGHT = 90;
 // ============================================================
 
 function FlowNodeCard({ data, selected }: NodeProps) {
-  const { node, isEntry, isFlashed } = data as NodeData;
+  const { node, isEntry, isFlashed, hasError } = data as NodeData;
   const meta = NODE_META[node.node_type];
   const displayName = getNodeDisplayName(node);
   const summary = summarizeNode(node);
@@ -130,12 +132,12 @@ function FlowNodeCard({ data, selected }: NodeProps) {
     <div
       className={cn(
         "relative min-w-[220px] max-w-[260px] rounded-lg border bg-slate-900/95 px-3 py-2 text-left shadow-lg backdrop-blur transition-colors",
+        hasError && !isFlashed && "border-red-500/70 bg-red-500/20 ring-1 ring-red-500/45",
         selected
-          ? "border-primary ring-1 ring-primary/40"
-          : "border-slate-700 hover:border-slate-600",
-        // Flash overrides hover/selected colors briefly. Tailwind's
-        // built-in `animate-pulse` is too gentle; a ring with the
-        // amber accent matches the list view's flash semantics.
+          ? hasError
+            ? "border-red-400 ring-1 ring-red-400/50"
+            : "border-primary ring-1 ring-primary/40"
+          : !hasError && "border-slate-700 hover:border-slate-600",
         isFlashed && "!border-amber-400 ring-2 ring-amber-400/60",
       )}
     >
@@ -149,14 +151,19 @@ function FlowNodeCard({ data, selected }: NodeProps) {
 
       <div className="flex items-center gap-2">
         <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.color)} />
-        <span className="truncate text-[11px] font-medium text-slate-200">
+        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-200">
           {displayName}
         </span>
-        {isEntry && (
-          <span className="ml-auto rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-300">
-            Entry
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {isEntry && (
+            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-300">
+              Entry
+            </span>
+          )}
+          {hasError && (
+            <CircleAlert className="h-3.5 w-3.5 text-red-400" aria-label="Has errors" />
+          )}
+        </div>
       </div>
       {displayName !== meta.label && (
         <div className="truncate text-[10px] text-slate-500">{meta.label}</div>
@@ -236,6 +243,7 @@ function FlowCanvasInner() {
     updateNodePositions,
     removeNode,
     flashKey,
+    issues,
   } = useFlowEditor();
   const reactFlow = useReactFlow();
   const builderNodes = state.nodes;
@@ -255,6 +263,16 @@ function FlowCanvasInner() {
         : null,
     [selectedNodeKey, builderNodes],
   );
+
+  const errorNodeKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const issue of issues) {
+      if (issue.severity === "error" && issue.node_key) {
+        keys.add(issue.node_key);
+      }
+    }
+    return keys;
+  }, [issues]);
 
   const autoLayoutPositions = useMemo(() => {
     const canvasEdges = deriveCanvasEdges(builderNodes);
@@ -300,13 +318,14 @@ function FlowCanvasInner() {
         data: {
           node: n,
           isEntry: n.node_key === entryNodeId,
+          hasError: errorNodeKeys.has(n.node_key),
           isFlashed: n.node_key === flashKey,
         },
       };
     });
 
     return nodes;
-  }, [builderNodes, entryNodeId, flashKey, autoLayoutPositions]);
+  }, [builderNodes, entryNodeId, flashKey, autoLayoutPositions, errorNodeKeys]);
 
   const [rfNodes, setRfNodes] = useState<RfNode<NodeData>[]>(derivedRfNodes);
 
@@ -601,7 +620,7 @@ function FlowCanvasViewport({
         "w-full overflow-hidden border border-slate-800 bg-slate-950",
         isMaximized
           ? "fixed inset-0 z-[100] h-screen w-screen rounded-none border-0"
-          : "h-[70vh] rounded-lg",
+          : "min-h-[min(560px,calc(100vh-16rem))] h-[min(560px,calc(100vh-16rem))] rounded-lg",
       )}
     >
       <ReactFlow

@@ -93,39 +93,40 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
   return (
     <FlowEditorProvider initialFlow={initialFlow} initialNodes={initialNodes}>
       <FlowFirstRunWizard open={wizardOpen} onOpenChange={setWizardOpen} />
-      <div className="mx-auto flex h-full max-w-4xl flex-col gap-6 p-6">
-        <EditorHeader onOpenGuide={() => setWizardOpen(true)} />
-        <FlowSetupGuide />
-        <TriggerSetupPanel compact />
-        {!isMobile && (
-          <div className="flex items-center justify-end">
-            <div
-              role="group"
-              aria-label="Editor view"
-              className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 p-0.5 text-xs"
-            >
-              <ToggleButton
-                active={effectiveView === "canvas"}
-                onClick={() => choose("canvas")}
-                icon={<LayoutGrid className="h-3 w-3" />}
-                label="Canvas"
-              />
-              <ToggleButton
-                active={effectiveView === "list"}
-                onClick={() => choose("list")}
-                icon={<ListTree className="h-3 w-3" />}
-                label="List"
-              />
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 pb-8">
+        <div className="shrink-0 space-y-4">
+          <EditorHeader onOpenGuide={() => setWizardOpen(true)} />
+          <FlowSetupGuide />
+          <TriggerSetupPanel compact />
+          {!isMobile && (
+            <div className="flex items-center justify-end">
+              <div
+                role="group"
+                aria-label="Editor view"
+                className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 p-0.5 text-xs"
+              >
+                <ToggleButton
+                  active={effectiveView === "canvas"}
+                  onClick={() => choose("canvas")}
+                  icon={<LayoutGrid className="h-3 w-3" />}
+                  label="Canvas"
+                />
+                <ToggleButton
+                  active={effectiveView === "list"}
+                  onClick={() => choose("list")}
+                  icon={<ListTree className="h-3 w-3" />}
+                  label="List"
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {effectiveView === "canvas" ? <FlowCanvas /> : <FlowBuilder />}
+        <div className="min-h-0 shrink-0">
+          {effectiveView === "canvas" ? <FlowCanvas /> : <FlowBuilder />}
+        </div>
 
-        {/* Sticky-bottom validation panel mirrors the placement used
-            when this lived inside FlowBuilder — the activate-readiness
-            status follows the user as they scroll, in either view. */}
-        <div className="sticky bottom-4 z-10 shadow-xl shadow-slate-950/60">
+        <div className="shrink-0">
           <ValidationPanel />
         </div>
       </div>
