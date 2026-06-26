@@ -37,6 +37,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   applyNodeChanges,
   Background,
@@ -56,7 +57,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Maximize2, Minimize2, Plus, Trash2, Eye } from "lucide-react";
+import { Maximize2, Minimize2, Plus, Trash2, Eye, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -74,20 +75,14 @@ import {
   outgoingSlots,
 } from "@/lib/flows/edges";
 import { autoLayout, shouldAutoLayout } from "@/lib/flows/layout";
+import { AddNodePicker } from "./add-node-picker";
 import {
   NODE_META,
-  NODE_TIPS,
   getNodeDisplayName,
   summarizeNode,
   type BuilderNode,
   type NodeType,
 } from "./shared";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useFlowEditor } from "./flow-editor-state";
 import { NodeConfigForm } from "./forms/node-config-form";
 import { canPreviewNode } from "./node-preview";
@@ -249,6 +244,9 @@ function FlowCanvasInner() {
   // list view's analogue is the per-card expanded set in
   // flow-builder.tsx.
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null);
+  const [canvasPortalRoot, setCanvasPortalRoot] = useState<HTMLElement | null>(
+    null,
+  );
   const selectedNode = useMemo(
     () =>
       selectedNodeKey
@@ -469,6 +467,7 @@ function FlowCanvasInner() {
   return (
     <>
       <FlowCanvasViewport
+        onPortalRoot={setCanvasPortalRoot}
         rfNodes={rfNodes}
         rfEdges={rfEdges}
         handleNodesChange={handleNodesChange}
@@ -483,6 +482,7 @@ function FlowCanvasInner() {
         node={selectedNode}
         isEntry={selectedNode?.node_key === entryNodeId}
         allNodes={builderNodes}
+        portalRoot={canvasPortalRoot}
         onClose={() => setSelectedNodeKey(null)}
         onUpdateConfig={onSelectedUpdateConfig}
         onDelete={handleDeleteSelected}
@@ -498,6 +498,7 @@ function FlowCanvasInner() {
 // ============================================================
 
 function FlowCanvasViewport({
+  onPortalRoot,
   rfNodes,
   rfEdges,
   handleNodesChange,
@@ -507,6 +508,7 @@ function FlowCanvasViewport({
   handleNodesDelete,
   handleEdgesDelete,
 }: {
+  onPortalRoot?: (el: HTMLElement | null) => void;
   rfNodes: RfNode<NodeData>[];
   rfEdges: RfEdge[];
   handleNodesChange: (changes: NodeChange<RfNode<NodeData>>[]) => void;
@@ -517,9 +519,16 @@ function FlowCanvasViewport({
   handleEdgesDelete: (deleted: RfEdge[]) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
-  const [nativeFullscreen, setNativeFullscreen] = useState(false);
-  const isMaximized = expanded || nativeFullscreen;
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  const setContainerRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      containerRef.current = el;
+      setPortalRoot(el);
+      onPortalRoot?.(el);
+    },
+    [onPortalRoot],
+  );
 
   const refitCanvas = useCallback(() => {
     requestAnimationFrame(() => {
@@ -529,6 +538,14 @@ function FlowCanvasViewport({
       window.dispatchEvent(new Event("resize"));
     });
   }, []);
+
+  const [expanded, setExpanded] = useState(false);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const isMaximized = expanded || nativeFullscreen;
+
+  useEffect(() => {
+    return () => onPortalRoot?.(null);
+  }, [onPortalRoot]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -578,7 +595,7 @@ function FlowCanvasViewport({
 
   return (
     <div
-      ref={containerRef}
+      ref={setContainerRef}
       className={cn(
         "w-full overflow-hidden border border-slate-800 bg-slate-950",
         isMaximized
@@ -637,8 +654,8 @@ function FlowCanvasViewport({
             {isMaximized ? "Exit fullscreen" : "Fullscreen"}
           </Button>
         </Panel>
-        <Panel position="bottom-right" className="!bottom-4 !right-4">
-          <CanvasAddNodeButton />
+        <Panel position="bottom-left" className="!bottom-4 !left-4">
+          <CanvasAddNodeButton portalRoot={portalRoot} />
         </Panel>
       </ReactFlow>
     </div>
@@ -664,6 +681,7 @@ function NodeEditSheet({
   node,
   isEntry,
   allNodes,
+  portalRoot,
   onClose,
   onUpdateConfig,
   onDelete,
@@ -672,119 +690,204 @@ function NodeEditSheet({
   node: BuilderNode | null;
   isEntry: boolean;
   allNodes: BuilderNode[];
+  portalRoot?: HTMLElement | null;
   onClose: () => void;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
   onDelete: () => void;
   onSetEntry: () => void;
 }) {
-  // Sheet is controlled — opens when a node is selected, closes via
-  // Esc / overlay / close button (all delegated to onClose).
   const open = node !== null;
   const [previewOpen, setPreviewOpen] = useState(false);
+
   if (!node) {
-    return (
-      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent side="right" className="w-full sm:max-w-md" />
-      </Sheet>
-    );
+    if (!portalRoot) {
+      return (
+        <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+          <SheetContent side="right" className="w-full sm:max-w-md" />
+        </Sheet>
+      );
+    }
+    return null;
   }
+
   const meta = NODE_META[node.node_type];
   const Icon = meta.icon;
   const displayName = getNodeDisplayName(node);
   const showPreview = canPreviewNode(node);
-  return (
+
+  const panelBody = (
     <>
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 border-l border-slate-800 bg-slate-950 p-0 sm:max-w-md"
-      >
-        <SheetHeader className="border-b border-slate-800 px-5 py-4">
-          <SheetTitle className="flex items-center gap-2 text-slate-100">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2 text-slate-100">
             <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
-            <span>{displayName}</span>
+            <span className="text-base font-semibold">{displayName}</span>
             {isEntry && (
               <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
                 Entry
               </span>
             )}
-          </SheetTitle>
-          <SheetDescription className="text-[11px] text-slate-400">
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">
             {displayName !== meta.label ? (
               <span>{meta.label} · </span>
             ) : null}
             <span className="font-mono">{node.node_key}</span>
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
-          <NodeConfigForm
-            node={node}
-            allNodes={allNodes}
-            showAdvanced={false}
-            onUpdateConfig={onUpdateConfig}
-          />
+          </p>
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          className="shrink-0 text-slate-400"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </div>
 
-        <SheetFooter className="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
-          <div className="flex items-center gap-2">
-            {!isEntry ? (
-              <Button variant="ghost" size="sm" onClick={onSetEntry}>
-                Set as entry
-              </Button>
-            ) : null}
-            {showPreview && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-700 text-slate-300"
-                onClick={() => setPreviewOpen(true)}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Preview
-              </Button>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+        <NodeConfigForm
+          node={node}
+          allNodes={allNodes}
+          showAdvanced={false}
+          onUpdateConfig={onUpdateConfig}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
+        <div className="flex items-center gap-2">
+          {!isEntry ? (
+            <Button variant="ghost" size="sm" onClick={onSetEntry}>
+              Set as entry
+            </Button>
+          ) : null}
+          {showPreview && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-700 text-slate-300"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Preview
+            </Button>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDelete}
+          className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete node
+        </Button>
+      </div>
+    </>
+  );
+
+  const inlinePanel =
+    open && portalRoot
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[200]"
+            role="dialog"
+            aria-modal="true"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete node
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-    <NodePreviewDialog
-      node={node}
-      open={previewOpen}
-      onOpenChange={setPreviewOpen}
-    />
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40"
+              aria-label="Close"
+              onClick={onClose}
+            />
+            <div
+              className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-800 bg-slate-950 shadow-2xl"
+            >
+              {panelBody}
+            </div>
+          </div>,
+          portalRoot,
+        )
+      : null;
+
+  return (
+    <>
+      {inlinePanel}
+      {!portalRoot && (
+        <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+          <SheetContent
+            side="right"
+            className="flex w-full flex-col gap-0 border-l border-slate-800 bg-slate-950 p-0 sm:max-w-md"
+          >
+            <SheetHeader className="border-b border-slate-800 px-5 py-4">
+              <SheetTitle className="flex items-center gap-2 text-slate-100">
+                <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
+                <span>{displayName}</span>
+                {isEntry && (
+                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                    Entry
+                  </span>
+                )}
+              </SheetTitle>
+              <SheetDescription className="text-[11px] text-slate-400">
+                {displayName !== meta.label ? (
+                  <span>{meta.label} · </span>
+                ) : null}
+                <span className="font-mono">{node.node_key}</span>
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+              <NodeConfigForm
+                node={node}
+                allNodes={allNodes}
+                showAdvanced={false}
+                onUpdateConfig={onUpdateConfig}
+              />
+            </div>
+
+            <SheetFooter className="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
+              <div className="flex items-center gap-2">
+                {!isEntry ? (
+                  <Button variant="ghost" size="sm" onClick={onSetEntry}>
+                    Set as entry
+                  </Button>
+                ) : null}
+                {showPreview && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-700 text-slate-300"
+                    onClick={() => setPreviewOpen(true)}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Preview
+                  </Button>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDelete}
+                className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete node
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      )}
+      <NodePreviewDialog
+        node={node}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </>
   );
 }
-
-// ============================================================
-// Floating add-node button — bottom-right of the canvas. Mirrors
-// the list view's AddNodeButton (same dropdown menu, same NodeType
-// list, same icons via NODE_META) but drops the new node into the
-// center of the visible viewport rather than appending to a list.
-// ============================================================
-
-const ADD_NODE_TYPES: NodeType[] = [
-  "start",
-  "send_buttons",
-  "send_list",
-  "send_message",
-  "send_media",
-  "collect_input",
-  "condition",
-  "set_tag",
-  "handoff",
-  "end",
-];
 
 function CanvasEmptyState() {
   const { addStarterScaffold } = useFlowEditor();
@@ -808,17 +911,21 @@ function CanvasEmptyState() {
   );
 }
 
-function CanvasAddNodeButton() {
+// ============================================================
+// Floating add-node button — bottom-left of the canvas (keeps the
+// minimap + zoom controls on the right clear).
+// ============================================================
+
+function CanvasAddNodeButton({
+  portalRoot,
+}: {
+  portalRoot?: HTMLElement | null;
+}) {
   const reactFlow = useReactFlow();
   const { addNode, updateNodePosition } = useFlowEditor();
 
   const handleAdd = (type: NodeType) => {
     const key = addNode(type);
-    // Place the new node at the visible canvas center. The Panel's
-    // own DOM lives inside ReactFlow so we can climb up to find the
-    // .react-flow root and read its bounding rect. If we can't find
-    // it (test envs, etc.), addNode's default (0, 0) is the fallback
-    // and the user can drag the node into view.
     const root = document.querySelector(".react-flow") as HTMLElement | null;
     if (!root) return;
     const rect = root.getBoundingClientRect();
@@ -826,42 +933,24 @@ function CanvasAddNodeButton() {
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     });
-    // NODE_WIDTH / NODE_HEIGHT are the dagre layout defaults; offset
-    // so the card sits visually centered rather than top-left at the
-    // viewport center.
-    updateNodePosition(key, center.x - NODE_WIDTH / 2, center.y - NODE_HEIGHT / 2);
+    updateNodePosition(
+      key,
+      center.x - NODE_WIDTH / 2,
+      center.y - NODE_HEIGHT / 2,
+    );
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-colors hover:bg-slate-800"
-        aria-label="Add node"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        Add node
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="border-slate-700 bg-slate-900">
-        {ADD_NODE_TYPES.map((t) => {
-          const meta = NODE_META[t];
-          const Icon = meta.icon;
-          return (
-            <DropdownMenuItem
-              key={t}
-              onClick={() => handleAdd(t)}
-              className="flex flex-col items-start gap-0.5 py-2"
-            >
-              <span className="flex items-center gap-2">
-                <Icon className={cn("h-3.5 w-3.5", meta.color)} />
-                {meta.label}
-              </span>
-              <span className="pl-5 text-[10px] leading-snug text-slate-500">
-                {NODE_TIPS[t]}
-              </span>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <AddNodePicker
+      onAdd={handleAdd}
+      portalRoot={portalRoot}
+      trigger={
+        <>
+          <Plus className="h-3.5 w-3.5" />
+          Add node
+        </>
+      }
+      triggerClassName="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-colors hover:bg-slate-800"
+    />
   );
 }

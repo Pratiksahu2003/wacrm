@@ -20,7 +20,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleAlert,
-  Plus,
   Trash2,
   ChevronDown,
   ChevronUp,
@@ -37,17 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { type ValidationIssue } from "@/lib/flows/validate";
 import {
   NODE_META,
-  NODE_TIPS,
   formatNodeIssueLabel,
   getNodeDisplayName,
   slugify,
@@ -58,6 +50,7 @@ import {
 import { NodeConfigForm } from "./forms/node-config-form";
 import { NodeKeySelect } from "./forms/fields";
 import { IssueLine } from "./validation-panel";
+import { AddNodePicker } from "./add-node-picker";
 import {
   useFlowEditor,
   type BuilderState,
@@ -166,7 +159,7 @@ export function FlowBuilder() {
           <h2 className="text-sm font-semibold text-white">
             Nodes ({state.nodes.length})
           </h2>
-          <AddNodeButton onAdd={addNode} />
+          <AddNodePicker onAdd={addNode} />
         </div>
 
         {state.nodes.length === 0 ? (
@@ -636,57 +629,6 @@ function NodeConfigWithAdvanced({
         )}
       </div>
     </div>
-  );
-}
-
-
-// ============================================================
-// Add-node menu
-// ============================================================
-
-function AddNodeButton({ onAdd }: { onAdd: (type: NodeType) => void }) {
-  const types: NodeType[] = [
-    "start",
-    "send_buttons",
-    "send_list",
-    "send_message",
-    "send_media",
-    "collect_input",
-    "condition",
-    "set_tag",
-    "handoff",
-    "end",
-  ];
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-800"
-        aria-label="Add node"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        Add node
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="border-slate-700 bg-slate-900">
-        {types.map((t) => {
-          const meta = NODE_META[t];
-          return (
-            <DropdownMenuItem
-              key={t}
-              onClick={() => onAdd(t)}
-              className="flex flex-col items-start gap-0.5 py-2"
-            >
-              <span className="flex items-center gap-2">
-                <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
-                {meta.label}
-              </span>
-              <span className="pl-5 text-[10px] leading-snug text-slate-500">
-                {NODE_TIPS[t]}
-              </span>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
