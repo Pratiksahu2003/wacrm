@@ -49,7 +49,7 @@ import {
   validateFlowForActivation,
   type ValidationIssue,
 } from "@/lib/flows/validate";
-import { unlinkNodeReferences } from "@/lib/flows/edges";
+import { unlinkNodeReferences, renameNodeKeyReferences } from "@/lib/flows/edges";
 import { resolveFallbackPolicy } from "@/lib/flows/fallback";
 import {
   STARTER_ENTRY_NODE_ID,
@@ -434,12 +434,42 @@ export function FlowEditorProvider({
   // ---- Node mutations ----
   const updateNode = useCallback(
     (key: string, patch: Partial<BuilderNode>) => {
-      setState((s) => ({
-        ...s,
-        nodes: s.nodes.map((n) =>
-          n.node_key === key ? { ...n, ...patch } : n,
-        ),
-      }));
+      setState((s) => {
+        const nextKey =
+          patch.node_key !== undefined && patch.node_key !== key
+            ? slugify(patch.node_key, key)
+            : null;
+
+        if (nextKey && nextKey !== key) {
+          if (s.nodes.some((n) => n.node_key === nextKey && n.node_key !== key)) {
+            toast.error("That technical id is already used by another node.");
+            const { node_key: _ignored, ...rest } = patch;
+            if (Object.keys(rest).length === 0) return s;
+            return {
+              ...s,
+              nodes: s.nodes.map((n) =>
+                n.node_key === key ? { ...n, ...rest } : n,
+              ),
+            };
+          }
+          const renamed = s.nodes.map((n) =>
+            n.node_key === key ? { ...n, ...patch, node_key: nextKey } : n,
+          );
+          const relinked = renameNodeKeyReferences(renamed, key, nextKey);
+          return {
+            ...s,
+            nodes: relinked,
+            entry_node_id: s.entry_node_id === key ? nextKey : s.entry_node_id,
+          };
+        }
+
+        return {
+          ...s,
+          nodes: s.nodes.map((n) =>
+            n.node_key === key ? { ...n, ...patch } : n,
+          ),
+        };
+      });
     },
     [setState],
   );

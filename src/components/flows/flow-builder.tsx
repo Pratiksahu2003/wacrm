@@ -48,6 +48,8 @@ import { type ValidationIssue } from "@/lib/flows/validate";
 import {
   NODE_META,
   NODE_TIPS,
+  formatNodeIssueLabel,
+  getNodeDisplayName,
   slugify,
   summarizeNode,
   type BuilderNode,
@@ -425,6 +427,7 @@ function NodeCard({
   onSetEntry: () => void;
 }) {
   const meta = NODE_META[node.node_type];
+  const displayName = getNodeDisplayName(node);
   const hasError = issues.some((i) => i.severity === "error");
   const preview = summarizeNode(node);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -454,9 +457,14 @@ function NodeCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-white">
-              {meta.label}
+              {displayName}
             </span>
-            <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
+            {displayName !== meta.label && (
+              <span className="truncate text-[10px] text-slate-500">
+                {meta.label}
+              </span>
+            )}
+            <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-500">
               {node.node_key}
             </code>
             {isEntry && (
@@ -541,7 +549,11 @@ function NodeCard({
           {issues.length > 0 && (
             <div className="mt-3 flex flex-col gap-1 rounded-md bg-red-500/5 p-2">
               {issues.map((i, ix) => (
-                <IssueLine key={ix} issue={i} />
+                <IssueLine
+                  key={ix}
+                  issue={i}
+                  nodeLabel={formatNodeIssueLabel(node)}
+                />
               ))}
             </div>
           )}
@@ -602,7 +614,8 @@ function NodeConfigWithAdvanced({
           <div className="mt-3 flex flex-col gap-3">
             <div>
               <label className="mb-1 block text-xs text-slate-400">
-                Node key (internal identifier — keep stable for analytics)
+                Technical id (for analytics — changing this updates all
+                connections)
               </label>
               <Input
                 value={node.node_key}

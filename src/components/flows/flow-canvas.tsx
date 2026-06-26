@@ -56,7 +56,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Plus, Trash2, Eye } from "lucide-react";
+import { Maximize2, Minimize2, Plus, Trash2, Eye } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,7 @@ import { autoLayout, shouldAutoLayout } from "@/lib/flows/layout";
 import {
   NODE_META,
   NODE_TIPS,
+  getNodeDisplayName,
   summarizeNode,
   type BuilderNode,
   type NodeType,
@@ -115,6 +116,7 @@ const NODE_HEIGHT = 90;
 function FlowNodeCard({ data, selected }: NodeProps) {
   const { node, isEntry, isFlashed } = data as NodeData;
   const meta = NODE_META[node.node_type];
+  const displayName = getNodeDisplayName(node);
   const summary = summarizeNode(node);
   const Icon = meta.icon;
   const slots = outgoingSlots(node);
@@ -151,8 +153,8 @@ function FlowNodeCard({ data, selected }: NodeProps) {
 
       <div className="flex items-center gap-2">
         <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.color)} />
-        <span className="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">
-          {meta.label}
+        <span className="truncate text-[11px] font-medium text-slate-200">
+          {displayName}
         </span>
         {isEntry && (
           <span className="ml-auto rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-300">
@@ -160,7 +162,10 @@ function FlowNodeCard({ data, selected }: NodeProps) {
           </span>
         )}
       </div>
-      <div className="mt-1 truncate font-mono text-[11px] text-slate-300">
+      {displayName !== meta.label && (
+        <div className="truncate text-[10px] text-slate-500">{meta.label}</div>
+      )}
+      <div className="truncate font-mono text-[10px] text-slate-500">
         {node.node_key}
       </div>
       {summary && (
@@ -463,49 +468,16 @@ function FlowCanvasInner() {
 
   return (
     <>
-      <div className="h-[70vh] w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
-        <ReactFlow
-          nodes={rfNodes}
-          edges={rfEdges}
-          nodeTypes={NODE_TYPES}
-          fitView
-          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
-          proOptions={{ hideAttribution: true }}
-          onNodesChange={handleNodesChange}
-          onNodeDragStop={handleNodeDragStop}
-          onNodeClick={handleNodeClick}
-          onConnect={handleConnect}
-          onNodesDelete={handleNodesDelete}
-          onEdgesDelete={handleEdgesDelete}
-          // Default is "Backspace" only — accept both so Mac users
-          // hitting Delete (Fn+Backspace) get the same behavior.
-          deleteKeyCode={["Backspace", "Delete"]}
-          nodesConnectable={true}
-          edgesFocusable={true}
-          elementsSelectable={true}
-          // Lower default min/max zoom than the lib's defaults; the
-          // tiles already truncate their summary at a reasonable
-          // size, so we don't need to zoom past 1.5x.
-          minZoom={0.2}
-          maxZoom={1.5}
-        >
-          <Background gap={24} size={1} color="#1e293b" />
-          <Controls
-            className="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
-            showInteractive={false}
-          />
-          <MiniMap
-            pannable
-            zoomable
-            nodeColor="#334155"
-            maskColor="rgba(15, 23, 42, 0.7)"
-            className="!border !border-slate-700 !bg-slate-900"
-          />
-          <Panel position="bottom-right" className="!bottom-4 !right-4">
-            <CanvasAddNodeButton />
-          </Panel>
-        </ReactFlow>
-      </div>
+      <FlowCanvasViewport
+        rfNodes={rfNodes}
+        rfEdges={rfEdges}
+        handleNodesChange={handleNodesChange}
+        handleNodeDragStop={handleNodeDragStop}
+        handleNodeClick={handleNodeClick}
+        handleConnect={handleConnect}
+        handleNodesDelete={handleNodesDelete}
+        handleEdgesDelete={handleEdgesDelete}
+      />
 
       <NodeEditSheet
         node={selectedNode}
@@ -518,6 +490,168 @@ function FlowCanvasInner() {
       />
     </>
   );
+}
+
+// ============================================================
+// Canvas viewport — fixed height by default; browser fullscreen
+// or expanded overlay for maximum visibility.
+// ============================================================
+
+function FlowCanvasViewport({
+  rfNodes,
+  rfEdges,
+  handleNodesChange,
+  handleNodeDragStop,
+  handleNodeClick,
+  handleConnect,
+  handleNodesDelete,
+  handleEdgesDelete,
+}: {
+  rfNodes: RfNode<NodeData>[];
+  rfEdges: RfEdge[];
+  handleNodesChange: (changes: NodeChange<RfNode<NodeData>>[]) => void;
+  handleNodeDragStop: OnNodeDrag<RfNode<NodeData>>;
+  handleNodeClick: (_event: React.MouseEvent, node: RfNode<NodeData>) => void;
+  handleConnect: (connection: Connection) => void;
+  handleNodesDelete: (deleted: RfNode<NodeData>[]) => void;
+  handleEdgesDelete: (deleted: RfEdge[]) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const isMaximized = expanded || nativeFullscreen;
+
+  const refitCanvas = useCallback(() => {
+    requestAnimationFrame(() => {
+      const root = containerRef.current?.querySelector(".react-flow");
+      if (!root) return;
+      // React Flow listens for resize on its root; nudge after layout change.
+      window.dispatchEvent(new Event("resize"));
+    });
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      const active = document.fullscreenElement === containerRef.current;
+      setNativeFullscreen(active);
+      if (!active) setExpanded(false);
+      refitCanvas();
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, [refitCanvas]);
+
+  useEffect(() => {
+    if (!expanded || nativeFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded, nativeFullscreen]);
+
+  useEffect(() => {
+    if (isMaximized) refitCanvas();
+  }, [isMaximized, refitCanvas]);
+
+  const toggleMaximized = useCallback(async () => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    if (document.fullscreenElement === el) {
+      await document.exitFullscreen();
+      return;
+    }
+    if (expanded) {
+      setExpanded(false);
+      refitCanvas();
+      return;
+    }
+
+    try {
+      await el.requestFullscreen();
+    } catch {
+      setExpanded(true);
+      refitCanvas();
+    }
+  }, [expanded, refitCanvas]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "w-full overflow-hidden border border-slate-800 bg-slate-950",
+        isMaximized
+          ? "fixed inset-0 z-[100] h-screen w-screen rounded-none border-0"
+          : "h-[70vh] rounded-lg",
+      )}
+    >
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        nodeTypes={NODE_TYPES}
+        fitView
+        fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+        proOptions={{ hideAttribution: true }}
+        onNodesChange={handleNodesChange}
+        onNodeDragStop={handleNodeDragStop}
+        onNodeClick={handleNodeClick}
+        onConnect={handleConnect}
+        onNodesDelete={handleNodesDelete}
+        onEdgesDelete={handleEdgesDelete}
+        deleteKeyCode={["Backspace", "Delete"]}
+        nodesConnectable={true}
+        edgesFocusable={true}
+        elementsSelectable={true}
+        minZoom={0.2}
+        maxZoom={1.5}
+      >
+        <Background gap={24} size={1} color="#1e293b" />
+        <Controls
+          className="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
+          showInteractive={false}
+        />
+        <MiniMap
+          pannable
+          zoomable
+          nodeColor="#334155"
+          maskColor="rgba(15, 23, 42, 0.7)"
+          className="!border !border-slate-700 !bg-slate-900"
+        />
+        <CanvasFitViewOnResize active={isMaximized} />
+        <Panel position="top-right" className="!m-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void toggleMaximized()}
+            className="border-slate-700 bg-slate-900 text-slate-200 shadow-lg hover:bg-slate-800"
+            aria-pressed={isMaximized}
+            title={isMaximized ? "Exit fullscreen (Esc)" : "Open canvas fullscreen"}
+          >
+            {isMaximized ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+            {isMaximized ? "Exit fullscreen" : "Fullscreen"}
+          </Button>
+        </Panel>
+        <Panel position="bottom-right" className="!bottom-4 !right-4">
+          <CanvasAddNodeButton />
+        </Panel>
+      </ReactFlow>
+    </div>
+  );
+}
+
+/** Re-fit the graph when the canvas viewport size changes. */
+function CanvasFitViewOnResize({ active }: { active: boolean }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    fitView({ padding: 0.15, duration: 200 });
+  }, [active, fitView]);
+  return null;
 }
 
 // ============================================================
@@ -556,6 +690,7 @@ function NodeEditSheet({
   }
   const meta = NODE_META[node.node_type];
   const Icon = meta.icon;
+  const displayName = getNodeDisplayName(node);
   const showPreview = canPreviewNode(node);
   return (
     <>
@@ -567,15 +702,18 @@ function NodeEditSheet({
         <SheetHeader className="border-b border-slate-800 px-5 py-4">
           <SheetTitle className="flex items-center gap-2 text-slate-100">
             <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
-            <span>{meta.label}</span>
+            <span>{displayName}</span>
             {isEntry && (
               <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
                 Entry
               </span>
             )}
           </SheetTitle>
-          <SheetDescription className="font-mono text-[11px] text-slate-400">
-            {node.node_key}
+          <SheetDescription className="text-[11px] text-slate-400">
+            {displayName !== meta.label ? (
+              <span>{meta.label} · </span>
+            ) : null}
+            <span className="font-mono">{node.node_key}</span>
           </SheetDescription>
         </SheetHeader>
 

@@ -28,7 +28,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { NODE_META, type BuilderNode } from "../shared";
+import {
+  formatNodeOptionLabel,
+  NODE_META,
+  type BuilderNode,
+  type NodeType,
+} from "../shared";
+
+export function NodeNameField({
+  value,
+  onChange,
+  nodeType,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  nodeType: NodeType;
+}) {
+  const meta = NODE_META[nodeType];
+  return (
+    <div>
+      <label className="mb-1 block text-xs text-slate-400">Node name</label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`e.g. ${meta.label}`}
+        className="bg-slate-800"
+      />
+      <p className="mt-1 text-[10px] text-slate-500">
+        Your label for this step — shown on the canvas and when wiring
+        connections.
+      </p>
+    </div>
+  );
+}
 
 export function TextRow({
   label,
@@ -123,7 +155,7 @@ export function NodeKeySelect({
                 <Icon
                   className={cn("h-3 w-3", NODE_META[n.node_type].color)}
                 />
-                {n.node_key}
+                {formatNodeOptionLabel(n)}
               </span>
             </SelectItem>
           );

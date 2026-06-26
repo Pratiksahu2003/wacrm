@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { slugify, type BuilderNode } from "../shared";
 import { NodeTypeTip } from "../node-type-tip";
-import { NextNodeRow, NodeKeySelect, TextRow } from "./fields";
+import { NextNodeRow, NodeKeySelect, NodeNameField, TextRow } from "./fields";
 
 interface NodeConfigFormProps {
   node: BuilderNode;
@@ -64,6 +64,8 @@ export function NodeConfigForm({
   onUpdateConfig,
 }: NodeConfigFormProps) {
   const cfg = node.config;
+  const displayName =
+    typeof cfg.display_name === "string" ? cfg.display_name : "";
 
   const formBody = (() => {
     switch (node.node_type) {
@@ -246,6 +248,11 @@ export function NodeConfigForm({
 
   return (
     <div className="flex flex-col gap-3">
+      <NodeNameField
+        value={displayName}
+        onChange={(v) => onUpdateConfig({ display_name: v })}
+        nodeType={node.node_type}
+      />
       <NodeTypeTip nodeType={node.node_type} />
       {formBody}
     </div>

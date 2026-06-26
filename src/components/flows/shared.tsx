@@ -113,6 +113,36 @@ export const NODE_META: Record<
   end: { label: "End", icon: Flag, color: "text-slate-400" },
 };
 
+/** Stored in each node's `config` — user-facing label, not sent to WhatsApp. */
+export const NODE_DISPLAY_NAME_FIELD = "display_name";
+
+/** Label shown in the UI — custom name if set, otherwise the node type. */
+export function getNodeDisplayName(node: BuilderNode): string {
+  const custom =
+    typeof node.config[NODE_DISPLAY_NAME_FIELD] === "string"
+      ? (node.config[NODE_DISPLAY_NAME_FIELD] as string).trim()
+      : "";
+  if (custom) return custom;
+  return NODE_META[node.node_type].label;
+}
+
+/** Dropdown label: custom name + type hint for wiring connections. */
+export function formatNodeOptionLabel(node: BuilderNode): string {
+  const name = getNodeDisplayName(node);
+  const typeLabel = NODE_META[node.node_type].label;
+  if (name !== typeLabel) {
+    return `${name} (${typeLabel})`;
+  }
+  return `${name} · ${node.node_key}`;
+}
+
+/** Short label for validation issues and compact UI. */
+export function formatNodeIssueLabel(node: BuilderNode): string {
+  const name = getNodeDisplayName(node);
+  if (name !== NODE_META[node.node_type].label) return name;
+  return node.node_key;
+}
+
 /** Short inline guidance shown above each node’s config form. */
 export const NODE_TIPS: Record<NodeType, string> = {
   start:

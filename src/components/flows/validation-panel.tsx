@@ -20,10 +20,16 @@
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationIssue } from "@/lib/flows/validate";
+import { formatNodeIssueLabel } from "./shared";
 import { useFlowEditor } from "./flow-editor-state";
 
 export function ValidationPanel() {
-  const { issues, requestFlash } = useFlowEditor();
+  const { issues, requestFlash, state } = useFlowEditor();
+
+  const nodeLabel = (key: string) => {
+    const node = state.nodes.find((n) => n.node_key === key);
+    return node ? formatNodeIssueLabel(node) : key;
+  };
 
   if (issues.length === 0) {
     // Slate-950 base + emerald accents so the panel stays readable when
@@ -56,7 +62,14 @@ export function ValidationPanel() {
       </div>
       <div className="flex flex-col gap-1">
         {issues.map((i, ix) => (
-          <IssueLine key={ix} issue={i} onJump={requestFlash} />
+          <IssueLine
+            key={ix}
+            issue={i}
+            onJump={requestFlash}
+            nodeLabel={
+              i.node_key ? nodeLabel(i.node_key) : undefined
+            }
+          />
         ))}
       </div>
     </div>
@@ -72,21 +85,25 @@ export function ValidationPanel() {
 export function IssueLine({
   issue,
   onJump,
+  nodeLabel,
 }: {
   issue: ValidationIssue;
   onJump?: (key: string) => void;
+  /** User-facing node name when available. */
+  nodeLabel?: string;
 }) {
   const tone =
     issue.severity === "error" ? "text-red-300" : "text-amber-300";
   const iconTone =
     issue.severity === "error" ? "text-red-400" : "text-amber-400";
+  const chip = nodeLabel ?? issue.node_key;
   const body = (
     <>
       <CircleAlert className={cn("mt-0.5 h-3 w-3 shrink-0", iconTone)} />
       <span className="min-w-0 flex-1">
-        {issue.node_key && (
+        {chip && (
           <code className="mr-1 rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-400">
-            {issue.node_key}
+            {chip}
           </code>
         )}
         {issue.message}
@@ -106,7 +123,7 @@ export function IssueLine({
           "flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-slate-800/60",
           tone,
         )}
-        aria-label={`Jump to node ${issue.node_key}`}
+        aria-label={`Jump to node ${chip ?? issue.node_key}`}
       >
         {body}
       </button>

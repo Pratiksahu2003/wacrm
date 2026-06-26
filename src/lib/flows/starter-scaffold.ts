@@ -19,12 +19,16 @@ export const STARTER_FLOW_NODES: FlowTemplateNode[] = [
   {
     node_key: "start",
     node_type: "start",
-    config: { next_node_key: "welcome" },
+    config: {
+      display_name: "Flow start",
+      next_node_key: "welcome",
+    },
   },
   {
     node_key: "welcome",
     node_type: "send_buttons",
     config: {
+      display_name: "Welcome message",
       text: "Hi! 👋 How can we help you today?",
       footer_text: "Tap a button below to continue.",
       buttons: [
@@ -45,6 +49,7 @@ export const STARTER_FLOW_NODES: FlowTemplateNode[] = [
     node_key: "support_handoff",
     node_type: "handoff",
     config: {
+      display_name: "Support handoff",
       note: "Customer asked for support — check recent messages before replying.",
     },
   },
@@ -52,6 +57,7 @@ export const STARTER_FLOW_NODES: FlowTemplateNode[] = [
     node_key: "sales_handoff",
     node_type: "handoff",
     config: {
+      display_name: "Sales handoff",
       note: "Customer asked for sales — share pricing or book a demo.",
     },
   },
