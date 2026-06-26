@@ -76,6 +76,7 @@ import {
 import { autoLayout, shouldAutoLayout } from "@/lib/flows/layout";
 import {
   NODE_META,
+  NODE_TIPS,
   summarizeNode,
   type BuilderNode,
   type NodeType,
@@ -457,12 +458,7 @@ function FlowCanvasInner() {
   }, [selectedNodeKey, setState]);
 
   if (rfNodes.length === 0) {
-    return (
-      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 text-sm text-slate-500">
-        <p>No nodes yet.</p>
-        <CanvasAddNodeButton />
-      </div>
-    );
+    return <CanvasEmptyState />;
   }
 
   return (
@@ -652,6 +648,28 @@ const ADD_NODE_TYPES: NodeType[] = [
   "end",
 ];
 
+function CanvasEmptyState() {
+  const { addStarterScaffold } = useFlowEditor();
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-6 text-center text-sm text-slate-500">
+      <p className="max-w-sm">
+        Start with the starter layout — a wired welcome menu you can edit —
+        or add nodes manually.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button
+          size="sm"
+          className="border-primary/40"
+          onClick={() => addStarterScaffold()}
+        >
+          Add starter layout
+        </Button>
+        <CanvasAddNodeButton />
+      </div>
+    </div>
+  );
+}
+
 function CanvasAddNodeButton() {
   const reactFlow = useReactFlow();
   const { addNode, updateNodePosition } = useFlowEditor();
@@ -690,9 +708,18 @@ function CanvasAddNodeButton() {
           const meta = NODE_META[t];
           const Icon = meta.icon;
           return (
-            <DropdownMenuItem key={t} onClick={() => handleAdd(t)}>
-              <Icon className={cn("h-3.5 w-3.5", meta.color)} />
-              {meta.label}
+            <DropdownMenuItem
+              key={t}
+              onClick={() => handleAdd(t)}
+              className="flex flex-col items-start gap-0.5 py-2"
+            >
+              <span className="flex items-center gap-2">
+                <Icon className={cn("h-3.5 w-3.5", meta.color)} />
+                {meta.label}
+              </span>
+              <span className="pl-5 text-[10px] leading-snug text-slate-500">
+                {NODE_TIPS[t]}
+              </span>
             </DropdownMenuItem>
           );
         })}

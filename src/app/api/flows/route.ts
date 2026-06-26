@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { getFlowTemplate } from '@/lib/flows/templates'
+import {
+  STARTER_ENTRY_NODE_ID,
+  STARTER_FLOW_NODES,
+  STARTER_KEYWORD_TRIGGER,
+} from '@/lib/flows/starter-scaffold'
 
 /**
  * GET /api/flows — list the caller's flows.
@@ -139,6 +144,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 })
   }
   const trigger_type = body.trigger_type ?? 'keyword'
+  const trigger_config =
+    body.trigger_config ??
+    (trigger_type === 'keyword' ? STARTER_KEYWORD_TRIGGER : {})
 
   const { data, error } = await admin
     .from('flows')
@@ -149,7 +157,8 @@ export async function POST(request: Request) {
       description: body.description ?? null,
       status: 'draft',
       trigger_type,
-      trigger_config: body.trigger_config ?? {},
+      trigger_config,
+      entry_node_id: STARTER_ENTRY_NODE_ID,
     })
     .select()
     .single()
@@ -159,5 +168,19 @@ export async function POST(request: Request) {
       { status: 500 },
     )
   }
+
+  const { error: nodesErr } = await admin.from('flow_nodes').insert(
+    STARTER_FLOW_NODES.map((n) => ({
+      flow_id: data.id,
+      node_key: n.node_key,
+      node_type: n.node_type,
+      config: n.config,
+    })),
+  )
+  if (nodesErr) {
+    await admin.from('flows').delete().eq('id', data.id)
+    return NextResponse.json({ error: nodesErr.message }, { status: 500 })
+  }
+
   return NextResponse.json({ flow: data }, { status: 201 })
 }

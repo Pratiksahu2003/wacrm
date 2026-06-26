@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { type ValidationIssue } from "@/lib/flows/validate";
 import {
   NODE_META,
+  NODE_TIPS,
   slugify,
   summarizeNode,
   type BuilderNode,
@@ -154,12 +155,6 @@ export function FlowBuilder() {
 
   return (
     <div className="flex flex-col gap-6">
-      <TriggerPanel
-        state={state}
-        setState={setState}
-        triggerIssues={issues.filter((i) => i.scope === "trigger")}
-      />
-
       <FallbackPolicyPanel state={state} setState={setState} />
 
       <EntryPicker state={state} setState={setState} />
@@ -173,11 +168,7 @@ export function FlowBuilder() {
         </div>
 
         {state.nodes.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
-            Add a <strong>Start</strong> node, then a <strong>Send buttons</strong>
-            {" "}node, then a <strong>Handoff</strong> — that&apos;s the welcome-menu
-            shape from the brief.
-          </div>
+          <EmptyNodesState />
         ) : (
           state.nodes.map((node) => (
             <NodeCard
@@ -208,93 +199,7 @@ export function FlowBuilder() {
 
 
 // ============================================================
-// Trigger panel
-// ============================================================
-
-function TriggerPanel({
-  state,
-  setState,
-  triggerIssues,
-}: {
-  state: BuilderState;
-  setState: React.Dispatch<React.SetStateAction<BuilderState>>;
-  triggerIssues: ValidationIssue[];
-}) {
-  return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="mb-3 text-sm font-semibold text-white">Trigger</h2>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs text-slate-400">When…</label>
-          <Select
-            value={state.trigger_type}
-            onValueChange={(v) =>
-              setState((s) => ({
-                ...s,
-                trigger_type: v as BuilderState["trigger_type"],
-                trigger_config:
-                  v === "keyword" ? { keywords: [] } : v === "manual" ? {} : {},
-              }))
-            }
-          >
-            <SelectTrigger className="bg-slate-800">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="keyword">
-                A message contains a keyword
-              </SelectItem>
-              <SelectItem value="first_inbound_message">
-                Customer&apos;s first ever inbound message
-              </SelectItem>
-              <SelectItem value="manual">
-                Manual only (no auto-trigger)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {state.trigger_type === "keyword" && (
-          <div>
-            <label className="mb-1 block text-xs text-slate-400">
-              Keywords (comma-separated)
-            </label>
-            <Input
-              value={
-                Array.isArray(state.trigger_config.keywords)
-                  ? (state.trigger_config.keywords as string[]).join(", ")
-                  : ""
-              }
-              onChange={(e) =>
-                setState((s) => ({
-                  ...s,
-                  trigger_config: {
-                    ...s.trigger_config,
-                    keywords: e.target.value
-                      .split(",")
-                      .map((k) => k.trim())
-                      .filter(Boolean),
-                  },
-                }))
-              }
-              placeholder="support, help, hi"
-              className="bg-slate-800"
-            />
-          </div>
-        )}
-      </div>
-      {triggerIssues.length > 0 && (
-        <div className="mt-3 flex flex-col gap-1">
-          {triggerIssues.map((i, ix) => (
-            <IssueLine key={ix} issue={i} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-// ============================================================
-// Fallback policy panel
+// Fallback policy panel (advanced — collapsed by default)
 // ============================================================
 
 function FallbackPolicyPanel({
@@ -304,18 +209,32 @@ function FallbackPolicyPanel({
   state: BuilderState;
   setState: React.Dispatch<React.SetStateAction<BuilderState>>;
 }) {
+  const [open, setOpen] = useState(false);
   const p = state.fallback_policy;
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="mb-1 text-sm font-semibold text-white">
-        Fallback policy
-      </h2>
-      <p className="mb-3 text-xs text-slate-400">
-        What happens when a customer sends an unexpected reply, or
-        abandons the flow.
-      </p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <div>
+          <h2 className="text-sm font-semibold text-white">
+            Advanced: fallback policy
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Unexpected replies and abandoned conversations — optional.
+          </p>
+        </div>
+        {open ? (
+          <ChevronUp className="h-4 w-4 shrink-0 text-slate-500" />
+        ) : (
+          <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
+        )}
+      </button>
+      {open && (
+        <div className="mt-3 grid grid-cols-1 gap-3 border-t border-slate-800 pt-3 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs text-slate-400">
             On unknown reply
@@ -419,8 +338,29 @@ function FallbackPolicyPanel({
             className="bg-slate-800"
           />
         </div>
-      </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+function EmptyNodesState() {
+  const { addStarterScaffold } = useFlowEditor();
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
+      <p>
+        No nodes yet. Add the starter layout for a ready-made welcome menu,
+        or add nodes one by one.
+      </p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-primary/40 text-primary"
+        onClick={() => addStarterScaffold()}
+      >
+        Add starter layout
+      </Button>
+    </div>
   );
 }
 
@@ -717,9 +657,18 @@ function AddNodeButton({ onAdd }: { onAdd: (type: NodeType) => void }) {
         {types.map((t) => {
           const meta = NODE_META[t];
           return (
-            <DropdownMenuItem key={t} onClick={() => onAdd(t)}>
-              <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
-              {meta.label}
+            <DropdownMenuItem
+              key={t}
+              onClick={() => onAdd(t)}
+              className="flex flex-col items-start gap-0.5 py-2"
+            >
+              <span className="flex items-center gap-2">
+                <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
+                {meta.label}
+              </span>
+              <span className="pl-5 text-[10px] leading-snug text-slate-500">
+                {NODE_TIPS[t]}
+              </span>
             </DropdownMenuItem>
           );
         })}

@@ -51,6 +51,11 @@ import {
 } from "@/lib/flows/validate";
 import { unlinkNodeReferences } from "@/lib/flows/edges";
 import { resolveFallbackPolicy } from "@/lib/flows/fallback";
+import {
+  STARTER_ENTRY_NODE_ID,
+  STARTER_FLOW_NODES,
+  STARTER_KEYWORD_TRIGGER,
+} from "@/lib/flows/starter-scaffold";
 import type {
   FlowFallbackPolicy,
   FlowNodeRow,
@@ -107,6 +112,8 @@ export interface FlowEditorContextValue {
     positions: Record<string, { x: number; y: number }>,
   ) => void;
   removeNode: (key: string) => void;
+  /** Wire in the default welcome-menu scaffold when the flow is empty. */
+  addStarterScaffold: () => void;
 
   // Actions
   save: () => Promise<void>;
@@ -524,6 +531,28 @@ export function FlowEditorProvider({
     [setState],
   );
 
+  const addStarterScaffold = useCallback(() => {
+    setState((s) => {
+      if (s.nodes.length > 0) return s;
+      const keywordTriggerEmpty =
+        s.trigger_type === "keyword" &&
+        (!Array.isArray(s.trigger_config.keywords) ||
+          (s.trigger_config.keywords as string[]).length === 0);
+      return {
+        ...s,
+        entry_node_id: STARTER_ENTRY_NODE_ID,
+        trigger_config: keywordTriggerEmpty
+          ? { ...STARTER_KEYWORD_TRIGGER }
+          : s.trigger_config,
+        nodes: STARTER_FLOW_NODES.map((n) => ({
+          node_key: n.node_key,
+          node_type: n.node_type as NodeType,
+          config: n.config as Record<string, unknown>,
+        })),
+      };
+    });
+  }, [setState]);
+
   const value = useMemo<FlowEditorContextValue>(
     () => ({
       flow: initialFlow,
@@ -540,6 +569,7 @@ export function FlowEditorProvider({
       updateNodePosition,
       updateNodePositions,
       removeNode,
+      addStarterScaffold,
       save,
       setStatus,
       deleteFlow,
@@ -561,6 +591,7 @@ export function FlowEditorProvider({
       updateNodePosition,
       updateNodePositions,
       removeNode,
+      addStarterScaffold,
       save,
       setStatus,
       deleteFlow,

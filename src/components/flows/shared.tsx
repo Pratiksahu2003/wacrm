@@ -113,6 +113,30 @@ export const NODE_META: Record<
   end: { label: "End", icon: Flag, color: "text-slate-400" },
 };
 
+/** Short inline guidance shown above each node’s config form. */
+export const NODE_TIPS: Record<NodeType, string> = {
+  start:
+    "Entry point only — wire “Advances to” to the first message customers see after the trigger fires.",
+  send_message:
+    "Plain text reply. Good for answers, confirmations, or short instructions before the next step.",
+  send_buttons:
+    "Up to 3 tappable buttons (20 chars each). Each button needs a target node — drag on canvas or pick from the dropdown.",
+  send_list:
+    "Scrollable menu for more than 3 options (max 10 rows). Great for FAQs and topic pickers.",
+  send_media:
+    "Send an image, document, or video. Upload a file or paste a URL; add an optional caption.",
+  collect_input:
+    "Ask a free-text question and save the reply. Use {{vars.key}} in later messages or handoff notes.",
+  condition:
+    "Branch based on a saved variable, contact field, or tag. Wire both “true” and “false” paths.",
+  set_tag:
+    "Add or remove a tag on the contact, then continue to the next node. Useful for routing in inbox filters.",
+  handoff:
+    "Stop the bot and open the chat for your team. The note appears in the inbox — use {{vars.name}} etc.",
+  end:
+    "Conversation stops here. No further bot messages unless the customer triggers another flow.",
+};
+
 // ============================================================
 // Pure editing helpers — used by forms in both views.
 // ============================================================

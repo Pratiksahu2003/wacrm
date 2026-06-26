@@ -31,6 +31,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 /**
@@ -88,6 +95,9 @@ export default function FlowsPage() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newTrigger, setNewTrigger] = useState<
+    "keyword" | "first_inbound_message" | "manual"
+  >("keyword");
   const [creating, setCreating] = useState(false);
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
 
@@ -135,14 +145,18 @@ export default function FlowsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim(),
-          trigger_type: "keyword",
-          trigger_config: { keywords: [] },
+          trigger_type: newTrigger,
+          trigger_config:
+            newTrigger === "keyword"
+              ? { keywords: ["help", "hi", "support"], match_type: "contains" }
+              : {},
         }),
       });
       if (!res.ok) throw new Error(`Create failed: ${res.status}`);
       const json = (await res.json()) as { flow: FlowRow };
       setCreateOpen(false);
       setNewName("");
+      setNewTrigger("keyword");
       router.push(`/flows/${json.flow.id}`);
     } catch (err) {
       console.error(err);
@@ -249,17 +263,26 @@ export default function FlowsPage() {
             sm-scoped 384px wins at every real desktop breakpoint. */}
         <DialogContent className="sm:max-w-4xl bg-slate-900 text-slate-100">
           <DialogHeader>
-            <DialogTitle>Create a new flow</DialogTitle>
+            <DialogTitle>Create a flow</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Start from a template or build from scratch.
+              Templates are the fastest way to get started. Each one is fully
+              wired — just customize the text and activate.
             </DialogDescription>
           </DialogHeader>
 
           {templates.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Start from a template
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Recommended — start from a template
+                </p>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-600/40 bg-emerald-500/10 text-[10px] text-emerald-300"
+                >
+                  Easiest
+                </Badge>
+              </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {templates.map((t) => {
                   const Icon = TEMPLATE_ICONS[t.icon] ?? FileText;
@@ -279,7 +302,8 @@ export default function FlowsPage() {
                         {t.description}
                       </span>
                       <span className="mt-auto border-t border-slate-800 pt-2 text-[11px] text-slate-500">
-                        {t.node_count} {t.node_count === 1 ? "node" : "nodes"}
+                        {t.node_count} {t.node_count === 1 ? "node" : "nodes"} ·{" "}
+                        {describeTemplateTrigger(t.trigger_type)}
                       </span>
                     </button>
                   );
@@ -288,19 +312,50 @@ export default function FlowsPage() {
             </div>
           )}
 
-          <div className="space-y-2 border-t border-slate-800 pt-4">
+          <div className="space-y-3 border-t border-slate-800 pt-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Or start blank
+              Or build your own
             </p>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Welcome menu"
-              className="bg-slate-800"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
-              }}
-            />
+            <p className="text-xs text-slate-500">
+              We&apos;ll add a starter welcome menu — edit the messages, then
+              activate.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs text-slate-400">Flow name</label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Welcome menu"
+                  className="bg-slate-800"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreate();
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-slate-400">Starts when</label>
+                <Select
+                  value={newTrigger}
+                  onValueChange={(v) =>
+                    setNewTrigger(
+                      v as "keyword" | "first_inbound_message" | "manual",
+                    )
+                  }
+                >
+                  <SelectTrigger className="bg-slate-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="keyword">Customer types a keyword</SelectItem>
+                    <SelectItem value="first_inbound_message">
+                      First message from new contact
+                    </SelectItem>
+                    <SelectItem value="manual">Manual from inbox</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -313,7 +368,7 @@ export default function FlowsPage() {
             </Button>
             <Button onClick={handleCreate} disabled={!newName.trim() || creating}>
               {creating && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create blank flow
+              Create custom flow
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -434,4 +489,12 @@ function describeTrigger(flow: FlowRow): string {
     return "Triggers on a contact's first-ever inbound message";
   }
   return "Manual trigger";
+}
+
+function describeTemplateTrigger(
+  triggerType: string,
+): string {
+  if (triggerType === "keyword") return "Keyword trigger";
+  if (triggerType === "first_inbound_message") return "First message";
+  return "Manual";
 }

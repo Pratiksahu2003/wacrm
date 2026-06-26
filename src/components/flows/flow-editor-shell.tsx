@@ -22,6 +22,12 @@ import { LayoutGrid, ListTree } from "lucide-react";
 import { FlowBuilder } from "./flow-builder";
 import { FlowCanvas } from "./flow-canvas";
 import { FlowEditorProvider } from "./flow-editor-state";
+import {
+  FlowFirstRunWizard,
+  shouldShowOnboarding,
+} from "./flow-first-run-wizard";
+import { FlowSetupGuide } from "./flow-setup-guide";
+import { TriggerSetupPanel } from "./trigger-setup-panel";
 import { EditorHeader } from "./header";
 import { ValidationPanel } from "./validation-panel";
 import { cn } from "@/lib/utils";
@@ -45,6 +51,14 @@ interface Props {
 }
 
 export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  useEffect(() => {
+    if (shouldShowOnboarding()) {
+      setWizardOpen(true);
+    }
+  }, []);
+
   // Read the persisted choice in the useState initializer. Safe even
   // though this is a client component because the parent page only
   // mounts us AFTER a client-side fetch resolves — there's no SSR
@@ -78,8 +92,11 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
 
   return (
     <FlowEditorProvider initialFlow={initialFlow} initialNodes={initialNodes}>
+      <FlowFirstRunWizard open={wizardOpen} onOpenChange={setWizardOpen} />
       <div className="mx-auto flex h-full max-w-4xl flex-col gap-6 p-6">
-        <EditorHeader />
+        <EditorHeader onOpenGuide={() => setWizardOpen(true)} />
+        <FlowSetupGuide />
+        <TriggerSetupPanel compact />
         {!isMobile && (
           <div className="flex items-center justify-end">
             <div

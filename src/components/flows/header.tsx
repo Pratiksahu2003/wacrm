@@ -18,6 +18,7 @@
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  CircleHelp,
   History,
   Loader2,
   PauseCircle,
@@ -36,7 +37,11 @@ import {
   type BuilderState,
 } from "./flow-editor-state";
 
-export function EditorHeader() {
+export function EditorHeader({
+  onOpenGuide,
+}: {
+  onOpenGuide?: () => void;
+}) {
   const router = useRouter();
   const {
     flow,
@@ -87,6 +92,17 @@ export function EditorHeader() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {onOpenGuide && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenGuide}
+              title="How flows work"
+            >
+              <CircleHelp className="h-3.5 w-3.5" />
+              Guide
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
