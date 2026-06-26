@@ -24,6 +24,7 @@
  */
 
 import { INTERACTIVE_LIMITS } from "@/lib/whatsapp/meta-api";
+import { isAutoAdvancing } from "./engine";
 
 export interface ValidationIssue {
   severity: "error" | "warning";
@@ -791,8 +792,9 @@ export function reachableFromEntry(
 }
 
 /**
- * DFS cycle detection from the entry node. Returns the first node_key
- * on a back-edge, or null when the graph is acyclic.
+ * DFS cycle detection along auto-advance edges only (send_message chains).
+ * Interactive branches (buttons, lists, collect_input) require a user tap
+ * and cannot spin without input — the runner caps auto steps at 64.
  */
 export function detectCycle(
   entryKey: string,
@@ -809,7 +811,7 @@ export function detectCycle(
     if (visited.has(key)) return null;
     visiting.add(key);
     const node = byKey.get(key);
-    if (node) {
+    if (node && isAutoAdvancing(node.node_type)) {
       for (const next of outgoingEdges(node)) {
         const hit = dfs(next);
         if (hit) return hit;

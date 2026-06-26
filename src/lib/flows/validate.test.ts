@@ -601,6 +601,26 @@ describe("detectCycle", () => {
     ];
     expect(detectCycle("a", nodes)).toBe("a");
   });
+
+  it("ignores cycles that require a user tap (buttons/lists)", () => {
+    const nodes = [
+      { node_key: "start", node_type: "start", config: { next_node_key: "msg" } },
+      {
+        node_key: "msg",
+        node_type: "send_message",
+        config: { text: "link", next_node_key: "buttons" },
+      },
+      {
+        node_key: "buttons",
+        node_type: "send_buttons",
+        config: {
+          text: "pick",
+          buttons: [{ reply_id: "again", title: "Again", next_node_key: "msg" }],
+        },
+      },
+    ];
+    expect(detectCycle("start", nodes)).toBeNull();
+  });
 });
 
 describe("validateFlowForActivation — cycles", () => {
