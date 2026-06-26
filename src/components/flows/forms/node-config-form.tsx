@@ -39,7 +39,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -48,7 +47,13 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { slugify, type BuilderNode } from "../shared";
 import { NodeTypeTip } from "../node-type-tip";
-import { NextNodeRow, NodeKeySelect, NodeNameField, TextRow } from "./fields";
+import {
+  NextNodeRow,
+  NodeKeySelect,
+  NodeNameField,
+  TextRow,
+  FlowSelectContent,
+} from "./fields";
 
 interface NodeConfigFormProps {
   node: BuilderNode;
@@ -181,12 +186,12 @@ export function NodeConfigForm({
               <SelectTrigger className="bg-slate-800">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <FlowSelectContent>
                 <SelectItem value="any">Any non-empty text</SelectItem>
                 <SelectItem value="email">Email address</SelectItem>
                 <SelectItem value="phone">Phone number</SelectItem>
                 <SelectItem value="regex">Custom regex</SelectItem>
-              </SelectContent>
+              </FlowSelectContent>
             </Select>
           </div>
           {(cfg as { validation?: string }).validation === "regex" && (
@@ -675,11 +680,11 @@ function ConditionForm({
             <SelectTrigger className="bg-slate-800">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <FlowSelectContent>
               <SelectItem value="var">Captured variable</SelectItem>
               <SelectItem value="tag">Contact has tag</SelectItem>
               <SelectItem value="contact_field">Contact field</SelectItem>
-            </SelectContent>
+            </FlowSelectContent>
           </Select>
         </div>
         <div className="md:col-span-2">
@@ -698,13 +703,13 @@ function ConditionForm({
               <SelectTrigger className="bg-slate-800">
                 <SelectValue placeholder="Pick a tag…" />
               </SelectTrigger>
-              <SelectContent>
+              <FlowSelectContent>
                 {tags.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
+              </FlowSelectContent>
             </Select>
           ) : subject === "contact_field" ? (
             <Select
@@ -714,12 +719,12 @@ function ConditionForm({
               <SelectTrigger className="bg-slate-800">
                 <SelectValue placeholder="Pick a field…" />
               </SelectTrigger>
-              <SelectContent>
+              <FlowSelectContent>
                 <SelectItem value="name">name</SelectItem>
                 <SelectItem value="email">email</SelectItem>
                 <SelectItem value="phone">phone</SelectItem>
                 <SelectItem value="company">company</SelectItem>
-              </SelectContent>
+              </FlowSelectContent>
             </Select>
           ) : (
             <Input
@@ -751,12 +756,12 @@ function ConditionForm({
             <SelectTrigger className="bg-slate-800">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <FlowSelectContent>
               <SelectItem value="present">is present</SelectItem>
               <SelectItem value="absent">is absent</SelectItem>
               <SelectItem value="equals">equals</SelectItem>
               <SelectItem value="contains">contains</SelectItem>
-            </SelectContent>
+            </FlowSelectContent>
           </Select>
         </div>
         {showValue && (
@@ -828,10 +833,10 @@ function SetTagForm({
             <SelectTrigger className="bg-slate-800">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <FlowSelectContent>
               <SelectItem value="add">Add tag</SelectItem>
               <SelectItem value="remove">Remove tag</SelectItem>
-            </SelectContent>
+            </FlowSelectContent>
           </Select>
         </div>
         <div>
@@ -844,13 +849,13 @@ function SetTagForm({
               <SelectTrigger className="bg-slate-800">
                 <SelectValue placeholder="Pick a tag…" />
               </SelectTrigger>
-              <SelectContent>
+              <FlowSelectContent>
                 {tags.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
+              </FlowSelectContent>
             </Select>
           ) : (
             <Input
@@ -1040,13 +1045,13 @@ function SendMediaForm({
           <SelectTrigger className="bg-slate-800">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <FlowSelectContent>
             <SelectItem value="image">Image (PNG, JPEG, WebP)</SelectItem>
             <SelectItem value="video">Video (MP4, 3GP)</SelectItem>
             <SelectItem value="document">
               Document (PDF, Word, Excel, PowerPoint, TXT)
             </SelectItem>
-          </SelectContent>
+          </FlowSelectContent>
         </Select>
       </div>
 

@@ -34,6 +34,25 @@ import {
   type BuilderNode,
   type NodeType,
 } from "../shared";
+import { useFlowPortalRoot } from "../flow-portal-context";
+
+/** SelectContent that portals into the canvas when inside fullscreen. */
+export function FlowSelectContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectContent>) {
+  const portalRoot = useFlowPortalRoot();
+  return (
+    <SelectContent
+      container={portalRoot}
+      className={cn("border-slate-700 bg-slate-900", className)}
+      {...props}
+    >
+      {children}
+    </SelectContent>
+  );
+}
 
 export function NodeNameField({
   value,
@@ -142,10 +161,10 @@ export function NodeKeySelect({
       value={value ?? "__none__"}
       onValueChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <SelectTrigger className={cn("bg-slate-800", className)}>
+      <SelectTrigger className={cn("w-full min-w-0 bg-slate-800", className)}>
         <SelectValue placeholder={placeholder ?? "—"} />
       </SelectTrigger>
-      <SelectContent>
+      <FlowSelectContent className="z-[250] max-h-60">
         <SelectItem value="__none__">— None —</SelectItem>
         {options.map((n) => {
           const Icon = NODE_META[n.node_type].icon;
@@ -160,7 +179,7 @@ export function NodeKeySelect({
             </SelectItem>
           );
         })}
-      </SelectContent>
+      </FlowSelectContent>
     </Select>
   );
 }

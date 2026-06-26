@@ -76,6 +76,7 @@ import {
 } from "@/lib/flows/edges";
 import { autoLayout, shouldAutoLayout } from "@/lib/flows/layout";
 import { AddNodePicker } from "./add-node-picker";
+import { FlowPortalProvider } from "./flow-portal-context";
 import {
   NODE_META,
   getNodeDisplayName,
@@ -805,7 +806,9 @@ function NodeEditSheet({
             <div
               className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-800 bg-slate-950 shadow-2xl"
             >
-              {panelBody}
+              <FlowPortalProvider root={portalRoot}>
+                {panelBody}
+              </FlowPortalProvider>
             </div>
           </div>,
           portalRoot,
