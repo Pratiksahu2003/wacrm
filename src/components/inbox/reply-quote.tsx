@@ -14,35 +14,35 @@ interface ReplyQuoteProps {
   /** Present → renders the composer-chip variant with an X button. Absent →
    *  renders the embedded-in-bubble variant. */
   onDismiss?: () => void;
+  /** Bubble the quote sits inside is outgoing (green) vs incoming. */
+  isOutgoing?: boolean;
 }
 
 export function ReplyQuote({
   authorLabel,
   preview,
   onDismiss,
+  isOutgoing = false,
 }: ReplyQuoteProps) {
   const isChip = !!onDismiss;
   return (
     <div
       className={cn(
-        "flex items-start gap-2 border-l-2 border-primary px-2 py-1",
+        "flex items-start gap-2 border-l-[3px] px-2 py-1",
         isChip
-          ? "rounded-md bg-slate-800/80"
-          : "mb-1.5 rounded-md bg-black/20",
+          ? "rounded-md bg-[#2a3942]"
+          : cn(
+              "mb-1 rounded-md",
+              isOutgoing ? "border-[#06cf9c] bg-black/15" : "border-[#06cf9c] bg-black/20",
+            ),
+        isChip && "border-[#06cf9c]",
       )}
     >
       <div className="min-w-0 flex-1 overflow-hidden">
-        <div className="truncate text-[11px] font-medium text-primary">
+        <div className="truncate text-[12px] font-medium text-[#06cf9c]">
           {authorLabel}
         </div>
-        {/* Wrap the preview instead of truncating to a single line.
-         *  `truncate` (white-space: nowrap) forced the quote onto one
-         *  impossibly-wide line and — because the parent flex chain
-         *  lacked `min-w-0` at every step — pushed the entire inbox
-         *  layout wider, shoving the contact sidebar off-screen.
-         *  `break-words` also wraps long URLs that have no whitespace
-         *  to break on. Issue #165. */}
-        <div className="whitespace-pre-wrap break-words text-xs text-slate-200/80">
+        <div className="whitespace-pre-wrap break-words text-[13px] text-[#e9edef]/80">
           {preview}
         </div>
       </div>
@@ -51,7 +51,7 @@ export function ReplyQuote({
           type="button"
           onClick={onDismiss}
           aria-label="Cancel reply"
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-white"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#8696a0] hover:bg-[#374248] hover:text-[#e9edef]"
         >
           <X className="h-3.5 w-3.5" />
         </button>

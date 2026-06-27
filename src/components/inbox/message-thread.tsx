@@ -114,22 +114,23 @@ function groupMessagesByDate(messages: Message[]) {
 }
 
 const STATUS_OPTIONS: { label: string; value: ConversationStatus; color: string }[] = [
-  { label: "Open", value: "open", color: "text-primary" },
+  { label: "Open", value: "open", color: "text-[#00a884]" },
   { label: "Pending", value: "pending", color: "text-amber-400" },
-  { label: "Closed", value: "closed", color: "text-slate-400" },
+  { label: "Closed", value: "closed", color: "text-[#8696a0]" },
 ];
 
 /**
- * WhatsApp-style doodle background applied to the chat area (both the
- * active thread and the empty state). The SVG tile lives at
- * `/public/inbox-doodle.svg`; the slate-950 colour sits underneath so
- * the doodles read as a subtle pattern rather than a stark grid.
- *
- * Defined once at module scope so the two render paths can't drift —
- * if we ever switch the asset, both spots update together.
+ * WhatsApp-style doodle background applied to the chat area.
  */
-const DOODLE_BG_CLASSES =
-  "bg-slate-950 bg-[url('/inbox-doodle.svg')] bg-repeat";
+const DOODLE_BG_CLASSES = "wa-chat-bg";
+
+function isAgentMessage(msg: Message): boolean {
+  return msg.sender_type === "agent" || msg.sender_type === "bot";
+}
+
+function sameSenderGroup(a: Message, b: Message): boolean {
+  return isAgentMessage(a) === isAgentMessage(b);
+}
 
 export function MessageThread({
   conversation,
@@ -696,14 +697,14 @@ export function MessageThread({
   if (!conversation || !contact) {
     return (
       <div className={cn("flex flex-1 flex-col items-center justify-center", DOODLE_BG_CLASSES)}>
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
-          <MessageSquare className="h-8 w-8 text-slate-600" />
+        <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-[#202c33]">
+          <MessageSquare className="h-12 w-12 text-[#8696a0]" />
         </div>
-        <h3 className="mt-4 text-sm font-medium text-slate-400">
-          Select a conversation
+        <h3 className="mt-6 text-[17px] font-light text-[#e9edef]">
+          WhatsApp Business Inbox
         </h3>
-        <p className="mt-1 text-xs text-slate-600">
-          Choose a conversation from the left to start messaging
+        <p className="mt-2 max-w-xs text-center text-sm text-[#8696a0]">
+          Select a conversation from the list to view and reply to messages
         </p>
       </div>
     );
@@ -722,36 +723,43 @@ export function MessageThread({
 
   return (
     <div className={cn("flex flex-1 flex-col", DOODLE_BG_CLASSES)}>
-      {/* Header — solid bg-slate-900 sits on top of the doodle so the
-          name/avatar/dropdowns stay legible. */}
-      <div className="flex items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-3 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          {/* Back-to-list button — mobile only. Hidden on lg+ where the
-              conversation list is always visible next to the thread. */}
+      {/* Header */}
+      <div className="wa-header flex items-center justify-between gap-2 border-b px-3 py-2 sm:px-4">
+        <div className="flex min-w-0 items-center gap-3">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Back to conversations"
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-slate-300 hover:bg-slate-800 hover:text-white lg:hidden"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-[#aebac1] hover:bg-[#2a3942] lg:hidden"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-medium text-white">
-            {displayName.charAt(0).toUpperCase()}
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#6b7b8a] text-sm font-medium text-white">
+            {contact.avatar_url ? (
+              <img
+                src={contact.avatar_url}
+                alt={displayName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              displayName.charAt(0).toUpperCase()
+            )}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-white">{displayName}</h2>
-            <p className="truncate text-xs text-slate-400">{contact.phone}</p>
+            <h2 className="truncate text-[16px] font-normal text-[#e9edef]">
+              {displayName}
+            </h2>
+            <p className="truncate text-[13px] text-[#8696a0]">
+              {contact.phone}
+            </p>
           </div>
-          {/* Session timer badge — hidden on the narrowest phones so
-              the name + back arrow keep their room. */}
           <Badge
             variant="outline"
             className={cn(
-              "ml-1 hidden gap-1 border-slate-700 text-[10px] sm:inline-flex sm:ml-2",
-              sessionInfo.expired ? "text-red-400" : "text-primary"
+              "ml-1 hidden gap-1 border-[#2a3942] bg-transparent text-[10px] sm:inline-flex sm:ml-2",
+              sessionInfo.expired ? "text-red-400" : "text-[#00a884]",
             )}
           >
             <Clock className="h-3 w-3" />
@@ -759,12 +767,7 @@ export function MessageThread({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Manual refresh — forces a refetch of the messages + the
-              conversation list (the parent bumps its resyncToken). Useful
-              when realtime missed an event or the agent just wants to be
-              sure nothing's stale. Only rendered when the parent wires
-              up `onRefresh`. */}
+        <div className="flex items-center gap-1">
           {onRefresh && (
             <button
               type="button"
@@ -773,33 +776,34 @@ export function MessageThread({
               aria-label="Refresh conversation"
               title="Refresh"
               className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-60",
+                "inline-flex h-10 w-10 items-center justify-center rounded-full text-[#aebac1] transition-colors hover:bg-[#2a3942] disabled:opacity-60",
               )}
             >
               <RefreshCw
-                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+                className={cn("h-5 w-5", isRefreshing && "animate-spin")}
               />
             </button>
           )}
 
-          {/* Status dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className={cn(
-                  "inline-flex items-center justify-center h-7 gap-1 px-2 text-xs rounded-md hover:bg-slate-800",
-                  currentStatus?.color ?? "text-slate-400"
-                )}>
-                {currentStatus?.label ?? "Status"}
-                <ChevronDown className="h-3 w-3" />
+            <DropdownMenuTrigger
+              className={cn(
+                "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
+                currentStatus?.color ?? "text-[#8696a0]",
+              )}
+            >
+              {currentStatus?.label ?? "Status"}
+              <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="border-slate-700 bg-slate-800"
+              className="border-[#2a3942] bg-[#233138]"
             >
               {STATUS_OPTIONS.map((opt) => (
                 <DropdownMenuItem
                   key={opt.value}
                   onClick={() => handleStatusChange(opt.value)}
-                  className={cn("text-sm", opt.color)}
+                  className={cn("text-sm focus:bg-[#2a3942]", opt.color)}
                 >
                   {opt.label}
                 </DropdownMenuItem>
@@ -807,24 +811,23 @@ export function MessageThread({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Assign dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                "inline-flex items-center justify-center h-7 gap-1 px-2 text-xs rounded-md hover:bg-slate-800",
-                assignedAgentId ? "text-primary" : "text-slate-400"
+                "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
+                assignedAgentId ? "text-[#00a884]" : "text-[#8696a0]",
               )}
             >
-              <UserPlus className="h-3 w-3" />
+              <UserPlus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{assignLabel}</span>
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="border-slate-700 bg-slate-800"
+              className="border-[#2a3942] bg-[#233138]"
             >
               {profiles.length === 0 ? (
-                <DropdownMenuItem disabled className="text-sm text-slate-500">
+                <DropdownMenuItem disabled className="text-sm text-[#8696a0]">
                   No teammates available
                 </DropdownMenuItem>
               ) : (
@@ -835,8 +838,8 @@ export function MessageThread({
                       key={p.id}
                       onClick={() => handleAssignChange(p.user_id)}
                       className={cn(
-                        "text-sm",
-                        isSelected ? "text-primary" : "text-slate-300"
+                        "text-sm focus:bg-[#2a3942]",
+                        isSelected ? "text-[#00a884]" : "text-[#e9edef]",
                       )}
                     >
                       <span className="flex-1">
@@ -850,10 +853,10 @@ export function MessageThread({
               )}
               {assignedAgentId && (
                 <>
-                  <DropdownMenuSeparator className="bg-slate-700" />
+                  <DropdownMenuSeparator className="bg-[#2a3942]" />
                   <DropdownMenuItem
                     onClick={() => handleAssignChange(null)}
-                    className="text-sm text-slate-400"
+                    className="text-sm text-[#8696a0] focus:bg-[#2a3942]"
                   >
                     Unassign
                   </DropdownMenuItem>
@@ -865,31 +868,39 @@ export function MessageThread({
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-[63px] py-3 max-sm:px-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm text-slate-500">No messages yet</p>
-            <p className="text-xs text-slate-600">
+            <p className="text-sm text-[#8696a0]">No messages yet</p>
+            <p className="text-xs text-[#667781]">
               Send a template to start the conversation
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {messageGroups.map((group) => (
               <div key={group.date}>
-                {/* Date separator */}
-                <div className="mb-4 flex items-center justify-center">
-                  <span className="rounded-full bg-slate-800 px-3 py-1 text-[10px] font-medium text-slate-400">
+                <div className="mb-3 flex items-center justify-center">
+                  <span className="wa-date-pill rounded-lg px-3 py-1.5 text-[12.5px] font-normal">
                     {formatDateSeparator(group.date)}
                   </span>
                 </div>
-                {/* Messages */}
-                <div className="space-y-2">
-                  {group.messages.map((msg) => {
+                <div className="space-y-0.5">
+                  {group.messages.map((msg, idx) => {
+                    const prev = idx > 0 ? group.messages[idx - 1] : null;
+                    const next =
+                      idx < group.messages.length - 1
+                        ? group.messages[idx + 1]
+                        : null;
+                    const isGrouped = prev
+                      ? sameSenderGroup(prev, msg)
+                      : false;
+                    const showTail = !next || !sameSenderGroup(msg, next);
+
                     const parent = msg.reply_to_message_id
                       ? messagesById.get(msg.reply_to_message_id)
                       : null;
@@ -900,16 +911,14 @@ export function MessageThread({
                         }
                       : null;
                     const msgReactions = reactionsByMessageId.get(msg.id);
-                    // Toggle is computed at the call site — `msgReactions`
-                    // and `user?.id` are already in scope, no extra hook.
                     const handlePillToggle = (emoji: string) => {
                       const own = msgReactions?.find(
                         (r) =>
                           r.actor_type === "agent" &&
                           r.actor_id === user?.id,
                       );
-                      const next = own?.emoji === emoji ? "" : emoji;
-                      void postReaction(msg.id, next);
+                      const nextEmoji = own?.emoji === emoji ? "" : emoji;
+                      void postReaction(msg.id, nextEmoji);
                     };
                     return (
                       <MessageActions
@@ -926,6 +935,8 @@ export function MessageThread({
                           reactions={msgReactions}
                           currentUserId={user?.id}
                           onToggleReaction={handlePillToggle}
+                          showTail={showTail}
+                          isGrouped={isGrouped}
                         />
                       </MessageActions>
                     );

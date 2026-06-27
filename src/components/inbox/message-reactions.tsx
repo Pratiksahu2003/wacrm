@@ -10,6 +10,7 @@ interface MessageReactionsProps {
   /** Toggle the agent's reaction. If the agent already has this emoji →
    *  caller should send empty to remove; otherwise swap/add. */
   onToggle: (emoji: string) => void;
+  isOutgoing?: boolean;
 }
 
 interface ReactionGroup {
@@ -43,6 +44,7 @@ export function MessageReactions({
   reactions,
   currentUserId,
   onToggle,
+  isOutgoing = false,
 }: MessageReactionsProps) {
   const groups = useMemo(
     () => groupReactions(reactions, currentUserId),
@@ -52,7 +54,12 @@ export function MessageReactions({
   if (groups.length === 0) return null;
 
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <div
+      className={cn(
+        "-mt-2 flex flex-wrap gap-0.5",
+        isOutgoing ? "mr-2 justify-end" : "ml-2 justify-start",
+      )}
+    >
       {groups.map((g) => (
         <button
           key={g.emoji}
@@ -60,14 +67,16 @@ export function MessageReactions({
           onClick={() => onToggle(g.emoji)}
           aria-pressed={g.byCurrentUser}
           className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition-colors",
+            "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] leading-none shadow-sm transition-colors",
             g.byCurrentUser
-              ? "border-primary/60 bg-primary/15 text-primary hover:bg-primary/25"
-              : "border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700",
+              ? "border-[#00a884]/50 bg-[#182229] text-[#e9edef] hover:bg-[#2a3942]"
+              : "border-[#2a3942] bg-[#182229] text-[#e9edef] hover:bg-[#2a3942]",
           )}
         >
-          <span className="text-sm leading-none">{g.emoji}</span>
-          {g.count > 1 && <span>{g.count}</span>}
+          <span className="text-[13px] leading-none">{g.emoji}</span>
+          {g.count > 1 && (
+            <span className="text-[11px] text-[#8696a0]">{g.count}</span>
+          )}
         </button>
       ))}
     </div>

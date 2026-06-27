@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, KeyboardEvent } from "react";
-import { Send, LayoutTemplate } from "lucide-react";
+import { Send, LayoutTemplate, SmilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GatedButton } from "@/components/ui/gated-button";
 import { useCan } from "@/hooks/use-can";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { ReplyQuote } from "./reply-quote";
 
 interface ReplyDraft {
-  /** Internal UUID of the message being replied to — sent back through onSend. */
   id: string;
   authorLabel: string;
   preview: string;
@@ -35,9 +34,6 @@ export function MessageComposer({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Viewers (read-only role) can browse the inbox but never send.
-  // For solo users this is always true — single-owner accounts pass
-  // every capability — so the disabled branch is a no-op there.
   const canSend = useCan("send-messages");
   const readOnly = !canSend;
 
@@ -45,8 +41,7 @@ export function MessageComposer({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    // Max 4 lines (~96px)
-    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 100)}px`;
   }, []);
 
   const handleSend = useCallback(async () => {
@@ -72,7 +67,7 @@ export function MessageComposer({
         handleSend();
       }
     },
-    [handleSend]
+    [handleSend],
   );
 
   const handleChange = useCallback(
@@ -80,11 +75,14 @@ export function MessageComposer({
       setText(e.target.value);
       adjustHeight();
     },
-    [adjustHeight]
+    [adjustHeight],
   );
 
+  const disabled = sessionExpired || readOnly;
+  const hasText = text.trim().length > 0;
+
   return (
-    <div className="border-t border-slate-800 bg-slate-900 p-3">
+    <div className="wa-composer border-t px-3 py-2 sm:px-4">
       {replyTo && (
         <div className="mb-2">
           <ReplyQuote
@@ -94,6 +92,7 @@ export function MessageComposer({
           />
         </div>
       )}
+
       {sessionExpired && (
         <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
           <p className="text-xs text-amber-400">
@@ -118,54 +117,62 @@ export function MessageComposer({
           canAct={!readOnly}
           gateReason="send messages"
           title={readOnly ? undefined : "Send template"}
-          className="h-9 w-9 shrink-0 p-0 text-slate-400 hover:text-white"
+          className="h-10 w-10 shrink-0 rounded-full p-0 text-[#8696a0] hover:bg-[#2a3942] hover:text-[#aebac1]"
           onClick={onOpenTemplates}
         >
-          <LayoutTemplate className="h-4 w-4" />
+          <LayoutTemplate className="h-6 w-6" />
         </GatedButton>
 
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            readOnly
-              ? "Read-only — viewers can browse but not reply"
-              : sessionExpired
-                ? "Session expired - use a template"
-                : "Type a message... (Shift+Enter for new line)"
-          }
-          disabled={sessionExpired || readOnly}
-          rows={1}
-          // Textarea keeps its own inline title — the GatedButton
-          // wrapping pattern doesn't apply to non-button inputs.
-          // The placeholder text also surfaces the read-only state.
-          title={readOnly ? "Read-only — your role can't send messages" : undefined}
-          className={cn(
-            "flex-1 resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-primary/50",
-            (sessionExpired || readOnly) && "cursor-not-allowed opacity-50"
-          )}
-        />
+        <div className="wa-input-bar flex min-h-[42px] flex-1 items-end gap-2 px-3 py-2">
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label="Emoji"
+            className="mb-0.5 shrink-0 text-[#8696a0] hover:text-[#aebac1] disabled:opacity-40"
+          >
+            <SmilePlus className="h-6 w-6" />
+          </button>
+
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              readOnly
+                ? "Read-only — viewers can browse but not reply"
+                : sessionExpired
+                  ? "Session expired — use a template"
+                  : "Type a message"
+            }
+            disabled={disabled}
+            rows={1}
+            title={
+              readOnly ? "Read-only — your role can't send messages" : undefined
+            }
+            className={cn(
+              "max-h-[100px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-[20px] text-[#e9edef] placeholder-[#8696a0] outline-none",
+              disabled && "cursor-not-allowed opacity-50",
+            )}
+          />
+        </div>
 
         <GatedButton
           size="sm"
           canAct={!readOnly}
           gateReason="send messages"
-          disabled={!text.trim() || sessionExpired || sending}
+          disabled={!hasText || sessionExpired || sending}
           onClick={handleSend}
-          className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
+          className={cn(
+            "h-[42px] w-[42px] shrink-0 rounded-full p-0 transition-colors disabled:opacity-40",
+            hasText
+              ? "wa-send-btn hover:bg-[#06cf9c]"
+              : "bg-[#8696a0]/30 text-[#8696a0]",
+          )}
         >
-          <Send className="h-4 w-4" />
+          <Send className="h-5 w-5" />
         </GatedButton>
       </div>
-
-      {/* Hint sits outside the flex row so its height doesn't push
-          `items-end` buttons below the textarea. Indented to line up
-          under the textarea left edge (w-9 button + gap-2 = 44px). */}
-      <p className="mt-1 pl-11 text-[10px] text-slate-600">
-        Type &apos;/&apos; for quick replies
-      </p>
     </div>
   );
 }

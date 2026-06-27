@@ -25,20 +25,24 @@ interface MessageBubbleProps {
   reactions?: MessageReaction[];
   currentUserId?: string;
   onToggleReaction?: (emoji: string) => void;
+  /** Show the WhatsApp-style tail notch (last in a sender group). */
+  showTail?: boolean;
+  /** Tighter top spacing when grouped with previous message from same sender. */
+  isGrouped?: boolean;
 }
 
 function StatusIcon({ status }: { status: Message["status"] }) {
   switch (status) {
     case "sending":
-      return <Clock className="h-3 w-3 text-slate-400" />;
+      return <Clock className="h-[14px] w-[14px] opacity-60" />;
     case "sent":
-      return <Check className="h-3 w-3 text-slate-400" />;
+      return <Check className="h-[14px] w-[14px] opacity-60" />;
     case "delivered":
-      return <CheckCheck className="h-3 w-3 text-slate-400" />;
+      return <CheckCheck className="h-[14px] w-[14px] opacity-60" />;
     case "read":
-      return <CheckCheck className="h-3 w-3 text-blue-400" />;
+      return <CheckCheck className="wa-status-read h-[14px] w-[14px]" />;
     case "failed":
-      return <XCircle className="h-3 w-3 text-red-400" />;
+      return <XCircle className="h-[14px] w-[14px] text-red-400" />;
     default:
       return null;
   }
@@ -46,8 +50,8 @@ function StatusIcon({ status }: { status: Message["status"] }) {
 
 function MediaUnavailable({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-slate-700/40 px-3 py-2 text-xs text-slate-300">
-      <ImageOff className="h-4 w-4 shrink-0 text-slate-500" />
+    <div className="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 text-xs text-[#8696a0]">
+      <ImageOff className="h-4 w-4 shrink-0 opacity-60" />
       <span>{label} unavailable</span>
     </div>
   );
@@ -61,7 +65,6 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
   const loadImage = useCallback(async () => {
     if (!url) return;
 
-    // Proxy URLs need auth fetch to create blob URL
     if (url.startsWith("/api/whatsapp/media/")) {
       try {
         const res = await fetch(url);
@@ -92,16 +95,16 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
 
   if (error) {
     return (
-      <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-slate-700">
-        <ImageOff className="h-8 w-8 text-slate-500" />
+      <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-black/20">
+        <ImageOff className="h-8 w-8 text-[#8696a0]" />
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-slate-700">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-black/20">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
       </div>
     );
   }
@@ -110,7 +113,7 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
     <img
       src={src ?? ""}
       alt={alt}
-      className="max-h-64 max-w-60 rounded-lg object-cover"
+      className="max-h-64 max-w-60 rounded-md object-cover"
       onError={() => setError(true)}
     />
   );
@@ -120,7 +123,7 @@ function MessageContent({ message }: { message: Message }) {
   switch (message.content_type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
           {message.content_text}
         </p>
       );
@@ -134,7 +137,7 @@ function MessageContent({ message }: { message: Message }) {
             <MediaUnavailable label="Image" />
           )}
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
               {message.content_text}
             </p>
           )}
@@ -148,13 +151,13 @@ function MessageContent({ message }: { message: Message }) {
             <video
               src={message.media_url}
               controls
-              className="max-h-64 max-w-60 rounded-lg"
+              className="max-h-64 max-w-60 rounded-md"
             />
           ) : (
             <MediaUnavailable label="Video" />
           )}
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
               {message.content_text}
             </p>
           )}
@@ -181,9 +184,9 @@ function MessageContent({ message }: { message: Message }) {
           href={message.media_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-lg bg-slate-700/50 px-3 py-2 text-sm hover:bg-slate-700"
+          className="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 text-sm hover:bg-black/30"
         >
-          <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+          <FileText className="h-5 w-5 shrink-0 text-[#8696a0]" />
           <span className="truncate">
             {message.content_text || "Document"}
           </span>
@@ -193,12 +196,12 @@ function MessageContent({ message }: { message: Message }) {
     case "template":
       return (
         <div>
-          <span className="mb-1 inline-flex items-center gap-1 rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="mb-1 inline-flex items-center gap-1 rounded bg-[#00a884]/20 px-1.5 py-0.5 text-[10px] font-medium text-[#06cf9c]">
             <LayoutTemplate className="h-3 w-3" />
             Template
           </span>
           {message.content_text && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+            <p className="mt-1 whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
               {message.content_text}
             </p>
           )}
@@ -208,33 +211,27 @@ function MessageContent({ message }: { message: Message }) {
     case "location":
       return (
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+          <MapPin className="h-4 w-4 shrink-0 text-[#8696a0]" />
           <span>{message.content_text || "Location shared"}</span>
         </div>
       );
 
-    case "interactive": {
-      // Customer tapped a reply button or list row on a message the bot
-      // sent. We show the tapped option's title (already in content_text,
-      // set by parseMessageContent in the webhook) with a small affordance
-      // so agents reading the inbox can tell at a glance that this is a
-      // tap rather than the customer typing the same words.
+    case "interactive":
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-[#8696a0]">
             <CornerDownLeft className="h-3 w-3" />
             Button reply
           </span>
-          <p className="whitespace-pre-wrap break-words text-sm">
+          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
             {message.content_text || "[Interactive reply]"}
           </p>
         </div>
       );
-    }
 
     default:
       return (
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
           {message.content_text || "[Unsupported message type]"}
         </p>
       );
@@ -247,39 +244,52 @@ export function MessageBubble({
   reactions,
   currentUserId,
   onToggleReaction,
+  showTail = true,
+  isGrouped = false,
 }: MessageBubbleProps) {
-  const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
+  const isAgent =
+    message.sender_type === "agent" || message.sender_type === "bot";
   const time = format(new Date(message.created_at), "HH:mm");
 
-  // Row alignment + width cap are owned by <MessageActions> so its hover
-  // group matches the bubble's content area, not the full row.
   return (
     <div
       className={cn(
         "flex flex-col",
         isAgent ? "items-end" : "items-start",
+        isGrouped && "-mt-1",
       )}
     >
       <div
         className={cn(
-          "relative rounded-2xl px-3 py-2",
+          "relative max-w-full px-[9px] py-[6px] pt-[6px] pb-[8px]",
+          isAgent ? "wa-bubble-out" : "wa-bubble-in",
+          showTail && "wa-bubble-tail",
           isAgent
-            ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md bg-slate-800 text-slate-100",
+            ? cn(
+                "rounded-lg",
+                showTail ? "rounded-br-none" : "rounded-br-lg",
+                isGrouped ? "rounded-tr-none" : "rounded-tr-lg",
+              )
+            : cn(
+                "rounded-lg",
+                showTail ? "rounded-bl-none" : "rounded-bl-lg",
+                isGrouped ? "rounded-tl-none" : "rounded-tl-lg",
+              ),
         )}
       >
         {reply && (
-          <ReplyQuote authorLabel={reply.authorLabel} preview={reply.preview} />
+          <ReplyQuote
+            authorLabel={reply.authorLabel}
+            preview={reply.preview}
+            isOutgoing={isAgent}
+          />
         )}
-        <MessageContent message={message} />
-        <div
-          className={cn(
-            "mt-1 flex items-center gap-1",
-            isAgent ? "justify-end" : "justify-start",
-          )}
-        >
-          <span className="text-[10px] text-white/60">{time}</span>
-          {isAgent && <StatusIcon status={message.status} />}
+        <div className="wa-bubble-content">
+          <MessageContent message={message} />
+          <span className="wa-bubble-meta">
+            {time}
+            {isAgent && <StatusIcon status={message.status} />}
+          </span>
         </div>
       </div>
       {reactions && reactions.length > 0 && onToggleReaction && (
@@ -287,6 +297,7 @@ export function MessageBubble({
           reactions={reactions}
           currentUserId={currentUserId}
           onToggle={onToggleReaction}
+          isOutgoing={isAgent}
         />
       )}
     </div>
