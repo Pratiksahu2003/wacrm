@@ -25,6 +25,20 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Supabase may redirect to Site URL root with ?code= when emailRedirectTo
+  // wasn't allow-listed — forward to the auth callback handler.
+  if (
+    request.nextUrl.pathname === '/' &&
+    request.nextUrl.searchParams.has('code')
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    if (!url.searchParams.has('next')) {
+      url.searchParams.set('next', '/login')
+    }
+    return NextResponse.redirect(url)
+  }
+
   // Auth pages - redirect to dashboard if already logged in.
   // Exception: when an invite token is in the query string we
   // send the already-signed-in user to /join/<token> instead so

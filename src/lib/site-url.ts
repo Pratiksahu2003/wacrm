@@ -23,3 +23,27 @@ export function publicAppUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${base}${normalized}`;
 }
+
+/**
+ * Redirect target for Supabase auth emails (signup confirm, password reset).
+ * Always built server-side from `NEXT_PUBLIC_SITE_URL` + `/auth/callback`.
+ */
+export function getAuthEmailRedirectTo(nextPath: string): string {
+  const siteUrl = getConfiguredSiteUrl();
+  if (!siteUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_SITE_URL must be set (e.g. https://crm.suganta.com) for auth email links",
+    );
+  }
+  const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+  return `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`;
+}
+
+/** Safe relative path for post-auth redirect (blocks open redirects). */
+export function sanitizeAuthNextPath(
+  raw: string | null | undefined,
+  fallback = "/dashboard",
+): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return fallback;
+  return raw;
+}

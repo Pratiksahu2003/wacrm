@@ -3,7 +3,6 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MessageSquare, CheckCircle, UsersRound } from "lucide-react";
-import { publicAppUrl } from "@/lib/site-url";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -43,7 +41,6 @@ function SignupPageInner() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,26 +58,21 @@ function SignupPageInner() {
 
     setLoading(true);
 
-    // Verification emails must redirect to the canonical site URL
-    // (NEXT_PUBLIC_SITE_URL), not window.location.origin — so links
-    // work when signing up from localhost or a preview deploy.
-    const emailRedirectTo = inviteToken
-      ? publicAppUrl(`/join/${encodeURIComponent(inviteToken)}`)
-      : publicAppUrl("/login");
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-        emailRedirectTo,
-      },
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        fullName,
+        inviteToken,
+      }),
     });
 
-    if (error) {
-      setError(error.message);
+    const payload = (await res.json().catch(() => ({}))) as { error?: string };
+
+    if (!res.ok) {
+      setError(payload.error || "Signup failed");
       setLoading(false);
       return;
     }
