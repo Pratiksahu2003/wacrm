@@ -15,18 +15,25 @@ import {
   StickyNote,
   Plus,
   Workflow,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { StartFlowPanel } from "./start-flow-panel";
+import { TeamMemberSelect } from "@/components/team/team-member-select";
+import { syncConversationAssigneeForContact } from "@/lib/contacts/sync-conversation-assignee";
+import { useCan } from "@/hooks/use-can";
+import { toast } from "sonner";
 
 interface ContactSidebarProps {
   contact: Contact | null;
+  onContactUpdated?: (contact: Contact) => void;
 }
 
-export function ContactSidebar({ contact }: ContactSidebarProps) {
+export function ContactSidebar({ contact, onContactUpdated }: ContactSidebarProps) {
   const { accountId } = useAuth();
+  const canAssign = useCan("send-messages");
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [notes, setNotes] = useState<ContactNote[]>([]);
@@ -76,6 +83,25 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContactData();
   }, [fetchContactData]);
+
+  const handleAssignChange = useCallback(
+    async (userId: string | null) => {
+      if (!contact || !canAssign) return;
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("contacts")
+        .update({ assigned_to: userId, updated_at: new Date().toISOString() })
+        .eq("id", contact.id);
+      if (error) {
+        toast.error("Failed to assign lead");
+        return;
+      }
+      await syncConversationAssigneeForContact(supabase, contact.id, userId);
+      onContactUpdated?.({ ...contact, assigned_to: userId });
+      toast.success(userId ? "Lead assigned" : "Lead unassigned");
+    },
+    [contact, canAssign, onContactUpdated],
+  );
 
   const handleCopyPhone = useCallback(async () => {
     if (!contact?.phone) return;
@@ -176,6 +202,19 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 <span className="truncate">{contact.email}</span>
               </div>
             )}
+          </div>
+
+          <div className="mt-4 space-y-1.5">
+            <label className="flex items-center gap-1.5 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <UserCog className="h-3 w-3" />
+              Lead owner
+            </label>
+            <TeamMemberSelect
+              value={contact.assigned_to}
+              onChange={handleAssignChange}
+              disabled={!canAssign}
+              className="text-sm"
+            />
           </div>
 
           {/* Divider */}

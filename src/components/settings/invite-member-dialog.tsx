@@ -16,7 +16,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Copy, Loader2, MessageCircle, Sparkles } from 'lucide-react';
+import { Copy, Loader2, Mail, MessageCircle, Sparkles } from 'lucide-react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 type InviteRole = 'admin' | 'agent' | 'viewer';
 
@@ -85,6 +86,7 @@ export function InviteMemberDialog({
   const [role, setRole] = useState<InviteRole>('agent');
   const [expiry, setExpiry] = useState<string>('7');
   const [label, setLabel] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreatedInvite | null>(null);
 
@@ -92,6 +94,7 @@ export function InviteMemberDialog({
     setRole('agent');
     setExpiry('7');
     setLabel('');
+    setRecipientEmail('');
     setResult(null);
     setSubmitting(false);
   }
@@ -172,6 +175,34 @@ export function InviteMemberDialog({
     const accountName = result?.accountName ?? 'our wacrm account';
     const message = `Join ${accountName} on wacrm using this link (valid for ${result?.expiresInDays} days): ${url}`;
     return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  }
+
+  function inviteEmailSubject(): string {
+    const accountName = result?.accountName ?? 'our wacrm account';
+    return `You're invited to join ${accountName} on wacrm`;
+  }
+
+  function inviteEmailBody(url: string): string {
+    const accountName = result?.accountName ?? 'our wacrm account';
+    const days = result?.expiresInDays ?? 7;
+    return [
+      `Hi,`,
+      ``,
+      `You've been invited to join ${accountName} on wacrm as a ${result?.role ?? 'teammate'}.`,
+      ``,
+      `Use this link to accept (valid for ${days} day${days === 1 ? '' : 's'}):`,
+      url,
+      ``,
+      `See you there!`,
+    ].join('\n');
+  }
+
+  function mailtoShareUrl(url: string, email: string): string {
+    const params = new URLSearchParams({
+      subject: inviteEmailSubject(),
+      body: inviteEmailBody(url),
+    });
+    return `mailto:${encodeURIComponent(email)}?${params.toString()}`;
   }
 
   return (
@@ -256,6 +287,47 @@ export function InviteMemberDialog({
                 <MessageCircle className="size-4" />
                 Send via WhatsApp
               </a>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">
+                  Send via email{' '}
+                  <span className="text-xs text-slate-500">(optional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="teammate@example.com"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  />
+                  <a
+                    href={
+                      recipientEmail.trim()
+                        ? mailtoShareUrl(result.url, recipientEmail.trim())
+                        : undefined
+                    }
+                    aria-disabled={!recipientEmail.trim()}
+                    className={buttonVariants({
+                      variant: 'outline',
+                      className: cn(
+                        'shrink-0 border-slate-700 text-slate-300 hover:bg-slate-800',
+                        !recipientEmail.trim() && 'pointer-events-none opacity-40',
+                      ),
+                    })}
+                    onClick={(e) => {
+                      if (!recipientEmail.trim()) e.preventDefault();
+                    }}
+                  >
+                    <Mail className="size-4" />
+                    Email
+                  </a>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Opens your email app with the invite pre-filled — no email
+                  is sent from wacrm.
+                </p>
+              </div>
             </div>
 
             <DialogFooter className="bg-slate-900 border-slate-700">
@@ -272,8 +344,8 @@ export function InviteMemberDialog({
             <DialogHeader>
               <DialogTitle className="text-white">Invite a teammate</DialogTitle>
               <DialogDescription className="text-slate-400">
-                Generate a one-time invite link. Share it via WhatsApp,
-                Slack, or any channel you like — no email service required.
+                Generate a one-time invite link. Share it via WhatsApp, email,
+                Slack, or any channel you like.
               </DialogDescription>
             </DialogHeader>
 
@@ -332,6 +404,23 @@ export function InviteMemberDialog({
                 <p className="text-xs text-slate-500">
                   Helps you remember who you sent the link to in the pending
                   list below.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-300">
+                  Recipient email{' '}
+                  <span className="text-xs text-slate-500">(optional)</span>
+                </Label>
+                <Input
+                  type="email"
+                  placeholder="teammate@example.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                />
+                <p className="text-xs text-slate-500">
+                  Pre-fill an email draft after the link is generated.
                 </p>
               </div>
             </div>

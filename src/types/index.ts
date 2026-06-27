@@ -94,6 +94,8 @@ export interface Contact {
   email?: string;
   company?: string;
   avatar_url?: string;
+  /** Lead owner — auth user id of the assigned teammate. */
+  assigned_to?: string | null;
   created_at: string;
   updated_at: string;
 }

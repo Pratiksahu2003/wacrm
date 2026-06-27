@@ -21,6 +21,8 @@ interface ConversationListProps {
   conversations: Conversation[];
   onConversationsLoaded: (conversations: Conversation[]) => void;
   resyncToken?: number;
+  /** Deep-link filter, e.g. from /inbox?assign=mine */
+  initialAssignFilter?: "all" | "mine" | "unassigned";
 }
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
@@ -37,6 +39,15 @@ const FILTER_OPTIONS: { label: string; value: ConversationStatus | "all" }[] =
     { label: "Closed", value: "closed" },
   ];
 
+const ASSIGN_FILTER_OPTIONS: {
+  label: string;
+  value: "all" | "mine" | "unassigned";
+}[] = [
+  { label: "All chats", value: "all" },
+  { label: "Assigned to me", value: "mine" },
+  { label: "Unassigned", value: "unassigned" },
+];
+
 function formatListTime(dateStr: string): string {
   const date = new Date(dateStr);
   if (isToday(date)) return format(date, "HH:mm");
@@ -50,11 +61,15 @@ export function ConversationList({
   conversations,
   onConversationsLoaded,
   resyncToken = 0,
+  initialAssignFilter = "all",
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ConversationStatus | "all">("all");
+  const [assignFilter, setAssignFilter] = useState<
+    "all" | "mine" | "unassigned"
+  >(initialAssignFilter);
   const [loading, setLoading] = useState(true);
-  const { accountId, profileLoading } = useAuth();
+  const { accountId, profileLoading, user } = useAuth();
 
   const onConversationsLoadedRef = useRef(onConversationsLoaded);
   useEffect(() => {
@@ -117,8 +132,14 @@ export function ConversationList({
       });
     }
 
+    if (assignFilter === "mine" && user?.id) {
+      result = result.filter((c) => c.assigned_agent_id === user.id);
+    } else if (assignFilter === "unassigned") {
+      result = result.filter((c) => !c.assigned_agent_id);
+    }
+
     return result;
-  }, [conversations, filter, search]);
+  }, [conversations, filter, search, assignFilter, user?.id]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +156,9 @@ export function ConversationList({
   );
 
   const activeFilter = FILTER_OPTIONS.find((o) => o.value === filter);
+  const activeAssignFilter = ASSIGN_FILTER_OPTIONS.find(
+    (o) => o.value === assignFilter,
+  );
 
   return (
     <div className="wa-panel flex h-full min-h-0 w-full flex-col overflow-hidden border-r border-[#2a3942] lg:w-[400px]">
@@ -165,6 +189,32 @@ export function ConversationList({
                 className={cn(
                   "text-sm focus:bg-[#2a3942]",
                   filter === opt.value ? "text-[#00a884]" : "text-[#e9edef]",
+                )}
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-[#8696a0] hover:bg-[#202c33] hover:text-[#e9edef]">
+            {activeAssignFilter?.label ?? "All chats"}
+            <ChevronDown className="h-3 w-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="border-[#2a3942] bg-[#233138]"
+          >
+            {ASSIGN_FILTER_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.value}
+                onClick={() => setAssignFilter(opt.value)}
+                className={cn(
+                  "text-sm focus:bg-[#2a3942]",
+                  assignFilter === opt.value
+                    ? "text-[#00a884]"
+                    : "text-[#e9edef]",
                 )}
               >
                 {opt.label}

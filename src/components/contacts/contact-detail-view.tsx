@@ -32,7 +32,11 @@ import {
   Save,
   X,
   DollarSign,
+  UserCog,
 } from 'lucide-react';
+import { TeamMemberSelect } from '@/components/team/team-member-select';
+import { syncConversationAssigneeForContact } from '@/lib/contacts/sync-conversation-assignee';
+import { useCan } from '@/hooks/use-can';
 
 interface ContactDetailViewProps {
   open: boolean;
@@ -49,6 +53,7 @@ export function ContactDetailView({
 }: ContactDetailViewProps) {
   const supabase = createClient();
   const { accountId } = useAuth();
+  const canAssign = useCan('send-messages');
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +64,7 @@ export function ContactDetailView({
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editCompany, setEditCompany] = useState('');
+  const [editAssignedTo, setEditAssignedTo] = useState<string | null>(null);
   const [savingDetails, setSavingDetails] = useState(false);
 
   // Tags tab
@@ -98,6 +104,7 @@ export function ContactDetailView({
       setEditPhone(data.phone);
       setEditEmail(data.email ?? '');
       setEditCompany(data.company ?? '');
+      setEditAssignedTo(data.assigned_to ?? null);
     }
     setLoading(false);
   }, [contactId, supabase]);
@@ -196,6 +203,7 @@ export function ContactDetailView({
         phone: editPhone.trim(),
         email: editEmail.trim() || null,
         company: editCompany.trim() || null,
+        assigned_to: editAssignedTo,
         updated_at: new Date().toISOString(),
       })
       .eq('id', contactId);
@@ -203,6 +211,7 @@ export function ContactDetailView({
     if (error) {
       toast.error('Failed to update contact');
     } else {
+      await syncConversationAssigneeForContact(supabase, contactId, editAssignedTo);
       toast.success('Contact updated');
       fetchContact();
       onUpdated();
@@ -458,6 +467,18 @@ export function ContactDetailView({
                       value={editCompany}
                       onChange={(e) => setEditCompany(e.target.value)}
                       className="bg-slate-800 border-slate-700 text-white h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-400 text-xs flex items-center gap-1">
+                      <UserCog className="size-3" />
+                      Assigned to
+                    </Label>
+                    <TeamMemberSelect
+                      value={editAssignedTo}
+                      onChange={setEditAssignedTo}
+                      disabled={!canAssign}
+                      className="h-8 text-sm"
                     />
                   </div>
                   <Button

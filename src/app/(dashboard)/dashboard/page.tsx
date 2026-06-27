@@ -31,10 +31,14 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { MyLeadsPanel } from '@/components/dashboard/my-leads-panel'
+import { loadMyLeads, type MyLeadsSummary } from '@/lib/dashboard/my-leads'
+import { useAuth } from '@/hooks/use-auth'
 
 type RangeDays = 7 | 30 | 90
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
 
@@ -57,6 +61,9 @@ export default function DashboardPage() {
 
   const [activity, setActivity] = useState<ActivityItem[] | null>(null)
   const [activityLoading, setActivityLoading] = useState(true)
+
+  const [myLeads, setMyLeads] = useState<MyLeadsSummary | null>(null)
+  const [myLeadsLoading, setMyLeadsLoading] = useState(true)
 
   const loadAll = useCallback(() => {
     const db = createClient()
@@ -92,6 +99,20 @@ export default function DashboardPage() {
       .catch((err) => console.error('[dashboard] activity failed:', err))
       .finally(() => setActivityLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMyLeads(null)
+      setMyLeadsLoading(false)
+      return
+    }
+    setMyLeadsLoading(true)
+    const db = createClient()
+    void loadMyLeads(db, user.id)
+      .then((m) => setMyLeads(m))
+      .catch((err) => console.error('[dashboard] my leads failed:', err))
+      .finally(() => setMyLeadsLoading(false))
+  }, [user?.id])
 
   useEffect(() => {
     loadAll()
@@ -178,6 +199,9 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <QuickActions />
+
+      {/* My assigned leads */}
+      <MyLeadsPanel data={myLeads} loading={myLeadsLoading} />
 
       {/* Charts row */}
       {/* items-stretch (the grid default) stretches the two columns to

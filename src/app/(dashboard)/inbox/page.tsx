@@ -21,6 +21,11 @@ export default function InboxPage() {
    * automatically instead of showing the empty center panel.
    */
   const deepLinkConvId = searchParams.get("c");
+  const assignParam = searchParams.get("assign");
+  const initialAssignFilter =
+    assignParam === "mine" || assignParam === "unassigned"
+      ? assignParam
+      : "all";
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
@@ -539,6 +544,7 @@ export default function InboxPage() {
             conversations={conversations}
             onConversationsLoaded={handleConversationsLoaded}
             resyncToken={resyncToken}
+            initialAssignFilter={initialAssignFilter}
           />
         </div>
 
@@ -575,7 +581,25 @@ export default function InboxPage() {
 
         {/* Right panel: Contact sidebar — desktop only. */}
         <div className="hidden lg:block">
-          <ContactSidebar contact={activeContact} />
+          <ContactSidebar
+            contact={activeContact}
+            onContactUpdated={(updated) => {
+              setActiveContact(updated);
+              if (activeConversation) {
+                const agentId = updated.assigned_to ?? undefined;
+                setActiveConversation((prev) =>
+                  prev ? { ...prev, assigned_agent_id: agentId } : prev,
+                );
+                setConversations((prev) =>
+                  prev.map((c) =>
+                    c.id === activeConversation.id
+                      ? { ...c, assigned_agent_id: agentId }
+                      : c,
+                  ),
+                );
+              }
+            }}
+          />
         </div>
       </div>
     </div>

@@ -717,9 +717,19 @@ export function MessageThread({
         return;
       }
 
+      if (contact?.id) {
+        await supabase
+          .from("contacts")
+          .update({
+            assigned_to: agentId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", contact.id);
+      }
+
       onAssignChange(conversation.id, agentId);
     },
-    [conversation, onAssignChange],
+    [conversation, contact?.id, onAssignChange],
   );
 
   // Empty state — same WhatsApp-style doodle background as the active

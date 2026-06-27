@@ -296,10 +296,10 @@ export function MembersTab() {
       {/* Header + invite button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Account members</h2>
+          <h2 className="text-lg font-semibold text-white">Team members</h2>
           <p className="text-sm text-slate-400">
-            People with access to this account. Roles control what each
-            teammate can do.
+            Invite sub-users and manage roles. Assign leads from Contacts or
+            the Inbox.
           </p>
         </div>
         <RequireRole min="admin">

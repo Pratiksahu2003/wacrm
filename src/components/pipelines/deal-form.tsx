@@ -356,7 +356,7 @@ export function DealForm({
               >
                 <option value="">Unassigned</option>
                 {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.user_id} value={p.user_id}>
                     {p.full_name || p.email}
                   </option>
                 ))}

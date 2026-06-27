@@ -97,6 +97,7 @@ const navItems: NavItem[] = [
 ];
 
 const bottomNavItems = [
+  { href: "/settings?tab=members", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

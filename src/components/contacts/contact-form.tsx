@@ -18,6 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import { TeamMemberSelect } from '@/components/team/team-member-select';
+import { syncConversationAssigneeForContact } from '@/lib/contacts/sync-conversation-assignee';
+import { useCan } from '@/hooks/use-can';
 
 interface ContactFormProps {
   open: boolean;
@@ -36,12 +39,14 @@ export function ContactForm({
 }: ContactFormProps) {
   const supabase = createClient();
   const { accountId } = useAuth();
+  const canAssign = useCan('send-messages');
   const isEdit = !!contact;
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
+  const [assignedTo, setAssignedTo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [tags, setTags] = useState<Tag[]>([]);
@@ -54,6 +59,7 @@ export function ContactForm({
       setPhone(contact?.phone ?? '');
       setEmail(contact?.email ?? '');
       setCompany(contact?.company ?? '');
+      setAssignedTo(contact?.assigned_to ?? null);
       setSelectedTagIds(contactTags.map((ct) => ct.tag_id));
       fetchTags();
     }
@@ -105,10 +111,12 @@ export function ContactForm({
             phone: phone.trim(),
             email: email.trim() || null,
             company: company.trim() || null,
+            assigned_to: assignedTo,
             updated_at: new Date().toISOString(),
           })
           .eq('id', contactId);
         if (error) throw error;
+        await syncConversationAssigneeForContact(supabase, contactId, assignedTo);
       } else {
         const { data, error } = await supabase
           .from('contacts')
@@ -119,6 +127,7 @@ export function ContactForm({
             phone: phone.trim(),
             email: email.trim() || null,
             company: company.trim() || null,
+            assigned_to: assignedTo,
           })
           .select('id')
           .single();
@@ -225,6 +234,22 @@ export function ContactForm({
               placeholder="Acme Inc."
               className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cf-assignee" className="text-slate-300">
+              Assigned to
+            </Label>
+            <TeamMemberSelect
+              id="cf-assignee"
+              value={assignedTo}
+              onChange={setAssignedTo}
+              disabled={!canAssign}
+              unassignedLabel="Unassigned"
+            />
+            <p className="text-xs text-slate-500">
+              Assign this lead to a teammate. Open inbox chats sync automatically.
+            </p>
           </div>
 
           <div className="space-y-2">

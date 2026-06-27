@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Contact, Tag, ContactTag } from '@/types';
@@ -40,12 +41,18 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  UserCog,
 } from 'lucide-react';
 import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactDetailView } from '@/components/contacts/contact-detail-view';
 import { ImportModal } from '@/components/contacts/import-modal';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
+import { useAuth } from '@/hooks/use-auth';
+import type { Profile } from '@/types';
+import { memberLabel, TeamMemberSelect } from '@/components/team/team-member-select';
+import { bulkAssignContacts } from '@/lib/contacts/bulk-assign';
 
 const PAGE_SIZE = 25;
 
@@ -53,15 +60,49 @@ interface ContactWithTags extends Contact {
   tags?: Tag[];
 }
 
+const ASSIGN_FILTER_OPTIONS: {
+  label: string;
+  value: 'all' | 'mine' | 'unassigned';
+}[] = [
+  { label: 'All leads', value: 'all' },
+  { label: 'Assigned to me', value: 'mine' },
+  { label: 'Unassigned', value: 'unassigned' },
+];
+
 export default function ContactsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <ContactsPageContent />
+    </Suspense>
+  );
+}
+
+function ContactsPageContent() {
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const canEdit = useCan('send-messages');
+  const { user } = useAuth();
 
   const [contacts, setContacts] = useState<ContactWithTags[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [assignFilter, setAssignFilter] = useState<'all' | 'mine' | 'unassigned'>(() => {
+    const p = searchParams.get('assign');
+    return p === 'mine' || p === 'unassigned' ? p : 'all';
+  });
+  const [teamMembers, setTeamMembers] = useState<Profile[]>([]);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignee, setBulkAssignee] = useState<string | null>(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   // Modals
   const [formOpen, setFormOpen] = useState(false);
@@ -86,6 +127,14 @@ export default function ContactsPage() {
     }
   }, [supabase]);
 
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name')
+      .then(({ data }) => setTeamMembers((data as Profile[]) ?? []));
+  }, [supabase]);
+
   const fetchContacts = useCallback(async () => {
     setLoading(true);
 
@@ -101,6 +150,12 @@ export default function ContactsPage() {
     if (search.trim()) {
       const term = `%${search.trim()}%`;
       query = query.or(`name.ilike.${term},phone.ilike.${term},email.ilike.${term}`);
+    }
+
+    if (assignFilter === 'mine' && user?.id) {
+      query = query.eq('assigned_to', user.id);
+    } else if (assignFilter === 'unassigned') {
+      query = query.is('assigned_to', null);
     }
 
     const { data, count, error } = await query;
@@ -141,7 +196,8 @@ export default function ContactsPage() {
 
     setContacts(enriched);
     setLoading(false);
-  }, [supabase, page, search, tagsMap]);
+    setSelectedIds(new Set());
+  }, [supabase, page, search, assignFilter, user?.id, tagsMap]);
 
   // Load-once-on-mount-ish data fetches. Each setter inside runs
   // inside an async promise completion (Supabase await), not
@@ -204,6 +260,46 @@ export default function ContactsPage() {
     setDeleteTarget(null);
   }
 
+  const allOnPageSelected =
+    contacts.length > 0 && contacts.every((c) => selectedIds.has(c.id));
+
+  function toggleSelectAllOnPage() {
+    if (allOnPageSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(contacts.map((c) => c.id)));
+  }
+
+  function toggleSelect(contactId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(contactId)) next.delete(contactId);
+      else next.add(contactId);
+      return next;
+    });
+  }
+
+  async function applyBulkAssign(userId: string | null) {
+    if (!canEdit || selectedIds.size === 0) return;
+    setBulkSaving(true);
+    const ids = [...selectedIds];
+    const { error } = await bulkAssignContacts(supabase, ids, userId);
+    setBulkSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(
+      userId
+        ? `Assigned ${ids.length} lead${ids.length === 1 ? '' : 's'}`
+        : `Unassigned ${ids.length} lead${ids.length === 1 ? '' : 's'}`,
+    );
+    setBulkAssignOpen(false);
+    setBulkAssignee(null);
+    fetchContacts();
+  }
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const hasNext = page < totalPages - 1;
   const hasPrev = page > 0;
@@ -241,32 +337,98 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            // Reset pagination when the query changes — the result
-            // set shrinks/grows, page N may no longer be valid.
-            setPage(0);
-          }}
-          placeholder="Search by name, phone, or email..."
-          className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
-        />
+      {/* Search + assign filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+          <Input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Search by name, phone, or email..."
+            className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-slate-300 hover:bg-slate-800">
+            <UserCog className="size-3.5" />
+            {ASSIGN_FILTER_OPTIONS.find((o) => o.value === assignFilter)?.label ??
+              'All leads'}
+            <ChevronDown className="size-3.5 opacity-60" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="border-slate-700 bg-slate-800">
+            {ASSIGN_FILTER_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.value}
+                onClick={() => {
+                  setAssignFilter(opt.value);
+                  setPage(0);
+                }}
+                className="text-sm text-slate-200 focus:bg-slate-700"
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {selectedIds.size > 0 && canEdit && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
+          <span className="text-sm text-white">
+            {selectedIds.size} selected
+          </span>
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={() => setBulkAssignOpen(true)}
+          >
+            <UserCog className="size-3.5" />
+            Assign to teammate
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-slate-600 text-slate-300"
+            onClick={() => void applyBulkAssign(null)}
+          >
+            Unassign
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-slate-400"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="rounded-lg border border-slate-800 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="border-slate-800 hover:bg-transparent">
+              {canEdit && (
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={toggleSelectAllOnPage}
+                    aria-label="Select all on page"
+                    className="rounded border-slate-600 bg-slate-800"
+                  />
+                </TableHead>
+              )}
               <TableHead className="text-slate-400">Name</TableHead>
               <TableHead className="text-slate-400">Phone</TableHead>
               <TableHead className="text-slate-400 hidden md:table-cell">Email</TableHead>
               <TableHead className="text-slate-400 hidden lg:table-cell">Company</TableHead>
               <TableHead className="text-slate-400 hidden md:table-cell">Tags</TableHead>
+              <TableHead className="text-slate-400 hidden lg:table-cell">Assigned</TableHead>
               <TableHead className="text-slate-400 hidden lg:table-cell">Created</TableHead>
               <TableHead className="text-slate-400 w-12" />
             </TableRow>
@@ -274,7 +436,7 @@ export default function ContactsPage() {
           <TableBody>
             {loading ? (
               <TableRow className="border-slate-800">
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="size-6 animate-spin text-primary" />
                     <p className="text-sm text-slate-500">Loading contacts...</p>
@@ -283,7 +445,7 @@ export default function ContactsPage() {
               </TableRow>
             ) : contacts.length === 0 ? (
               <TableRow className="border-slate-800">
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Users className="size-8 text-slate-600" />
                     <p className="text-sm text-slate-500">
@@ -310,6 +472,20 @@ export default function ContactsPage() {
                   className="border-slate-800 hover:bg-slate-900/50 cursor-pointer"
                   onClick={() => openDetail(contact.id)}
                 >
+                  {canEdit && (
+                    <TableCell
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-10"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(contact.id)}
+                        onChange={() => toggleSelect(contact.id)}
+                        aria-label={`Select ${contact.name || contact.phone}`}
+                        className="rounded border-slate-600 bg-slate-800"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="text-white font-medium">
                     {contact.name || <span className="text-slate-500 italic">Unnamed</span>}
                   </TableCell>
@@ -346,6 +522,11 @@ export default function ContactsPage() {
                         </span>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-slate-400 hidden lg:table-cell text-sm">
+                    {memberLabel(teamMembers, contact.assigned_to) ?? (
+                      <span className="text-slate-600">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-slate-500 text-xs hidden lg:table-cell">
                     {new Date(contact.created_at).toLocaleDateString('en-US', {
@@ -491,6 +672,40 @@ export default function ContactsPage() {
             >
               {deleting && <Loader2 className="size-4 animate-spin" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white">Assign leads</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Assign {selectedIds.size} selected contact
+              {selectedIds.size === 1 ? '' : 's'} to a teammate.
+            </DialogDescription>
+          </DialogHeader>
+          <TeamMemberSelect
+            value={bulkAssignee}
+            onChange={setBulkAssignee}
+            allowUnassigned
+          />
+          <DialogFooter className="bg-slate-900 border-slate-700">
+            <Button
+              variant="outline"
+              onClick={() => setBulkAssignOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void applyBulkAssign(bulkAssignee)}
+              disabled={bulkSaving}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {bulkSaving && <Loader2 className="size-4 animate-spin" />}
+              Assign
             </Button>
           </DialogFooter>
         </DialogContent>
