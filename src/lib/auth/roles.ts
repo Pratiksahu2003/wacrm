@@ -112,3 +112,11 @@ export function canDeleteData(role: AccountRole): boolean {
 export function canTransferOwnership(role: AccountRole): boolean {
   return role === "owner";
 }
+
+/**
+ * Personal Meta / WhatsApp credentials — only for account owners on
+ * their own workspace, not invited teammates (they use team config).
+ */
+export function canUsePersonalWhatsApp(role: AccountRole): boolean {
+  return role === "owner";
+}

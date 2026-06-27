@@ -107,6 +107,9 @@ export default function JoinPage() {
   // A transient toast wasn't enough — the user has no actionable next
   // step. Surface a blocking modal that walks them through it.
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
+  const [conflictKind, setConflictKind] = useState<"team" | "data" | null>(
+    null,
+  );
   const [signingOut, setSigningOut] = useState(false);
 
   // Extracted so the "Try again" button on the server_error card
@@ -181,10 +184,14 @@ export default function JoinPage() {
         // a clear next-action (sign out → use different email)
         // rather than a 3-second toast.
         if (res.status === 409) {
-          setConflictMessage(
+          const msg =
             payload.error ||
-              'You are already in another account. Sign in with a different email to join this one.',
-          );
+            "You are already in another account. Sign in with a different email to join this one.";
+          const onTeam =
+            msg.toLowerCase().includes("another team") ||
+            msg.toLowerCase().includes("leave your current team");
+          setConflictKind(onTeam ? "team" : "data");
+          setConflictMessage(msg);
         } else {
           toast.error(payload.error || 'Failed to accept invitation');
         }
@@ -356,7 +363,10 @@ export default function JoinPage() {
         <Dialog
           open={conflictMessage !== null}
           onOpenChange={(open) => {
-            if (!open) setConflictMessage(null);
+            if (!open) {
+              setConflictMessage(null);
+              setConflictKind(null);
+            }
           }}
         >
           <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-md">
@@ -370,22 +380,46 @@ export default function JoinPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2 py-2 text-xs text-slate-500">
-              <p>
-                To join{' '}
-                <span className="text-slate-300">{peek.account_name}</span>,
-                sign out and sign up again with a different email address.
-                The invite link stays valid as long as it hasn&apos;t
-                expired.
-              </p>
+              {conflictKind === "team" ? (
+                <p>
+                  Go to{' '}
+                  <Link href="/settings?tab=profile" className="text-primary hover:underline">
+                    Settings → Profile
+                  </Link>{' '}
+                  and use <span className="text-slate-300">Leave team</span>.
+                  Then return here and accept the invitation again.
+                </p>
+              ) : (
+                <p>
+                  To join{' '}
+                  <span className="text-slate-300">{peek.account_name}</span>,
+                  sign out and sign up again with a different email address.
+                  The invite link stays valid as long as it hasn&apos;t
+                  expired.
+                </p>
+              )}
             </div>
             <DialogFooter className="bg-slate-900 border-slate-700">
               <Button
                 variant="outline"
-                onClick={() => setConflictMessage(null)}
+                onClick={() => {
+                  setConflictMessage(null);
+                  setConflictKind(null);
+                }}
                 className="border-slate-700 text-slate-300 hover:bg-slate-800"
               >
-                Stay signed in
+                {conflictKind === "team" ? "Close" : "Stay signed in"}
               </Button>
+              {conflictKind === "team" ? (
+                <Button
+                  render={
+                    <Link href="/settings?tab=profile" />
+                  }
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Leave team in Settings
+                </Button>
+              ) : (
               <Button
                 onClick={handleSignOutAndRetry}
                 disabled={signingOut}
@@ -400,6 +434,7 @@ export default function JoinPage() {
                   'Sign out & use a different email'
                 )}
               </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

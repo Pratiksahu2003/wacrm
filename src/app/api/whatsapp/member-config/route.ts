@@ -17,6 +17,31 @@ async function resolveAccountId(
   return (data?.account_id as string | undefined) ?? null;
 }
 
+async function requireAccountOwner(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("account_role")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (data?.account_role !== "owner") {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error:
+            "Team members use the shared WhatsApp configuration. Personal credentials are not available while you belong to a team.",
+        },
+        { status: 403 },
+      ),
+    };
+  }
+  return { ok: true };
+}
+
 /** GET — load the signed-in member's optional personal WhatsApp config. */
 export async function GET() {
   try {
@@ -28,6 +53,9 @@ export async function GET() {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const ownerCheck = await requireAccountOwner(supabase, user.id);
+    if (!ownerCheck.ok) return ownerCheck.response;
 
     const { data, error } = await supabase
       .from("member_whatsapp_config")
@@ -73,6 +101,9 @@ export async function POST(request: Request) {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const ownerCheck = await requireAccountOwner(supabase, user.id);
+    if (!ownerCheck.ok) return ownerCheck.response;
 
     const accountId = await resolveAccountId(supabase, user.id);
     if (!accountId) {
@@ -141,6 +172,9 @@ export async function DELETE() {
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const ownerCheck = await requireAccountOwner(supabase, user.id);
+    if (!ownerCheck.ok) return ownerCheck.response;
 
     const { error } = await supabase
       .from("member_whatsapp_config")

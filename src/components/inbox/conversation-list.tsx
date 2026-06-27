@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import type { Conversation, ConversationStatus } from "@/types";
-import { Search, ChevronDown } from "lucide-react";
+import type { Conversation, ConversationStatus, Profile } from "@/types";
+import { Search, ChevronDown, Check, UserCog } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
+import { memberLabel } from "@/components/team/team-member-select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -23,6 +26,8 @@ interface ConversationListProps {
   resyncToken?: number;
   /** Deep-link filter, e.g. from /inbox?assign=mine */
   initialAssignFilter?: "all" | "mine" | "unassigned";
+  /** Deep-link filter by assignee, e.g. /inbox?agent=<user_id> */
+  initialMemberId?: string | null;
 }
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
@@ -62,12 +67,19 @@ export function ConversationList({
   onConversationsLoaded,
   resyncToken = 0,
   initialAssignFilter = "all",
+  initialMemberId = null,
 }: ConversationListProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ConversationStatus | "all">("all");
   const [assignFilter, setAssignFilter] = useState<
     "all" | "mine" | "unassigned"
-  >(initialAssignFilter);
+  >(initialMemberId ? "all" : initialAssignFilter);
+  const [memberUserId, setMemberUserId] = useState<string | null>(
+    initialMemberId,
+  );
+  const [teamMembers, setTeamMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const { accountId, profileLoading, user } = useAuth();
 
@@ -115,6 +127,63 @@ export function ConversationList({
     };
   }, [resyncToken, accountId, profileLoading]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("*")
+      .order("full_name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to load team members:", error);
+          return;
+        }
+        setTeamMembers((data as Profile[]) ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const syncAssignUrl = useCallback(
+    (
+      nextAssign: "all" | "mine" | "unassigned",
+      nextMemberId: string | null,
+    ) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("assign");
+      params.delete("agent");
+      if (nextMemberId) {
+        params.set("agent", nextMemberId);
+      } else if (nextAssign !== "all") {
+        params.set("assign", nextAssign);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `/inbox?${qs}` : "/inbox", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const handleAssignPreset = useCallback(
+    (value: "all" | "mine" | "unassigned") => {
+      setAssignFilter(value);
+      setMemberUserId(null);
+      syncAssignUrl(value, null);
+    },
+    [syncAssignUrl],
+  );
+
+  const handleAssignMember = useCallback(
+    (userId: string) => {
+      setAssignFilter("all");
+      setMemberUserId(userId);
+      syncAssignUrl("all", userId);
+    },
+    [syncAssignUrl],
+  );
+
   const filtered = useMemo(() => {
     let result = conversations;
 
@@ -132,14 +201,16 @@ export function ConversationList({
       });
     }
 
-    if (assignFilter === "mine" && user?.id) {
+    if (memberUserId) {
+      result = result.filter((c) => c.assigned_agent_id === memberUserId);
+    } else if (assignFilter === "mine" && user?.id) {
       result = result.filter((c) => c.assigned_agent_id === user.id);
     } else if (assignFilter === "unassigned") {
       result = result.filter((c) => !c.assigned_agent_id);
     }
 
     return result;
-  }, [conversations, filter, search, assignFilter, user?.id]);
+  }, [conversations, filter, search, assignFilter, memberUserId, user?.id]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,6 +230,21 @@ export function ConversationList({
   const activeAssignFilter = ASSIGN_FILTER_OPTIONS.find(
     (o) => o.value === assignFilter,
   );
+  const assignFilterLabel = useMemo(() => {
+    if (memberUserId) {
+      const name = memberLabel(teamMembers, memberUserId);
+      if (name) {
+        return memberUserId === user?.id ? `${name} (me)` : name;
+      }
+      return "Team member";
+    }
+    return activeAssignFilter?.label ?? "All chats";
+  }, [
+    memberUserId,
+    teamMembers,
+    user?.id,
+    activeAssignFilter?.label,
+  ]);
 
   return (
     <div className="wa-panel flex h-full min-h-0 w-full flex-col overflow-hidden border-r border-[#2a3942] lg:w-[400px]">
@@ -199,27 +285,56 @@ export function ConversationList({
 
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-[#8696a0] hover:bg-[#202c33] hover:text-[#e9edef]">
-            {activeAssignFilter?.label ?? "All chats"}
-            <ChevronDown className="h-3 w-3" />
+            <UserCog className="h-3 w-3" />
+            <span className="max-w-[140px] truncate">{assignFilterLabel}</span>
+            <ChevronDown className="h-3 w-3 shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="border-[#2a3942] bg-[#233138]"
+            className="max-h-[min(320px,60vh)] overflow-y-auto border-[#2a3942] bg-[#233138]"
           >
-            {ASSIGN_FILTER_OPTIONS.map((opt) => (
-              <DropdownMenuItem
-                key={opt.value}
-                onClick={() => setAssignFilter(opt.value)}
-                className={cn(
-                  "text-sm focus:bg-[#2a3942]",
-                  assignFilter === opt.value
-                    ? "text-[#00a884]"
-                    : "text-[#e9edef]",
-                )}
-              >
-                {opt.label}
-              </DropdownMenuItem>
-            ))}
+            {ASSIGN_FILTER_OPTIONS.map((opt) => {
+              const isSelected = !memberUserId && assignFilter === opt.value;
+              return (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => handleAssignPreset(opt.value)}
+                  className={cn(
+                    "text-sm focus:bg-[#2a3942]",
+                    isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                  )}
+                >
+                  <span className="flex-1">{opt.label}</span>
+                  {isSelected && <Check className="ml-2 h-3 w-3" />}
+                </DropdownMenuItem>
+              );
+            })}
+            {teamMembers.length > 0 && (
+              <>
+                <DropdownMenuSeparator className="bg-[#2a3942]" />
+                {teamMembers.map((member) => {
+                  const isSelected = memberUserId === member.user_id;
+                  const label =
+                    member.full_name || member.email || "Teammate";
+                  return (
+                    <DropdownMenuItem
+                      key={member.user_id}
+                      onClick={() => handleAssignMember(member.user_id)}
+                      className={cn(
+                        "text-sm focus:bg-[#2a3942]",
+                        isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                      )}
+                    >
+                      <span className="flex-1">
+                        {label}
+                        {member.user_id === user?.id ? " (me)" : ""}
+                      </span>
+                      {isSelected && <Check className="ml-2 h-3 w-3" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -247,6 +362,10 @@ export function ConversationList({
                 conversation={conv}
                 isActive={conv.id === activeConversationId}
                 onSelect={handleSelect}
+                assigneeLabel={memberLabel(
+                  teamMembers,
+                  conv.assigned_agent_id,
+                )}
               />
             ))}
           </div>
@@ -260,12 +379,14 @@ interface ConversationItemProps {
   conversation: Conversation;
   isActive: boolean;
   onSelect: (conversation: Conversation) => void;
+  assigneeLabel?: string | null;
 }
 
 function ConversationItem({
   conversation,
   isActive,
   onSelect,
+  assigneeLabel,
 }: ConversationItemProps) {
   const contact = conversation.contact;
   const displayName = contact?.name || contact?.phone || "Unknown";
@@ -319,6 +440,11 @@ function ConversationItem({
             {timeLabel}
           </span>
         </div>
+        {assigneeLabel && (
+          <p className="mt-0.5 truncate text-[12px] text-[#00a884]/80">
+            {assigneeLabel}
+          </p>
+        )}
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <p
             className={cn(

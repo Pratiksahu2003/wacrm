@@ -22,10 +22,12 @@ export default function InboxPage() {
    */
   const deepLinkConvId = searchParams.get("c");
   const assignParam = searchParams.get("assign");
+  const agentParam = searchParams.get("agent");
   const initialAssignFilter =
     assignParam === "mine" || assignParam === "unassigned"
       ? assignParam
       : "all";
+  const initialMemberId = agentParam || null;
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
@@ -545,6 +547,7 @@ export default function InboxPage() {
             onConversationsLoaded={handleConversationsLoaded}
             resyncToken={resyncToken}
             initialAssignFilter={initialAssignFilter}
+            initialMemberId={initialMemberId}
           />
         </div>
 

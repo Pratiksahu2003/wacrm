@@ -16,12 +16,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useCan } from "@/hooks/use-can";
+import { useAuth } from "@/hooks/use-auth";
 import type { MemberWhatsAppConfig } from "@/types";
 
 const MASKED = "••••••••••••••••";
 
 export function MemberWhatsAppConfig() {
+  const { isOwner } = useAuth();
   const canEdit = useCan("send-messages");
+
+  if (!isOwner) {
+    return null;
+  }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [usePersonal, setUsePersonal] = useState(false);
