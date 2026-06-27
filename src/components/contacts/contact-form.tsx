@@ -39,7 +39,7 @@ export function ContactForm({
 }: ContactFormProps) {
   const supabase = createClient();
   const { accountId } = useAuth();
-  const canAssign = useCan('send-messages');
+  const canAssign = useCan('assign-leads');
   const isEdit = !!contact;
 
   const [name, setName] = useState('');

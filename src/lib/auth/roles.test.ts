@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACCOUNT_ROLES,
   type AccountRole,
+  canAssignLeads,
   canDeleteAccount,
   canDeleteData,
   canEditSettings,
@@ -127,6 +128,13 @@ describe("capability predicates", () => {
     expect(canDeleteData("admin")).toBe(true);
     expect(canDeleteData("agent")).toBe(false);
     expect(canDeleteData("viewer")).toBe(false);
+  });
+
+  it("canAssignLeads: admin+ only", () => {
+    expect(canAssignLeads("owner")).toBe(true);
+    expect(canAssignLeads("admin")).toBe(true);
+    expect(canAssignLeads("agent")).toBe(false);
+    expect(canAssignLeads("viewer")).toBe(false);
   });
 
   it("canTransferOwnership: owner only", () => {

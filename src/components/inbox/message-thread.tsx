@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useCan } from "@/hooks/use-can";
 import { cn } from "@/lib/utils";
 import type {
   Conversation,
@@ -139,6 +140,7 @@ export function MessageThread({
   onRefresh,
 }: MessageThreadProps) {
   const { user, accountId } = useAuth();
+  const canAssign = useCan("assign-leads");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -703,7 +705,7 @@ export function MessageThread({
 
   const handleAssignChange = useCallback(
     async (agentId: string | null) => {
-      if (!conversation) return;
+      if (!conversation || !canAssign) return;
 
       const supabase = createClient();
       const { error } = await supabase
@@ -729,7 +731,7 @@ export function MessageThread({
 
       onAssignChange(conversation.id, agentId);
     },
-    [conversation, contact?.id, onAssignChange],
+    [conversation, contact?.id, onAssignChange, canAssign],
   );
 
   // Empty state — same WhatsApp-style doodle background as the active
@@ -852,59 +854,71 @@ export function MessageThread({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
-                assignedAgentId ? "text-[#00a884]" : "text-[#8696a0]",
-              )}
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{assignLabel}</span>
-              <ChevronDown className="h-3 w-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-[#2a3942] bg-[#233138]"
-            >
-              {profiles.length === 0 ? (
-                <DropdownMenuItem disabled className="text-sm text-[#8696a0]">
-                  No teammates available
-                </DropdownMenuItem>
-              ) : (
-                profiles.map((p) => {
-                  const isSelected = p.user_id === assignedAgentId;
-                  return (
-                    <DropdownMenuItem
-                      key={p.id}
-                      onClick={() => handleAssignChange(p.user_id)}
-                      className={cn(
-                        "text-sm focus:bg-[#2a3942]",
-                        isSelected ? "text-[#00a884]" : "text-[#e9edef]",
-                      )}
-                    >
-                      <span className="flex-1">
-                        {p.full_name}
-                        {p.user_id === user?.id ? " (me)" : ""}
-                      </span>
-                      {isSelected && <Check className="ml-2 h-3 w-3" />}
-                    </DropdownMenuItem>
-                  );
-                })
-              )}
-              {assignedAgentId && (
-                <>
-                  <DropdownMenuSeparator className="bg-[#2a3942]" />
-                  <DropdownMenuItem
-                    onClick={() => handleAssignChange(null)}
-                    className="text-sm text-[#8696a0] focus:bg-[#2a3942]"
-                  >
-                    Unassign
+          {canAssign ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
+                  assignedAgentId ? "text-[#00a884]" : "text-[#8696a0]",
+                )}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{assignLabel}</span>
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="border-[#2a3942] bg-[#233138]"
+              >
+                {profiles.length === 0 ? (
+                  <DropdownMenuItem disabled className="text-sm text-[#8696a0]">
+                    No teammates available
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                ) : (
+                  profiles.map((p) => {
+                    const isSelected = p.user_id === assignedAgentId;
+                    return (
+                      <DropdownMenuItem
+                        key={p.id}
+                        onClick={() => handleAssignChange(p.user_id)}
+                        className={cn(
+                          "text-sm focus:bg-[#2a3942]",
+                          isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                        )}
+                      >
+                        <span className="flex-1">
+                          {p.full_name}
+                          {p.user_id === user?.id ? " (me)" : ""}
+                        </span>
+                        {isSelected && <Check className="ml-2 h-3 w-3" />}
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
+                {assignedAgentId && (
+                  <>
+                    <DropdownMenuSeparator className="bg-[#2a3942]" />
+                    <DropdownMenuItem
+                      onClick={() => handleAssignChange(null)}
+                      className="text-sm text-[#8696a0] focus:bg-[#2a3942]"
+                    >
+                      Unassign
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            assignedAgentId && (
+              <span
+                className="inline-flex h-9 items-center gap-1 px-2 text-xs text-[#00a884]"
+                title="Only admins and owners can change assignment"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{assignLabel}</span>
+              </span>
+            )
+          )}
         </div>
       </div>
 

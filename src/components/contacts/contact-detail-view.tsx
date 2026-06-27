@@ -53,7 +53,7 @@ export function ContactDetailView({
 }: ContactDetailViewProps) {
   const supabase = createClient();
   const { accountId } = useAuth();
-  const canAssign = useCan('send-messages');
+  const canAssign = useCan('assign-leads');
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);

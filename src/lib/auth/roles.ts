@@ -108,6 +108,11 @@ export function canDeleteData(role: AccountRole): boolean {
   return hasMinRole(role, "admin");
 }
 
+/** Owner / admin: assign chats and leads to teammates. */
+export function canAssignLeads(role: AccountRole): boolean {
+  return hasMinRole(role, "admin");
+}
+
 /** Owner only: hand the account to another member. */
 export function canTransferOwnership(role: AccountRole): boolean {
   return role === "owner";

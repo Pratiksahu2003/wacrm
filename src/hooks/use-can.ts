@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/hooks/use-auth";
 import {
+  canAssignLeads,
   canDeleteAccount,
   canDeleteData,
   canEditSettings,
@@ -21,6 +22,7 @@ export type CanAction =
   | "manage-members"
   | "edit-settings"
   | "send-messages"
+  | "assign-leads"
   | "view-only"
   | "delete-account"
   | "delete-data"
@@ -50,6 +52,8 @@ export function useCan(action: CanAction): boolean {
       return canEditSettings(accountRole);
     case "send-messages":
       return canSendMessages(accountRole);
+    case "assign-leads":
+      return canAssignLeads(accountRole);
     case "view-only":
       return canViewOnly(accountRole);
     case "delete-account":

@@ -87,6 +87,7 @@ function ContactsPageContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const canEdit = useCan('send-messages');
+  const canAssign = useCan('assign-leads');
   const canDelete = useCan('delete-data');
   const { user } = useAuth();
 
@@ -282,7 +283,7 @@ function ContactsPageContent() {
   }
 
   async function applyBulkAssign(userId: string | null) {
-    if (!canEdit || selectedIds.size === 0) return;
+    if (!canAssign || selectedIds.size === 0) return;
     setBulkSaving(true);
     const ids = [...selectedIds];
     const { error } = await bulkAssignContacts(supabase, ids, userId);
@@ -381,22 +382,26 @@ function ContactsPageContent() {
           <span className="text-sm text-white">
             {selectedIds.size} selected
           </span>
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => setBulkAssignOpen(true)}
-          >
-            <UserCog className="size-3.5" />
-            Assign to teammate
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-slate-600 text-slate-300"
-            onClick={() => void applyBulkAssign(null)}
-          >
-            Unassign
-          </Button>
+          {canAssign && (
+            <>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => setBulkAssignOpen(true)}
+              >
+                <UserCog className="size-3.5" />
+                Assign to teammate
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-600 text-slate-300"
+                onClick={() => void applyBulkAssign(null)}
+              >
+                Unassign
+              </Button>
+            </>
+          )}
           <Button
             size="sm"
             variant="ghost"

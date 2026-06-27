@@ -33,7 +33,7 @@ interface ContactSidebarProps {
 
 export function ContactSidebar({ contact, onContactUpdated }: ContactSidebarProps) {
   const { accountId } = useAuth();
-  const canAssign = useCan("send-messages");
+  const canAssign = useCan("assign-leads");
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [notes, setNotes] = useState<ContactNote[]>([]);
