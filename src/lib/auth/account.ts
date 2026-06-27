@@ -26,7 +26,7 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { hasMinRole, isAccountRole, type AccountRole } from "./roles";
@@ -72,6 +72,30 @@ export function toErrorResponse(err: unknown): NextResponse {
   }
   console.error("[toErrorResponse] uncategorized error:", err);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+
+/**
+ * Map Postgres SQLSTATEs from SECURITY DEFINER RPCs to HTTP responses.
+ * Surfaces the RAISE message from migrations instead of a generic 500.
+ */
+export function toRpcErrorResponse(
+  err: PostgrestError,
+  fallbackMessage = "Request failed",
+): NextResponse {
+  if (err.code === "42501") {
+    return NextResponse.json({ error: err.message }, { status: 403 });
+  }
+  if (err.code === "22023") {
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+  if (err.code === "23505") {
+    return NextResponse.json({ error: err.message }, { status: 409 });
+  }
+  console.error("[toRpcErrorResponse] unexpected RPC error:", err);
+  return NextResponse.json(
+    { error: err.message || fallbackMessage },
+    { status: 500 },
+  );
 }
 
 // ------------------------------------------------------------

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
-import { toErrorResponse } from "@/lib/auth/account";
+import { toErrorResponse, toRpcErrorResponse } from "@/lib/auth/account";
 
 /** POST — leave the current team and return to an empty personal account. */
 export async function POST() {
@@ -19,7 +20,7 @@ export async function POST() {
     const { data: accountId, error } = await supabase.rpc("leave_team");
 
     if (error) {
-      return toErrorResponse(error);
+      return toRpcErrorResponse(error, "Could not leave team");
     }
 
     return NextResponse.json({ account_id: accountId });
