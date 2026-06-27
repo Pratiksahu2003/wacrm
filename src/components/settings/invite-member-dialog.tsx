@@ -39,7 +39,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
-type InviteRole = 'admin' | 'agent' | 'viewer';
+type InviteableRole = 'agent' | 'viewer';
 
 interface InviteMemberDialogProps {
   open: boolean;
@@ -55,9 +55,7 @@ const EXPIRY_OPTIONS: { value: string; label: string }[] = [
   { value: '30', label: '30 days' },
 ];
 
-const ROLE_DESCRIPTIONS: Record<InviteRole, string> = {
-  admin:
-    'Can invite teammates, manage settings, send messages, and edit data.',
+const ROLE_DESCRIPTIONS: Record<InviteableRole, string> = {
   agent:
     'Can use the inbox, contacts, broadcasts, automations, and flows. No settings or member access.',
   viewer: 'Read-only access across every page. Cannot send or edit anything.',
@@ -70,7 +68,7 @@ const MAX_LABEL_LEN = 80;
 
 interface CreatedInvite {
   url: string;
-  role: InviteRole;
+  role: InviteableRole;
   expiresInDays: number;
   /** Snapshotted at creation time so a later account rename can't
    *  retroactively change the wa.me message text on the result step. */
@@ -83,7 +81,7 @@ export function InviteMemberDialog({
   onCreated,
 }: InviteMemberDialogProps) {
   const { account } = useAuth();
-  const [role, setRole] = useState<InviteRole>('agent');
+  const [role, setRole] = useState<InviteableRole>('agent');
   const [expiry, setExpiry] = useState<string>('7');
   const [label, setLabel] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
@@ -354,13 +352,12 @@ export function InviteMemberDialog({
                 <Label className="text-slate-300">Role</Label>
                 <Select
                   value={role}
-                  onValueChange={(v) => v && setRole(v as InviteRole)}
+                  onValueChange={(v) => v && setRole(v as InviteableRole)}
                 >
                   <SelectTrigger className="w-full bg-slate-800 border-slate-700 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="viewer">Viewer</SelectItem>
                   </SelectContent>
