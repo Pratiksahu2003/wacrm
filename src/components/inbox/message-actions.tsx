@@ -20,6 +20,8 @@ interface MessageActionsProps {
   onReply: () => void;
   onReact: (emoji: string) => void;
   children: ReactNode;
+  /** Wider cap for template messages with header media. */
+  wide?: boolean;
 }
 
 /**
@@ -32,6 +34,7 @@ export function MessageActions({
   onReply,
   onReact,
   children,
+  wide = false,
 }: MessageActionsProps) {
   // Touch devices have no hover. Long-press fires `contextmenu`; we capture
   // it, suppress the native menu, and pin the toolbar open until the user
@@ -90,7 +93,7 @@ export function MessageActions({
        *  an unbroken URL) push past the cap and shove the row past
        *  100%, which used to bleed across into the contact-sidebar
        *  area. See issue #165. */}
-      <div className="group/actions relative min-w-0 max-w-[75%]">
+      <div className={cn("group/actions relative min-w-0", wide ? "max-w-[min(100%,360px)]" : "max-w-[75%]")}>
         {children}
       <div
         data-touch-open={touchOpen || pickerOpen ? "true" : undefined}

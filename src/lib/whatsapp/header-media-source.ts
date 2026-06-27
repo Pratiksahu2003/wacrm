@@ -1,6 +1,5 @@
-import type { MessageTemplate } from '@/types';
+import type { Message, MessageTemplate } from '@/types';
 
-/** True when the value is an http(s) URL (Meta sometimes puts CDN URLs in header_handle). */
 export function isHttpMediaUrl(value?: string | null): boolean {
   if (!value?.trim()) return false;
   try {
@@ -80,4 +79,72 @@ export function normalizeSyncedHeaderMedia(args: {
     header_handle: rawHandle,
     header_media_url: rawUrl,
   };
+}
+
+export type TemplateHeaderKind = 'text' | MediaHeaderType;
+
+export interface TemplateHeaderDisplay {
+  kind: TemplateHeaderKind;
+  text?: string;
+  mediaUrl?: string;
+}
+
+/**
+ * Resolve header assets for in-app template message display.
+ * Falls back to the Meta media proxy when only `header_media_id` is stored.
+ */
+export function resolveTemplateHeaderDisplay(
+  template: Pick<
+    MessageTemplate,
+    | 'header_type'
+    | 'header_content'
+    | 'header_media_url'
+    | 'header_handle'
+    | 'header_media_id'
+  >,
+  options?: { headerText?: string | null; mediaUrlOverride?: string | null },
+): TemplateHeaderDisplay | null {
+  const headerType = template.header_type;
+  if (!headerType) return null;
+
+  if (headerType === 'text') {
+    const text =
+      options?.headerText?.trim() ||
+      template.header_content?.trim() ||
+      undefined;
+    return text ? { kind: 'text', text } : null;
+  }
+
+  const direct =
+    options?.mediaUrlOverride?.trim() ||
+    pickHeaderMediaLink(template, options?.mediaUrlOverride);
+  if (direct) return { kind: headerType, mediaUrl: direct };
+
+  const mediaId = template.header_media_id?.trim();
+  if (mediaId) {
+    return {
+      kind: headerType,
+      mediaUrl: `/api/whatsapp/media/${mediaId}`,
+    };
+  }
+
+  return { kind: headerType };
+}
+
+/** Prefer persisted message media, then template definition. */
+export function resolveTemplateMessageMediaUrl(
+  message: Pick<Message, 'media_url'>,
+  template?: Pick<
+    MessageTemplate,
+    | 'header_type'
+    | 'header_content'
+    | 'header_media_url'
+    | 'header_handle'
+    | 'header_media_id'
+  > | null,
+): string | undefined {
+  const fromMessage = message.media_url?.trim();
+  if (fromMessage) return fromMessage;
+  if (!template) return undefined;
+  return resolveTemplateHeaderDisplay(template)?.mediaUrl;
 }

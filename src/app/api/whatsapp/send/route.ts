@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendTextMessage, sendTemplateMessage, resolveUploadHandleToMediaId, uploadWhatsAppMediaFromUrl, verifyPhoneNumber } from '@/lib/whatsapp/meta-api'
 import { prepareSendComponents } from '@/lib/whatsapp/template-send-builder'
+import { resolveTemplateHeaderDisplay } from '@/lib/whatsapp/header-media-source'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
@@ -378,9 +379,23 @@ export async function POST(request: Request) {
     }
 
     // Insert message into DB — field names MUST match the messages schema
-    // (see supabase/migrations/001_initial_schema.sql):
     //   conversation_id, sender_type, content_type, content_text,
     //   media_url, template_name, message_id, status, created_at
+    let storedMediaUrl: string | null = media_url?.trim() || null
+    if (
+      message_type === 'template' &&
+      templateRow &&
+      !storedMediaUrl &&
+      templateRow.header_type &&
+      templateRow.header_type !== 'text'
+    ) {
+      const headerDisplay = resolveTemplateHeaderDisplay(templateRow, {
+        headerText: template_message_params?.headerText,
+        mediaUrlOverride: template_message_params?.headerMediaUrl,
+      })
+      storedMediaUrl = headerDisplay?.mediaUrl ?? null
+    }
+
     const { data: messageRecord, error: msgError } = await supabase
       .from('messages')
       .insert({
@@ -388,7 +403,7 @@ export async function POST(request: Request) {
         sender_type: 'agent',
         content_type: message_type,
         content_text: content_text || null,
-        media_url: media_url || null,
+        media_url: storedMediaUrl,
         template_name: template_name || null,
         message_id: waMessageId,
         status: 'sent',

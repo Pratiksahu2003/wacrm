@@ -32,12 +32,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageBubble } from "./message-bubble";
+import { MessageBubble, messageUsesWideBubble } from "./message-bubble";
 import { MessageActions } from "./message-actions";
 import { MessageComposer } from "./message-composer";
 import { TemplatePicker } from "./template-picker";
 import { buildReplyPreview } from "./reply-quote";
 import { toast } from "sonner";
+import { resolveTemplateHeaderDisplay } from "@/lib/whatsapp/header-media-source";
 
 interface ReplyDraft {
   id: string;
@@ -145,7 +146,7 @@ export function MessageThread({
   resyncToken = 0,
   onRefresh,
 }: MessageThreadProps) {
-  const { user } = useAuth();
+  const { user, accountId } = useAuth();
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -174,6 +175,9 @@ export function MessageThread({
     }, 700);
   }, [isRefreshing, onRefresh]);
   const [replyTo, setReplyTo] = useState<ReplyDraft | null>(null);
+  const [templatesByName, setTemplatesByName] = useState<
+    Map<string, MessageTemplate>
+  >(new Map());
 
   // Profiles are bounded by RLS to rows the current user is allowed to
   // see — today that's just the current user, but the dropdown keeps the
@@ -197,6 +201,35 @@ export function MessageThread({
       cancelled = true;
     };
   }, []);
+
+  // Template rows power header-image rendering for template messages in chat.
+  useEffect(() => {
+    if (!accountId) {
+      setTemplatesByName(new Map());
+      return;
+    }
+    let cancelled = false;
+    const supabase = createClient();
+    supabase
+      .from("message_templates")
+      .select("*")
+      .eq("account_id", accountId)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to fetch templates:", error);
+          return;
+        }
+        const map = new Map<string, MessageTemplate>();
+        for (const row of (data as MessageTemplate[]) ?? []) {
+          if (!map.has(row.name)) map.set(row.name, row);
+        }
+        setTemplatesByName(map);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId]);
 
   // 24-hour session timer
   const sessionInfo = useMemo(() => {
@@ -506,6 +539,11 @@ export function MessageThread({
 
       const renderedBody = renderTemplateBody(template.body_text, values.body);
       const tempId = `temp-${Date.now()}`;
+      const headerDisplay = resolveTemplateHeaderDisplay(template, {
+        headerText: values.headerText,
+      });
+      const templateMediaUrl =
+        headerDisplay?.kind !== "text" ? headerDisplay?.mediaUrl : undefined;
 
       const optimisticMsg: Message = {
         id: tempId,
@@ -513,6 +551,7 @@ export function MessageThread({
         sender_type: "agent",
         content_type: "template",
         content_text: renderedBody,
+        media_url: templateMediaUrl,
         template_name: template.name,
         status: "sending",
         created_at: new Date().toISOString(),
@@ -911,6 +950,9 @@ export function MessageThread({
                         }
                       : null;
                     const msgReactions = reactionsByMessageId.get(msg.id);
+                    const templateRow = msg.template_name
+                      ? templatesByName.get(msg.template_name)
+                      : undefined;
                     const handlePillToggle = (emoji: string) => {
                       const own = msgReactions?.find(
                         (r) =>
@@ -924,6 +966,7 @@ export function MessageThread({
                       <MessageActions
                         key={msg.id}
                         message={msg}
+                        wide={messageUsesWideBubble(msg, templateRow)}
                         onReply={() => handleStartReply(msg)}
                         onReact={(emoji) => {
                           if (emoji) void postReaction(msg.id, emoji);
@@ -937,6 +980,7 @@ export function MessageThread({
                           onToggleReaction={handlePillToggle}
                           showTail={showTail}
                           isGrouped={isGrouped}
+                          template={templateRow}
                         />
                       </MessageActions>
                     );

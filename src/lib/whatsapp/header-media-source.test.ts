@@ -5,6 +5,8 @@ import {
   normalizeSyncedHeaderMedia,
   pickHeaderMediaLink,
   pickUploadHandle,
+  resolveTemplateHeaderDisplay,
+  resolveTemplateMessageMediaUrl,
 } from './header-media-source';
 
 describe('header-media-source', () => {
@@ -58,5 +60,35 @@ describe('header-media-source', () => {
       isWhatsAppCdnUrl('https://scontent.whatsapp.net/v/t61.29466-34/foo'),
     ).toBe(true);
     expect(isWhatsAppCdnUrl('https://example.com/a.jpg')).toBe(false);
+  });
+
+  it('resolves template image header for display via media id proxy', () => {
+    expect(
+      resolveTemplateHeaderDisplay({
+        header_type: 'image',
+        header_content: null,
+        header_media_url: null,
+        header_handle: null,
+        header_media_id: '12345',
+      }),
+    ).toEqual({
+      kind: 'image',
+      mediaUrl: '/api/whatsapp/media/12345',
+    });
+  });
+
+  it('prefers persisted message media_url over template definition', () => {
+    expect(
+      resolveTemplateMessageMediaUrl(
+        { media_url: 'https://example.com/sent.jpg' },
+        {
+          header_type: 'image',
+          header_content: null,
+          header_media_url: 'https://example.com/template.jpg',
+          header_handle: null,
+          header_media_id: null,
+        },
+      ),
+    ).toBe('https://example.com/sent.jpg');
   });
 });
