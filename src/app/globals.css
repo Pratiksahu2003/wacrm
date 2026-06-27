@@ -347,10 +347,10 @@ html[data-theme="rose"] {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    margin-left: 8px;
-    margin-top: 4px;
+    margin-left: 10px;
+    margin-top: 6px;
     position: relative;
-    top: 4px;
+    top: 2px;
     font-size: 11px;
     line-height: 15px;
     color: rgba(233, 237, 239, 0.63);

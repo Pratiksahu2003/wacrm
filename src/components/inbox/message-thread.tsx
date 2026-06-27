@@ -125,14 +125,6 @@ const STATUS_OPTIONS: { label: string; value: ConversationStatus; color: string 
  */
 const DOODLE_BG_CLASSES = "wa-chat-bg";
 
-function isAgentMessage(msg: Message): boolean {
-  return msg.sender_type === "agent" || msg.sender_type === "bot";
-}
-
-function sameSenderGroup(a: Message, b: Message): boolean {
-  return isAgentMessage(a) === isAgentMessage(b);
-}
-
 export function MessageThread({
   conversation,
   contact,
@@ -907,7 +899,7 @@ export function MessageThread({
       </div>
 
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-[63px] py-3 max-sm:px-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-[63px] py-4 max-sm:px-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
@@ -920,26 +912,16 @@ export function MessageThread({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-4">
             {messageGroups.map((group) => (
               <div key={group.date}>
-                <div className="mb-3 flex items-center justify-center">
+                <div className="mb-4 flex items-center justify-center">
                   <span className="wa-date-pill rounded-lg px-3 py-1.5 text-[12.5px] font-normal">
                     {formatDateSeparator(group.date)}
                   </span>
                 </div>
-                <div className="space-y-0.5">
-                  {group.messages.map((msg, idx) => {
-                    const prev = idx > 0 ? group.messages[idx - 1] : null;
-                    const next =
-                      idx < group.messages.length - 1
-                        ? group.messages[idx + 1]
-                        : null;
-                    const isGrouped = prev
-                      ? sameSenderGroup(prev, msg)
-                      : false;
-                    const showTail = !next || !sameSenderGroup(msg, next);
-
+                <div className="flex flex-col gap-2.5">
+                  {group.messages.map((msg) => {
                     const parent = msg.reply_to_message_id
                       ? messagesById.get(msg.reply_to_message_id)
                       : null;
@@ -978,8 +960,8 @@ export function MessageThread({
                           reactions={msgReactions}
                           currentUserId={user?.id}
                           onToggleReaction={handlePillToggle}
-                          showTail={showTail}
-                          isGrouped={isGrouped}
+                          showTail
+                          isGrouped={false}
                           template={templateRow}
                         />
                       </MessageActions>

@@ -66,9 +66,9 @@ describe('header-media-source', () => {
     expect(
       resolveTemplateHeaderDisplay({
         header_type: 'image',
-        header_content: null,
-        header_media_url: null,
-        header_handle: null,
+        header_content: undefined,
+        header_media_url: undefined,
+        header_handle: undefined,
         header_media_id: '12345',
       }),
     ).toEqual({
@@ -83,10 +83,10 @@ describe('header-media-source', () => {
         { media_url: 'https://example.com/sent.jpg' },
         {
           header_type: 'image',
-          header_content: null,
+          header_content: undefined,
           header_media_url: 'https://example.com/template.jpg',
-          header_handle: null,
-          header_media_id: null,
+          header_handle: undefined,
+          header_media_id: undefined,
         },
       ),
     ).toBe('https://example.com/sent.jpg');

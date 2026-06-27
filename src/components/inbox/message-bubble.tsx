@@ -162,7 +162,7 @@ function TemplateMessageContent({
   const footerText = template?.footer_text?.trim();
 
   return (
-    <div className={cn(hasMediaHeader ? "flex flex-col" : "space-y-1")}>
+    <div className={cn(hasMediaHeader ? "flex flex-col gap-1" : "space-y-1.5")}>
       {hasMediaHeader && mediaUrl && (
         <div className="overflow-hidden">
           {header?.kind === "image" && (
@@ -195,7 +195,7 @@ function TemplateMessageContent({
 
       <div
         className={cn(
-          hasMediaHeader ? "space-y-1 px-3 py-2" : "space-y-1",
+          hasMediaHeader ? "space-y-2 px-3.5 py-2.5" : "space-y-1.5",
         )}
       >
         {!hasMediaHeader && (
@@ -212,23 +212,23 @@ function TemplateMessageContent({
         )}
 
         {message.content_text && (
-          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px] text-[#e9edef]">
+          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px] text-[#e9edef]">
             {message.content_text}
           </p>
         )}
 
         {footerText && (
-          <p className="pt-0.5 text-[12px] leading-[16px] text-[#8696a0]">
+          <p className="pt-1 text-[12px] leading-[17px] text-[#8696a0]">
             {footerText}
           </p>
         )}
 
         {template?.buttons && template.buttons.length > 0 && (
-          <div className="mt-2 space-y-1 border-t border-black/10 pt-2">
+          <div className="mt-2.5 space-y-1.5 border-t border-black/10 pt-2.5">
             {template.buttons.map((btn, i) => (
               <div
                 key={`${btn.type}-${i}`}
-                className="rounded-md bg-black/10 px-2 py-1.5 text-center text-[13px] text-[#53bdeb]"
+                className="rounded-md bg-black/10 px-3 py-2 text-center text-[13px] text-[#53bdeb]"
               >
                 {btn.text}
               </div>
@@ -250,7 +250,7 @@ function MessageContent({
   switch (message.content_type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
+        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px]">
           {message.content_text}
         </p>
       );
@@ -264,7 +264,7 @@ function MessageContent({
             <MediaUnavailable label="Image" />
           )}
           {message.content_text && (
-            <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
+            <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px]">
               {message.content_text}
             </p>
           )}
@@ -284,7 +284,7 @@ function MessageContent({
             <MediaUnavailable label="Video" />
           )}
           {message.content_text && (
-            <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
+            <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px]">
               {message.content_text}
             </p>
           )}
@@ -338,7 +338,7 @@ function MessageContent({
             <CornerDownLeft className="h-3 w-3" />
             Button reply
           </span>
-          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
+          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px]">
             {message.content_text || "[Interactive reply]"}
           </p>
         </div>
@@ -346,7 +346,7 @@ function MessageContent({
 
     default:
       return (
-        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[19px]">
+        <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px]">
           {message.content_text || "[Unsupported message type]"}
         </p>
       );
@@ -383,30 +383,27 @@ export function MessageBubble({
       className={cn(
         "flex flex-col",
         isAgent ? "items-end" : "items-start",
-        isGrouped && "-mt-1",
       )}
     >
       <div
         className={cn(
           "relative max-w-[min(100%,340px)]",
-          templateMediaHeader ? "overflow-hidden p-0" : "px-3 py-1.5 pb-2",
+          templateMediaHeader ? "overflow-hidden p-0" : "px-3.5 py-2 pb-2.5",
           isAgent ? "wa-bubble-out" : "wa-bubble-in",
           showTail && "wa-bubble-tail",
           isAgent
             ? cn(
                 "rounded-lg",
                 showTail ? "rounded-br-none" : "rounded-br-lg",
-                isGrouped ? "rounded-tr-none" : "rounded-tr-lg",
               )
             : cn(
                 "rounded-lg",
                 showTail ? "rounded-bl-none" : "rounded-bl-lg",
-                isGrouped ? "rounded-tl-none" : "rounded-tl-lg",
               ),
         )}
       >
         {reply && (
-          <div className={cn(templateMediaHeader && "px-3 pt-2")}>
+          <div className={cn(templateMediaHeader ? "px-3.5 pt-2.5" : "mb-1")}>
             <ReplyQuote
               authorLabel={reply.authorLabel}
               preview={reply.preview}
@@ -419,7 +416,7 @@ export function MessageBubble({
           <span
             className={cn(
               "wa-bubble-meta",
-              templateMediaHeader && "px-3 pb-1.5",
+              templateMediaHeader && "px-3.5 pb-2.5",
             )}
           >
             {time}
