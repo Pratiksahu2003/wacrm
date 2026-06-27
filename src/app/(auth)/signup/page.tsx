@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MessageSquare, CheckCircle, UsersRound } from "lucide-react";
+import { publicAppUrl } from "@/lib/site-url";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -60,13 +61,12 @@ function SignupPageInner() {
 
     setLoading(true);
 
-    // If we have an invite token, point Supabase's verification
-    // email back at the join page so the user can accept after
-    // verifying. Without a token, Supabase uses its default
-    // redirect (the app root).
+    // Verification emails must redirect to the canonical site URL
+    // (NEXT_PUBLIC_SITE_URL), not window.location.origin — so links
+    // work when signing up from localhost or a preview deploy.
     const emailRedirectTo = inviteToken
-      ? `${window.location.origin}/join/${encodeURIComponent(inviteToken)}`
-      : undefined;
+      ? publicAppUrl(`/join/${encodeURIComponent(inviteToken)}`)
+      : publicAppUrl("/login");
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -75,7 +75,7 @@ function SignupPageInner() {
         data: {
           full_name: fullName,
         },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        emailRedirectTo,
       },
     });
 
