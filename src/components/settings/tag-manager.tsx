@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Plus, X, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useCan } from '@/hooks/use-can';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,7 @@ const PRESET_COLORS = [
 export function TagManager() {
   const supabase = createClient();
   const { user, accountId, loading: authLoading } = useAuth();
+  const canDelete = useCan('delete-data');
 
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -198,12 +200,14 @@ export function TagManager() {
                     style={{ backgroundColor: tag.color }}
                   />
                   {tag.name}
+                  {canDelete && (
                   <button
                     onClick={() => confirmDelete(tag)}
                     className="ml-0.5 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
                   >
                     <X className="size-3" />
                   </button>
+                  )}
                 </span>
               ))}
             </div>

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useCan } from '@/hooks/use-can';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,6 +44,7 @@ export function WhatsAppConfig() {
   // joined an account sees the inviter's saved config without
   // having to re-enter anything.
   const { user, accountId, loading: authLoading, profileLoading } = useAuth();
+  const canEditTeam = useCan('edit-settings');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -378,8 +380,19 @@ export function WhatsAppConfig() {
     <div className="grid gap-6 lg:grid-cols-[1fr_380px] mt-4">
       {/* Main config form */}
       <div className="space-y-6">
+        {!canEditTeam && (
+          <Alert className="bg-slate-900 border-slate-700">
+            <AlertTitle className="text-white">Team WhatsApp (shared)</AlertTitle>
+            <AlertDescription className="text-slate-400">
+              This is your account&apos;s shared WhatsApp number. All teammates
+              send from it unless they enable personal credentials below. Only
+              owners/admins can change team settings.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Corrupted-token reset banner */}
-        {showResetBanner && (
+        {showResetBanner && canEditTeam && (
           <Alert className="bg-amber-950/40 border-amber-600/40">
             <div className="flex items-start gap-3">
               <AlertTriangle className="size-5 text-amber-400 mt-0.5 shrink-0" />
@@ -556,6 +569,7 @@ export function WhatsAppConfig() {
                 placeholder="e.g. 100234567890123"
                 value={phoneNumberId}
                 onChange={(e) => setPhoneNumberId(e.target.value)}
+                readOnly={!canEditTeam}
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
               />
             </div>
@@ -566,6 +580,7 @@ export function WhatsAppConfig() {
                 placeholder="e.g. 100234567890456"
                 value={wabaId}
                 onChange={(e) => setWabaId(e.target.value)}
+                readOnly={!canEditTeam}
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
               />
             </div>
@@ -587,8 +602,10 @@ export function WhatsAppConfig() {
                       setTokenEdited(true);
                     }
                   }}
+                  readOnly={!canEditTeam}
                   className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 pr-10"
                 />
+                {canEditTeam && (
                 <button
                   type="button"
                   onClick={() => setShowToken(!showToken)}
@@ -596,6 +613,7 @@ export function WhatsAppConfig() {
                 >
                   {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
+                )}
               </div>
               {config && !tokenEdited && (
                 <p className="text-xs text-slate-500">
@@ -610,6 +628,7 @@ export function WhatsAppConfig() {
                 placeholder="Create a custom verify token"
                 value={verifyToken}
                 onChange={(e) => setVerifyToken(e.target.value)}
+                readOnly={!canEditTeam}
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
               />
               <p className="text-xs text-slate-500">
@@ -633,6 +652,7 @@ export function WhatsAppConfig() {
                 onChange={(e) =>
                   setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
                 }
+                readOnly={!canEditTeam}
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 tracking-widest"
               />
               <p className="text-xs text-slate-500 leading-relaxed">
@@ -708,6 +728,7 @@ export function WhatsAppConfig() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3">
+          {canEditTeam && (
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -722,6 +743,7 @@ export function WhatsAppConfig() {
               'Save Configuration'
             )}
           </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleTestConnection}
@@ -740,7 +762,7 @@ export function WhatsAppConfig() {
               </>
             )}
           </Button>
-          {config && (
+          {config && canEditTeam && (
             <Button
               variant="outline"
               onClick={handleReset}

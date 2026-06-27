@@ -20,6 +20,7 @@ import { SessionsCard } from '@/components/settings/sessions-card';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { MembersTab } from '@/components/settings/members-tab';
 import { MetaAppSecretPanel } from '@/components/settings/meta-app-secret-panel';
+import { MemberWhatsAppConfig } from '@/components/settings/member-whatsapp-config';
 
 const TAB_VALUES = [
   'profile',
@@ -118,8 +119,9 @@ export default function SettingsPage() {
           <SessionsCard />
         </TabsContent>
 
-        <TabsContent value="whatsapp">
+        <TabsContent value="whatsapp" className="space-y-6">
           <WhatsAppConfig />
+          <MemberWhatsAppConfig />
         </TabsContent>
 
         <TabsContent value="app-secret">

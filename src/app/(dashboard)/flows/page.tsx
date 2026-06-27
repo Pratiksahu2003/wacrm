@@ -91,6 +91,7 @@ const TEMPLATE_ICONS = {
 export default function FlowsPage() {
   const router = useRouter();
   const canCreate = useCan("send-messages");
+  const canDelete = useCan("delete-data");
   const [flows, setFlows] = useState<FlowRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -250,7 +251,7 @@ export default function FlowsPage() {
               key={flow.id}
               flow={flow}
               onEdit={() => router.push(`/flows/${flow.id}`)}
-              onDelete={() => handleDelete(flow)}
+              onDelete={canDelete ? () => handleDelete(flow) : undefined}
             />
           ))}
         </div>
@@ -417,7 +418,7 @@ function FlowCard({
 }: {
   flow: FlowRow;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const triggerSummary = describeTrigger(flow);
   const StatusIcon =
@@ -463,6 +464,7 @@ function FlowCard({
           <Pencil className="h-3.5 w-3.5" />
           Edit
         </Button>
+        {onDelete && (
         <Button
           variant="ghost"
           size="sm"
@@ -472,6 +474,7 @@ function FlowCard({
           <Trash2 className="h-3.5 w-3.5" />
           Delete
         </Button>
+        )}
       </div>
     </div>
   );

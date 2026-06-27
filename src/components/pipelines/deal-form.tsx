@@ -31,6 +31,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCan } from "@/hooks/use-can";
 
 interface DealFormProps {
   open: boolean;
@@ -71,6 +72,7 @@ export function DealForm({
   const [statusAction, setStatusAction] = useState<DealStatus | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const canDelete = useCan("delete-data");
 
   // Reset the form fields every time the sheet opens or its input
   // props change. This is a legitimate prop-driven sync; the rule is
@@ -443,7 +445,7 @@ export function DealForm({
               </Button>
             </div>
 
-            {deal &&
+            {deal && canDelete &&
               (confirmDelete ? (
                 <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs">
                   <span className="text-red-300">Delete this deal?</span>

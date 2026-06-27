@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Broadcast, BroadcastRecipient, RecipientStatus } from '@/types';
 import { Button } from '@/components/ui/button';
+import { useCan } from '@/hooks/use-can';
 import {
   Table,
   TableBody,
@@ -155,6 +156,7 @@ export default function BroadcastDetailPage() {
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const canDelete = useCan('delete-data');
 
   useEffect(() => {
     async function fetchData() {
@@ -336,11 +338,8 @@ export default function BroadcastDetailPage() {
           </div>
         </div>
 
-        {/* Delete — inline-confirm pattern matches the pipeline-settings
-            "Delete Pipeline" flow. Mid-send broadcasts can't be deleted
-            because orphaning in-flight Meta messages would leave the
-            funnel inconsistent. */}
-        {confirmDelete ? (
+        {/* Delete — owner only */}
+        {canDelete && (confirmDelete ? (
           <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm">
             <span className="text-red-300">Delete this broadcast?</span>
             <Button
@@ -377,7 +376,7 @@ export default function BroadcastDetailPage() {
             <Trash2 className="h-3.5 w-3.5" />
             Delete
           </Button>
-        )}
+        ))}
       </div>
 
       {broadcast.status === 'sending' && (

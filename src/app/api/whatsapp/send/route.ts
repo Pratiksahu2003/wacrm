@@ -5,6 +5,7 @@ import { prepareSendComponents } from '@/lib/whatsapp/template-send-builder'
 import { resolveTemplateHeaderDisplay } from '@/lib/whatsapp/header-media-source'
 import { metaApiErrorStatus } from '@/lib/whatsapp/meta-api-errors'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
+import { resolveWhatsAppConfigForUser } from '@/lib/whatsapp/resolve-config'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import {
   sanitizePhoneForMeta,
@@ -121,14 +122,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch and decrypt WhatsApp config (needed for country-code inference)
-    const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('*')
-      .eq('account_id', accountId)
-      .single()
+    // Team or personal WhatsApp credentials (member override when enabled)
+    const { data: resolved, error: configResolveError } =
+      await resolveWhatsAppConfigForUser(supabase, user.id, accountId)
 
-    if (configError || !config) {
+    if (configResolveError) {
+      return NextResponse.json(
+        { error: configResolveError.message },
+        { status: 500 },
+      )
+    }
+
+    const config = resolved?.config
+    if (!config) {
       return NextResponse.json(
         { error: 'WhatsApp not configured. Please set up your WhatsApp integration first.' },
         { status: 400 }
@@ -139,18 +145,20 @@ export async function POST(request: Request) {
     const accessToken = decodedToken.plaintext
 
     if (!decodedToken.encrypted || decodedToken.legacy) {
-      void supabase
-        .from('whatsapp_config')
-        .update({ access_token: encrypt(accessToken) })
-        .eq('id', config.id)
-        .then(({ error }) => {
-          if (error) {
-            console.warn(
-              '[whatsapp/send] access_token GCM upgrade failed:',
-              error.message,
-            )
-          }
-        })
+      if (resolved?.source === "team" && config.id) {
+        void supabase
+          .from('whatsapp_config')
+          .update({ access_token: encrypt(accessToken) })
+          .eq('id', config.id)
+          .then(({ error }) => {
+            if (error) {
+              console.warn(
+                '[whatsapp/send] access_token GCM upgrade failed:',
+                error.message,
+              )
+            }
+          })
+      }
     }
 
     let defaultCountryCode: string | undefined

@@ -87,6 +87,7 @@ function ContactsPageContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const canEdit = useCan('send-messages');
+  const canDelete = useCan('delete-data');
   const { user } = useAuth();
 
   const [contacts, setContacts] = useState<ContactWithTags[]>([]);
@@ -563,6 +564,8 @@ function ContactsPageContent() {
                           <Pencil className="size-4" />
                           Edit
                         </DropdownMenuItem>
+                        {canDelete && (
+                          <>
                         <DropdownMenuSeparator className="bg-slate-700" />
                         <DropdownMenuItem
                           variant="destructive"
@@ -574,6 +577,8 @@ function ContactsPageContent() {
                           <Trash2 className="size-4" />
                           Delete
                         </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

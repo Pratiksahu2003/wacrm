@@ -60,6 +60,7 @@ const TEMPLATE_ICON: Record<TemplateSlug, typeof Zap> = {
 export default function AutomationsPage() {
   const router = useRouter()
   const canCreate = useCan("send-messages")
+  const canDelete = useCan("delete-data")
   const [automations, setAutomations] = useState<Automation[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Automation | null>(null)
@@ -221,7 +222,7 @@ export default function AutomationsPage() {
               onEdit={() => router.push(`/automations/${a.id}/edit`)}
               onDuplicate={() => duplicate(a)}
               onLogs={() => router.push(`/automations/${a.id}/logs`)}
-              onDelete={() => setPendingDelete(a)}
+              onDelete={canDelete ? () => setPendingDelete(a) : undefined}
             />
           ))}
         </ul>
@@ -273,7 +274,7 @@ function AutomationCard({
   onEdit: () => void
   onDuplicate: () => void
   onLogs: () => void
-  onDelete: () => void
+  onDelete?: () => void
 }) {
   const meta = triggerMeta(automation.trigger_type)
   return (
@@ -349,11 +350,15 @@ function AutomationCard({
                 <FileText className="h-4 w-4" />
                 View Logs
               </DropdownMenuItem>
+              {onDelete && (
+                <>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={onDelete}>
                 <Trash2 className="h-4 w-4" />
                 Delete
               </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

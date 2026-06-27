@@ -103,6 +103,11 @@ export function canDeleteAccount(role: AccountRole): boolean {
   return role === "owner";
 }
 
+/** Owner / admin: delete contacts, deals, broadcasts, messages, etc. */
+export function canDeleteData(role: AccountRole): boolean {
+  return hasMinRole(role, "admin");
+}
+
 /** Owner only: hand the account to another member. */
 export function canTransferOwnership(role: AccountRole): boolean {
   return role === "owner";

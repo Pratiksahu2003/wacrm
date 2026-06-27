@@ -224,6 +224,19 @@ export interface WhatsAppConfig {
   last_registration_error?: string;
 }
 
+/** Optional per-member WhatsApp credentials (see member_whatsapp_config). */
+export interface MemberWhatsAppConfig {
+  user_id: string;
+  account_id: string;
+  use_personal: boolean;
+  phone_number_id?: string | null;
+  waba_id?: string | null;
+  access_token?: string | null;
+  verify_token?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Raw Meta status enum. We persist this verbatim from Meta (sync + webhook)
 // rather than collapsing to a local TitleCase set — distinctions like
 // PAUSED vs DISABLED vs IN_APPEAL drive the edit/resubmit/delete flows.
