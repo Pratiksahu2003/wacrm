@@ -1,8 +1,0 @@
-# Linked to the project in NEXT_PUBLIC_SUPABASE_URL (ref: eidhofurmtqmesoiipwn).
-project_id = "eidhofurmtqmesoiipwn"
-
-[db]
-major_version = 17
-
-[db.migrations]
-enabled = true
