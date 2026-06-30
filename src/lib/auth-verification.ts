@@ -50,6 +50,16 @@ export function setSessionCookie(response: NextResponse, token: string): void {
   });
 }
 
+export function clearSessionCookie(response: NextResponse): void {
+  response.cookies.set("vedmint_crm_session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}
+
 export async function sendUserVerificationEmail(
   email: string,
   nextPath = "/dashboard",

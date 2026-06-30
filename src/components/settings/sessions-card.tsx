@@ -38,7 +38,7 @@ export function SessionsCard() {
         toast.error(`Sign-out failed: ${error.message}`);
         return;
       }
-      window.location.href = '/login';
+      window.location.replace("/login");
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       toast.error(msg);

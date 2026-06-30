@@ -239,10 +239,15 @@ export function createEmulatorClient() {
     },
 
     async signOut() {
-      if (typeof window !== 'undefined') {
-        document.cookie = 'vedmint_crm_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      try {
+        await fetch("/api/auth/signout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("[auth] signOut request failed:", err);
       }
-      triggerAuthChange('SIGNED_OUT', null);
+      triggerAuthChange("SIGNED_OUT", null);
       return { error: null };
     },
 
