@@ -124,7 +124,7 @@ export function ProfileForm() {
         const ext =
           pendingAvatar.name.split('.').pop()?.toLowerCase() || 'png';
         const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(path, pendingAvatar, {
             cacheControl: '3600',
@@ -134,10 +134,9 @@ export function ProfileForm() {
         if (uploadError) {
           throw new Error(`Upload failed: ${uploadError.message}`);
         }
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('avatars').getPublicUrl(path);
-        nextAvatarUrl = publicUrl;
+        nextAvatarUrl =
+          (uploadData as { publicUrl?: string } | null)?.publicUrl ??
+          supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
       } else if (removeAvatar) {
         nextAvatarUrl = null;
       }

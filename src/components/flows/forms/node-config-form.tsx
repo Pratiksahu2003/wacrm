@@ -993,7 +993,7 @@ function SendMediaForm({
             .replace(/[^a-zA-Z0-9_-]+/g, "_")
             .slice(0, 40) || "file";
         const path = `account-${profile.account_id}/${Date.now()}-${safeBase}.${ext}`;
-        const { error: upErr } = await supabase.storage
+        const { data: uploadData, error: upErr } = await supabase.storage
           .from(FLOW_MEDIA_BUCKET)
           .upload(path, file, {
             cacheControl: "3600",
@@ -1001,9 +1001,10 @@ function SendMediaForm({
             contentType: file.type,
           });
         if (upErr) throw new Error(upErr.message);
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from(FLOW_MEDIA_BUCKET).getPublicUrl(path);
+        const publicUrl =
+          (uploadData as { publicUrl?: string } | null)?.publicUrl ??
+          supabase.storage.from(FLOW_MEDIA_BUCKET).getPublicUrl(path).data
+            .publicUrl;
         // Patch all fields in one call so the form doesn't re-render
         // with a half-uploaded state.
         onUpdateConfig({

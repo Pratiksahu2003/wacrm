@@ -303,7 +303,15 @@ export function createEmulatorClient() {
             method: 'POST',
             body: formData
           });
-          return await res.json();
+          const payload = await res.json();
+          if (!res.ok || payload.error) {
+            const message =
+              typeof payload.error === 'string'
+                ? payload.error
+                : payload.error?.message || 'Upload failed';
+            return { data: null, error: { message } };
+          }
+          return payload;
         },
 
         getPublicUrl(pathStr: string) {

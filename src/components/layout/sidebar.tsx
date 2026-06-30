@@ -181,11 +181,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Logo row. On mobile we put a close button here; on desktop the
             close button is hidden since the sidebar is always-visible. */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center">
             <Logo variant="sidebar" />
-            <span className="text-sm font-semibold text-white">
-              VedMint Crm
-            </span>
           </Link>
           <button
             type="button"

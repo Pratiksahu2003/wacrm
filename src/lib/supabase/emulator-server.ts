@@ -783,16 +783,7 @@ export function createEmulatorClient() {
             });
             return await res.json();
           } else {
-            // Upload to Cloudflare R2
-            const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-            const client = new S3Client({
-              region: 'auto',
-              endpoint: process.env.CLOUDFLARE_R2_ENDPOINT || '',
-              credentials: {
-                accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || '',
-                secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || ''
-              }
-            });
+            const { uploadObject } = await import('@/lib/storage');
 
             let bodyBuffer: Buffer;
             let contentType = 'application/octet-stream';
@@ -806,16 +797,17 @@ export function createEmulatorClient() {
               bodyBuffer = Buffer.from(file as any);
             }
 
-            const key = `${bucketName}/${pathStr}`;
-            await client.send(new PutObjectCommand({
-              Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME || '',
-              Key: key,
-              Body: bodyBuffer,
-              ContentType: contentType
-            }));
+            const stored = await uploadObject(
+              bucketName,
+              pathStr,
+              bodyBuffer,
+              contentType,
+            );
 
-            const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
-            return { data: { path: pathStr, publicUrl }, error: null };
+            return {
+              data: { path: stored.path, publicUrl: stored.publicUrl },
+              error: null,
+            };
           }
         },
 
@@ -833,22 +825,8 @@ export function createEmulatorClient() {
               body: JSON.stringify({ bucket: bucketName, paths })
             });
           } else {
-            const { S3Client, DeleteObjectsCommand } = await import('@aws-sdk/client-s3');
-            const client = new S3Client({
-              region: 'auto',
-              endpoint: process.env.CLOUDFLARE_R2_ENDPOINT || '',
-              credentials: {
-                accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || '',
-                secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || ''
-              }
-            });
-
-            await client.send(new DeleteObjectsCommand({
-              Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME || '',
-              Delete: {
-                Objects: paths.map(p => ({ Key: `${bucketName}/${p}` }))
-              }
-            }));
+            const { deleteObjects } = await import('@/lib/storage');
+            await deleteObjects(bucketName, paths);
           }
           return { error: null };
         }
