@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { createEmulatorClient } from '@/lib/supabase/emulator';
+import { createEmulatorClient } from '@/lib/supabase/emulator-server';
 import { query } from '@/lib/mysql';
 
 const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';

@@ -1,4 +1,4 @@
-import { createEmulatorClient } from './emulator'
+import { createEmulatorClient } from './emulator-server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export async function createClient(): Promise<SupabaseClient> {

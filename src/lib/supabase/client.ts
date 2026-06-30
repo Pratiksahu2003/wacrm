@@ -1,4 +1,4 @@
-import { createEmulatorClient } from './emulator'
+import { createEmulatorClient } from './emulator-client'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 let browserClient: any = null

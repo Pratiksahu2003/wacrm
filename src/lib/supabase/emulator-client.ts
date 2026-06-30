@@ -1,0 +1,360 @@
+// Browser-safe emulator client that communicates with server endpoints.
+// Contains zero dependencies on Node.js built-ins or server-side libraries (like mysql2, bcryptjs, jsonwebtoken, etc.).
+
+export class EmulatorQueryBuilder {
+  private tableName: string;
+  private selectFields: string = '*';
+  private conditions: { column: string; operator: string; value: any }[] = [];
+  private orderColumns: { column: string; ascending: boolean }[] = [];
+  private limitCount: number | null = null;
+  private countOption: string | null = null;
+  private singleResult: boolean = false;
+  private maybeSingleResult: boolean = false;
+  private isInsert: boolean = false;
+  private isUpdate: boolean = false;
+  private isDelete: boolean = false;
+  private isUpsert: boolean = false;
+  private dataToSet: any = null;
+
+  constructor(tableName: string) {
+    this.tableName = tableName;
+  }
+
+  select(fields: string = '*', options?: { count?: string; head?: boolean }) {
+    this.selectFields = fields;
+    if (options?.count) {
+      this.countOption = options.count;
+    }
+    return this;
+  }
+
+  insert(data: any) {
+    this.isInsert = true;
+    this.dataToSet = data;
+    return this;
+  }
+
+  upsert(data: any, options?: any) {
+    this.isInsert = true;
+    this.isUpsert = true;
+    this.dataToSet = data;
+    return this;
+  }
+
+  update(data: any) {
+    this.isUpdate = true;
+    this.dataToSet = data;
+    return this;
+  }
+
+  delete() {
+    this.isDelete = true;
+    return this;
+  }
+
+  eq(column: string, value: any) {
+    this.conditions.push({ column, operator: '=', value });
+    return this;
+  }
+
+  neq(column: string, value: any) {
+    this.conditions.push({ column, operator: '!=', value });
+    return this;
+  }
+
+  gt(column: string, value: any) {
+    this.conditions.push({ column, operator: '>', value });
+    return this;
+  }
+
+  gte(column: string, value: any) {
+    this.conditions.push({ column, operator: '>=', value });
+    return this;
+  }
+
+  lt(column: string, value: any) {
+    this.conditions.push({ column, operator: '<', value });
+    return this;
+  }
+
+  lte(column: string, value: any) {
+    this.conditions.push({ column, operator: '<=', value });
+    return this;
+  }
+
+  like(column: string, pattern: string) {
+    this.conditions.push({ column, operator: 'LIKE', value: pattern });
+    return this;
+  }
+
+  ilike(column: string, pattern: string) {
+    this.conditions.push({ column, operator: 'LIKE', value: pattern });
+    return this;
+  }
+
+  in(column: string, values: any[]) {
+    this.conditions.push({ column, operator: 'IN', value: values });
+    return this;
+  }
+
+  is(column: string, value: any) {
+    if (value === null) {
+      this.conditions.push({ column, operator: 'IS NULL', value: null });
+    } else {
+      this.conditions.push({ column, operator: '=', value });
+    }
+    return this;
+  }
+
+  order(column: string, options?: { ascending?: boolean }) {
+    this.orderColumns.push({ column, ascending: options?.ascending !== false });
+    return this;
+  }
+
+  limit(count: number) {
+    this.limitCount = count;
+    return this;
+  }
+
+  single() {
+    this.singleResult = true;
+    return this;
+  }
+
+  maybeSingle() {
+    this.maybeSingleResult = true;
+    return this;
+  }
+
+  async then(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) {
+    try {
+      const res = await this.execute();
+      if (onfulfilled) return onfulfilled(res);
+      return res;
+    } catch (err) {
+      if (onrejected) return onrejected(err);
+      throw err;
+    }
+  }
+
+  private async execute() {
+    // Browser side: Proxy to HTTP endpoint
+    const response = await fetch('/api/db-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tableName: this.tableName,
+        selectFields: this.selectFields,
+        conditions: this.conditions,
+        orderColumns: this.orderColumns,
+        limitCount: this.limitCount,
+        countOption: this.countOption,
+        singleResult: this.singleResult,
+        maybeSingleResult: this.maybeSingleResult,
+        isInsert: this.isInsert,
+        isUpdate: this.isUpdate,
+        isDelete: this.isDelete,
+        isUpsert: this.isUpsert,
+        dataToSet: this.dataToSet
+      })
+    });
+    return await response.json();
+  }
+}
+
+export function createEmulatorClient() {
+  const auth = {
+    async getSession() {
+      if (typeof window === 'undefined') {
+        return { data: { session: null }, error: null };
+      }
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const sessionCookie = cookies.find(c => c.startsWith('vedmint_crm_session='));
+      if (!sessionCookie) return { data: { session: null }, error: null };
+      const token = sessionCookie.split('=')[1];
+      try {
+        // Safe base64 decoding of JWT payload in browser
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          window.atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const decoded = JSON.parse(jsonPayload);
+        return {
+          data: {
+            session: {
+              user: { id: decoded.userId, email: decoded.email },
+              access_token: token
+            }
+          },
+          error: null
+        };
+      } catch {
+        return { data: { session: null }, error: null };
+      }
+    },
+
+    async getUser() {
+      const { data, error } = await this.getSession();
+      return { data: { user: data?.session?.user || null }, error };
+    },
+
+    async signInWithPassword({ email, password }: any) {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      return await res.json();
+    },
+
+    async signUp({ email, password, options }: any) {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, options })
+      });
+      return await res.json();
+    },
+
+    async signOut() {
+      if (typeof window !== 'undefined') {
+        document.cookie = 'vedmint_crm_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      }
+      return { error: null };
+    },
+
+    async resetPasswordForEmail(email: string, options?: any) {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, options })
+      });
+      return await res.json();
+    },
+
+    async updateUser({ password }: any) {
+      const res = await fetch('/api/auth/update-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      return await res.json();
+    },
+
+    onAuthStateChange(callback: any) {
+      return {
+        data: {
+          subscription: {
+            unsubscribe() {}
+          }
+        }
+      };
+    }
+  };
+
+  const storage = {
+    from(bucketName: string) {
+      return {
+        async upload(pathStr: string, file: File | Buffer, options?: any) {
+          const formData = new FormData();
+          formData.append('bucket', bucketName);
+          formData.append('path', pathStr);
+          formData.append('file', file as File);
+          
+          const res = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData
+          });
+          return await res.json();
+        },
+
+        getPublicUrl(pathStr: string) {
+          const key = `${bucketName}/${pathStr}`;
+          const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-r2.vedmint-crm.com'}/${key}`;
+          return { data: { publicUrl } };
+        },
+
+        async remove(paths: string[]) {
+          await fetch('/api/storage/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bucket: bucketName, paths })
+          });
+          return { error: null };
+        }
+      };
+    }
+  };
+
+  const channel = (channelName: string) => {
+    const listeners: { table: string; callback: (payload: any) => void }[] = [];
+    let eventSource: any = null;
+
+    return {
+      on(event: string, filter: any, callback: any) {
+        listeners.push({
+          table: filter.table,
+          callback: (payload: any) => {
+            const supabasePayload = {
+              new: payload.record,
+              old: payload.type === 'UPDATE' ? payload.record : null,
+              eventType: payload.type,
+              schema: 'public',
+              table: payload.table,
+              commit_timestamp: new Date().toISOString()
+            };
+            callback(supabasePayload);
+          }
+        });
+        return this;
+      },
+      subscribe() {
+        if (typeof window !== 'undefined' && !eventSource) {
+          eventSource = new EventSource('/api/realtime');
+          eventSource.onmessage = (e: any) => {
+            try {
+              const payload = JSON.parse(e.data);
+              for (const listener of listeners) {
+                if (listener.table === payload.table) {
+                  listener.callback(payload);
+                }
+              }
+            } catch (err) {
+              console.error('[Emulator Realtime] error parsing message:', err);
+            }
+          };
+        }
+        return this;
+      },
+      unsubscribe() {
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+      }
+    };
+  };
+
+  const rpc = async (fnName: string, args?: any) => {
+    const res = await fetch('/api/db-proxy/rpc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fnName, args })
+    });
+    return await res.json();
+  };
+
+  return {
+    from(tableName: string) {
+      return new EmulatorQueryBuilder(tableName);
+    },
+    auth,
+    storage,
+    channel,
+    rpc
+  };
+}
