@@ -11,7 +11,7 @@ export function PublicDocsShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href="/docs/getting-started"
-            className="flex min-w-0 flex-1 items-center py-1 sm:max-w-[15rem]"
+            className="block min-w-0 w-[11.5rem] shrink-0 sm:w-[13rem]"
           >
             <Logo variant="header" />
           </Link>

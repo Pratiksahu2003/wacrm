@@ -184,8 +184,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       >
         {/* Logo row. On mobile we put a close button here; on desktop the
             close button is hidden since the sidebar is always-visible. */}
-        <div className="flex h-[4.25rem] shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-3">
-          <Link href="/dashboard" className="flex min-w-0 flex-1 items-center py-1">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-2.5 py-2.5">
+          <Link href="/dashboard" className="block min-w-0 flex-1">
             <Logo variant="sidebar" />
           </Link>
           <button
