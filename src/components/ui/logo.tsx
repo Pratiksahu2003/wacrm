@@ -11,9 +11,9 @@ export function Logo({ variant = "auth", className }: LogoProps) {
     return (
       <img
         src="/logo.png"
-        alt="VedMint Crm"
+        alt="VedMint CRM"
         className={cn(
-          "h-8 w-8 object-contain bg-white p-0.5 rounded",
+          "h-10 w-full max-w-full object-contain object-left",
           className
         )}
       />
@@ -29,7 +29,7 @@ export function Logo({ variant = "auth", className }: LogoProps) {
     >
       <img
         src="/logo.png"
-        alt="VedMint Crm"
+        alt="VedMint CRM"
         className="h-full w-full object-contain"
       />
     </div>
