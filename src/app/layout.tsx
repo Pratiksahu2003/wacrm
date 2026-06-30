@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { COMPANY_NAME, META_DESCRIPTION, OFFICIAL_APP_URL } from "@/lib/brand";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
 
@@ -82,6 +83,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
+        <GoogleAnalytics />
         <ThemeProvider>
           {children}
           <Toaster
