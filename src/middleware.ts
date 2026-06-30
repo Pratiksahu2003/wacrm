@@ -1,29 +1,22 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  let user: { id: string; email: string } | null = null;
+  const sessionCookie = request.cookies.get('vedmint_crm_session');
+  if (sessionCookie?.value) {
+    try {
+      const parts = sessionCookie.value.split('.');
+      if (parts.length === 3) {
+        const payload = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+        const decoded = JSON.parse(payload);
+        if (decoded && decoded.userId) {
+          user = { id: decoded.userId, email: decoded.email };
+        }
+      }
+    } catch (e) {
+      // Ignored
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
+  }
 
   // Supabase may redirect to Site URL root with ?code= when emailRedirectTo
   // wasn't allow-listed — forward to the auth callback handler.
@@ -80,7 +73,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {

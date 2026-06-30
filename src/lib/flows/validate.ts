@@ -24,7 +24,15 @@
  */
 
 import { INTERACTIVE_LIMITS } from "@/lib/whatsapp/meta-api";
-import { isAutoAdvancing } from "./engine";
+function isAutoAdvancing(node_type: string): boolean {
+  return (
+    node_type === "start" ||
+    node_type === "send_message" ||
+    node_type === "send_media" ||
+    node_type === "condition" ||
+    node_type === "set_tag"
+  );
+}
 
 export interface ValidationIssue {
   severity: "error" | "warning";

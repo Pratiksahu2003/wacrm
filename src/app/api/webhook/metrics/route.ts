@@ -10,7 +10,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createEmulatorClient as createClient } from '@/lib/supabase/emulator-server'
 import { logWebhook, maskId } from '@/lib/whatsapp/webhook-log'
 
 export const runtime = 'nodejs'
@@ -20,10 +20,7 @@ export const runtime = 'nodejs'
 let _adminClient: any = null
 function supabaseAdmin() {
   if (!_adminClient) {
-    _adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    _adminClient = createClient() as unknown as any
   }
   return _adminClient
 }
