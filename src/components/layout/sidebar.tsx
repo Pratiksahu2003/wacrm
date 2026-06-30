@@ -16,6 +16,7 @@ import {
   Radio,
   Settings,
   Shield,
+  BookOpen,
   User,
   UserCog,
   Users,
@@ -98,6 +99,7 @@ const navItems: NavItem[] = [
 ];
 
 const bottomNavItems = [
+  { href: "/docs/getting-started", label: "Docs", icon: BookOpen },
   { href: "/settings?tab=members", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -246,7 +248,10 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
           <ul className="flex flex-col gap-1">
             {bottomNavItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive =
+                item.href.startsWith("/docs")
+                  ? pathname.startsWith("/docs")
+                  : pathname.startsWith(item.href.split("?")[0] ?? item.href);
               return (
                 <li key={item.href}>
                   <Link

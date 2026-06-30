@@ -9,14 +9,18 @@ interface LogoProps {
 export function Logo({ variant = "auth", className }: LogoProps) {
   if (variant === "sidebar") {
     return (
-      <img
-        src="/logo.png"
-        alt="VedMint CRM"
+      <div
         className={cn(
-          "h-10 w-full max-w-full object-contain object-left",
+          "flex h-10 w-full items-center justify-center rounded bg-white px-2 py-1",
           className
         )}
-      />
+      >
+        <img
+          src="/logo.png"
+          alt="VedMint CRM"
+          className="h-full w-full max-w-full object-contain object-left"
+        />
+      </div>
     );
   }
 
