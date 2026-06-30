@@ -57,11 +57,17 @@ async function migrate() {
     }
     const sqlContent = fs.readFileSync(schemaPath, 'utf8');
     
-    // Split statements carefully by semicolon at end of line
-    const statements = sqlContent
-      .split(/;\s*\r?\n/)
+    // Split statements carefully by stripping SQL comment lines first, then splitting by semicolon at the end of lines
+    const lines = sqlContent.split(/\r?\n/);
+    const cleanLines = lines.filter(line => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith('--');
+    });
+    const cleanSql = cleanLines.join('\n');
+    const statements = cleanSql
+      .split(/;\s*$/m)
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
 
     console.log(`[Migration] Found ${statements.length} SQL statements to execute.`);
 

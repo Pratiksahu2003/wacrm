@@ -475,7 +475,7 @@ CREATE TABLE IF NOT EXISTS webhook_circuit_breakers (
 -- BROADCAST RECIPIENT COUNT TRIGGERS
 -- ============================================================
 
-DROP TRIGGER IF EXISTS broadcast_recipients_after_insert ON broadcast_recipients;
+DROP TRIGGER IF EXISTS broadcast_recipients_after_insert;
 CREATE TRIGGER broadcast_recipients_after_insert
 AFTER INSERT ON broadcast_recipients
 FOR EACH ROW
@@ -487,7 +487,7 @@ FOR EACH ROW
     failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
   WHERE b.id = NEW.broadcast_id;
 
-DROP TRIGGER IF EXISTS broadcast_recipients_after_update ON broadcast_recipients;
+DROP TRIGGER IF EXISTS broadcast_recipients_after_update;
 CREATE TRIGGER broadcast_recipients_after_update
 AFTER UPDATE ON broadcast_recipients
 FOR EACH ROW
@@ -499,7 +499,7 @@ FOR EACH ROW
     failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
   WHERE b.id = NEW.broadcast_id;
 
-DROP TRIGGER IF EXISTS broadcast_recipients_after_delete ON broadcast_recipients;
+DROP TRIGGER IF EXISTS broadcast_recipients_after_delete;
 CREATE TRIGGER broadcast_recipients_after_delete
 AFTER DELETE ON broadcast_recipients
 FOR EACH ROW
