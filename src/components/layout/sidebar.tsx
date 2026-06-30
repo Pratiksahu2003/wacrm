@@ -181,11 +181,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             close button is hidden since the sidebar is always-visible. */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
-            </div>
+            <img src="/logo.png" alt="VedMint Crm" className="h-8 w-8 object-contain rounded" />
             <span className="text-sm font-semibold text-white">
-              CRM Template for WhatsApp
+              VedMint Crm
             </span>
           </Link>
           <button
@@ -372,8 +370,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </aside>
+         </div>
+         <div className="border-t border-slate-800 p-3 text-center">
+           <p className="text-[10px] text-slate-500">
+             © 2026 Vedmint Consultancy Services. All Rights Reserved.
+           </p>
+         </div>
+       </aside>
     </>
   );
 }

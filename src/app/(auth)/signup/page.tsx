@@ -123,12 +123,8 @@ function SignupPageInner() {
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
       <Card className="w-full max-w-md border-slate-800 bg-slate-900">
         <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            {inviteToken ? (
-              <UsersRound className="h-6 w-6 text-primary" />
-            ) : (
-              <MessageSquare className="h-6 w-6 text-primary" />
-            )}
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden">
+            <img src="/logo.png" alt="VedMint Crm" className="h-full w-full object-contain" />
           </div>
           <CardTitle className="text-xl text-white">
             {inviteToken ? "Create account & join" : "Create account"}
@@ -136,7 +132,7 @@ function SignupPageInner() {
           <CardDescription className="text-slate-400">
             {inviteToken
               ? "Verify your email, then accept the invitation to join your team."
-              : "Get started with CRM Template for WhatsApp"}
+              : "Get started with VedMint Crm"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,6 +227,9 @@ function SignupPageInner() {
           </p>
         </CardContent>
       </Card>
+      <p className="mt-4 text-center text-xs text-slate-500">
+        © 2026 Vedmint Consultancy Services. All Rights Reserved.
+      </p>
     </div>
   );
 }
