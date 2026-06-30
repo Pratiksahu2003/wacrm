@@ -64,7 +64,21 @@ async function initializeDatabase(p: mysql.Pool) {
     try {
       for (const statement of statements) {
         if (!statement) continue;
-        await connection.query(statement);
+        try {
+          await connection.query(statement);
+        } catch (err: any) {
+          const isDuplicateError = 
+            err.code === 'ER_DUP_KEYNAME' || 
+            err.code === 'ER_TABLE_EXISTS_ERROR' || 
+            err.code === 'ER_DUP_FIELDNAME' ||
+            err.errno === 1061 || 
+            err.errno === 1050 || 
+            err.errno === 1060;
+          
+          if (!isDuplicateError) {
+            console.warn(`[MySQL] warning executing statement: ${err.message}`);
+          }
+        }
       }
       console.log('[MySQL] Database schema initialized/verified successfully');
     } finally {

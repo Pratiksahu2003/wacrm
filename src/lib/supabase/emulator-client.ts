@@ -374,6 +374,11 @@ export function createEmulatorClient() {
     auth,
     storage,
     channel,
+    removeChannel(chan: any) {
+      if (chan && typeof chan.unsubscribe === 'function') {
+        chan.unsubscribe();
+      }
+    },
     rpc
   };
 }

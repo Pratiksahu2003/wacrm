@@ -718,10 +718,11 @@ export function createEmulatorClient() {
         }
         // Send reset email via SMTP transporter
         const nodemailer = await import('nodemailer');
+        const smtpPort = Number(process.env.SMTP_PORT) || 587;
         const transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST || '',
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true',
+          port: smtpPort,
+          secure: smtpPort === 465,
           auth: {
             user: process.env.SMTP_USER || '',
             pass: process.env.SMTP_PASSWORD || ''
@@ -935,6 +936,11 @@ export function createEmulatorClient() {
     auth,
     storage,
     channel,
+    removeChannel(chan: any) {
+      if (chan && typeof chan.unsubscribe === 'function') {
+        chan.unsubscribe();
+      }
+    },
     rpc
   };
 }
