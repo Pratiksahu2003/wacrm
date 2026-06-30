@@ -9,8 +9,11 @@ export function PublicDocsShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-950">
       <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/docs/getting-started" className="flex min-w-0 max-w-[200px] flex-1 items-center">
-            <Logo variant="sidebar" />
+          <Link
+            href="/docs/getting-started"
+            className="flex min-w-0 flex-1 items-center py-1 sm:max-w-[15rem]"
+          >
+            <Logo variant="header" />
           </Link>
           <div className="flex items-center gap-2">
             <Button
