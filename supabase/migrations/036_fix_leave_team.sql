@@ -6,7 +6,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT current_setting('wacrm.bypass_assignee_guard', true) = 'true';
+  SELECT current_setting('vedmint_crm.bypass_assignee_guard', true) = 'true';
 $$;
 
 CREATE OR REPLACE FUNCTION guard_conversation_assignee_update()
@@ -105,7 +105,7 @@ BEGIN
 
   -- Bypass assignee guards while clearing stale assignments on the team
   -- the user is leaving (caller's JWT role is usually agent/viewer).
-  PERFORM set_config('wacrm.bypass_assignee_guard', 'true', true);
+  PERFORM set_config('vedmint_crm.bypass_assignee_guard', 'true', true);
 
   UPDATE contacts
   SET assigned_to = NULL

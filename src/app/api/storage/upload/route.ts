@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'wacrm-secret-default-encryption-key-32-chars';
+const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const sessionCookie = cookiesHeader
       .split(';')
       .map(c => c.trim())
-      .find(c => c.startsWith('wacrm_session='));
+      .find(c => c.startsWith('vedmint_crm_session='));
 
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

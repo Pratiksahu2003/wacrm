@@ -43,7 +43,7 @@ const MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 type View = "canvas" | "list";
 
-const STORAGE_KEY = "wacrm.flowEditor.view";
+const STORAGE_KEY = "VedMint Crm.flowEditor.view";
 
 interface Props {
   initialFlow: FlowRow;

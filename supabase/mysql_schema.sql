@@ -1,5 +1,5 @@
 -- ============================================================
--- wacrm MySQL Database Schema
+-- VedMint Crm MySQL Database Schema
 -- Sets up all the tables required for the CRM.
 -- ============================================================
 

@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export const ONBOARDING_STORAGE_KEY = "wacrm.flowEditor.onboardingDismissed";
+export const ONBOARDING_STORAGE_KEY = "VedMint Crm.flowEditor.onboardingDismissed";
 
 interface Props {
   open: boolean;

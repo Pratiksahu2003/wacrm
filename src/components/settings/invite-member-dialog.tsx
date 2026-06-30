@@ -141,7 +141,7 @@ export function InviteMemberDialog({
         // string if `account` hasn't loaded yet (shouldn't happen
         // — the dialog requires admin+ which requires a loaded
         // profile — but stay safe).
-        accountName: account?.name ?? 'our wacrm account',
+        accountName: account?.name ?? 'our VedMint Crm account',
       });
       onCreated();
     } catch (err) {
@@ -168,25 +168,25 @@ export function InviteMemberDialog({
   function whatsappShareUrl(url: string): string {
     // Include the account name so the recipient knows which team
     // they're being invited to before clicking through. This matters
-    // for users in multi-team contexts where "our wacrm account"
+    // for users in multi-team contexts where "our VedMint Crm account"
     // wouldn't be enough to disambiguate.
-    const accountName = result?.accountName ?? 'our wacrm account';
-    const message = `Join ${accountName} on wacrm using this link (valid for ${result?.expiresInDays} days): ${url}`;
+    const accountName = result?.accountName ?? 'our VedMint Crm account';
+    const message = `Join ${accountName} on VedMint Crm using this link (valid for ${result?.expiresInDays} days): ${url}`;
     return `https://wa.me/?text=${encodeURIComponent(message)}`;
   }
 
   function inviteEmailSubject(): string {
-    const accountName = result?.accountName ?? 'our wacrm account';
-    return `You're invited to join ${accountName} on wacrm`;
+    const accountName = result?.accountName ?? 'our VedMint Crm account';
+    return `You're invited to join ${accountName} on VedMint Crm`;
   }
 
   function inviteEmailBody(url: string): string {
-    const accountName = result?.accountName ?? 'our wacrm account';
+    const accountName = result?.accountName ?? 'our VedMint Crm account';
     const days = result?.expiresInDays ?? 7;
     return [
       `Hi,`,
       ``,
-      `You've been invited to join ${accountName} on wacrm as a ${result?.role ?? 'teammate'}.`,
+      `You've been invited to join ${accountName} on VedMint Crm as a ${result?.role ?? 'teammate'}.`,
       ``,
       `Use this link to accept (valid for ${days} day${days === 1 ? '' : 's'}):`,
       url,
@@ -268,7 +268,7 @@ export function InviteMemberDialog({
               </div>
 
               {/* Anchor styled with `buttonVariants` rather than wrapping
-                  in <Button asChild>. The wacrm Button is the Base UI
+                  in <Button asChild>. The VedMint Crm Button is the Base UI
                   ButtonPrimitive — it has no Radix-style asChild slot.
                   Direct anchor preserves right-click "Open in new tab"
                   behaviour too. */}
@@ -323,7 +323,7 @@ export function InviteMemberDialog({
                 </div>
                 <p className="text-xs text-slate-500">
                   Opens your email app with the invite pre-filled — no email
-                  is sent from wacrm.
+                  is sent from VedMint Crm.
                 </p>
               </div>
             </div>

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { createEmulatorClient } from '@/lib/supabase/emulator';
 import { query } from '@/lib/mysql';
 
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'wacrm-secret-default-encryption-key-32-chars';
+const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
 
 const TABLES_WITH_ACCOUNT_ID = [
   'profiles',
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const sessionCookie = cookiesHeader
       .split(';')
       .map(c => c.trim())
-      .find(c => c.startsWith('wacrm_session='));
+      .find(c => c.startsWith('vedmint_crm_session='));
 
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized: No session cookie' }, { status: 401 });

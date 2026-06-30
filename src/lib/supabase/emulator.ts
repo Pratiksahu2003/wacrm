@@ -153,7 +153,7 @@ function getForeignKeyColumn(parentTable: string, relationName: string): { paren
   };
 }
 
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'wacrm-secret-default-encryption-key-32-chars';
+const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
 
 export class EmulatorQueryBuilder {
   private tableName: string;
@@ -584,7 +584,7 @@ export function createEmulatorClient() {
     async getSession() {
       if (typeof window !== 'undefined') {
         const cookies = document.cookie.split(';').map(c => c.trim());
-        const sessionCookie = cookies.find(c => c.startsWith('wacrm_session='));
+        const sessionCookie = cookies.find(c => c.startsWith('vedmint_crm_session='));
         if (!sessionCookie) return { data: { session: null }, error: null };
         const token = sessionCookie.split('=')[1];
         try {
@@ -604,7 +604,7 @@ export function createEmulatorClient() {
       } else {
         const { cookies } = await import('next/headers');
         const cookieStore = await cookies();
-        const token = cookieStore.get('wacrm_session')?.value;
+        const token = cookieStore.get('vedmint_crm_session')?.value;
         if (!token) return { data: { session: null }, error: null };
         try {
           const decoded: any = jwt.verify(token, JWT_SECRET);
@@ -692,11 +692,11 @@ export function createEmulatorClient() {
 
     async signOut() {
       if (typeof window !== 'undefined') {
-        document.cookie = 'wacrm_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'vedmint_crm_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       } else {
         const { cookies } = await import('next/headers');
         const cookieStore = await cookies();
-        cookieStore.delete('wacrm_session');
+        cookieStore.delete('vedmint_crm_session');
       }
       return { error: null };
     },
@@ -732,7 +732,7 @@ export function createEmulatorClient() {
         const resetLink = `${options?.redirectTo || 'http://localhost:3000/auth/callback'}?token=${token}`;
 
         await transporter.sendMail({
-          from: process.env.SMTP_FROM || 'no-reply@wacrm.com',
+          from: process.env.SMTP_FROM || 'no-reply@VedMint Crm.com',
           to: email,
           subject: 'Reset Password',
           html: `<p>Click <a href="${resetLink}">here</a> to reset your password. The link is valid for 1 hour.</p>`
@@ -828,7 +828,7 @@ export function createEmulatorClient() {
 
         getPublicUrl(pathStr: string) {
           const key = `${bucketName}/${pathStr}`;
-          const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-r2.wacrm.com'}/${key}`;
+          const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-r2.VedMint Crm.com'}/${key}`;
           return { data: { publicUrl } };
         },
 
