@@ -45,6 +45,285 @@ export function getPool(): mysql.Pool {
   return pool;
 }
 
+async function ensureColumn(
+  connection: mysql.PoolConnection,
+  sql: string,
+  label: string,
+): Promise<void> {
+  try {
+    await connection.query(sql);
+    console.log(`[MySQL] migration applied: ${label}`);
+  } catch (err: any) {
+    if (err.code === "ER_DUP_FIELDNAME" || err.errno === 1060) return;
+    console.warn(`[MySQL] migration ${label}:`, err.message);
+  }
+}
+
+async function ensureIndex(
+  connection: mysql.PoolConnection,
+  sql: string,
+  label: string,
+): Promise<void> {
+  try {
+    await connection.query(sql);
+  } catch (err: any) {
+    if (err.code === "ER_DUP_KEYNAME" || err.errno === 1061) return;
+    console.warn(`[MySQL] index ${label}:`, err.message);
+  }
+}
+
+async function ensureSchemaMigrations(connection: mysql.PoolConnection) {
+  await ensureEmailVerifiedColumn(connection);
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE contacts ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "contacts.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE contacts ADD COLUMN assigned_to VARCHAR(36) NULL AFTER company",
+    "contacts.assigned_to",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE tags ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "tags.user_id",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE pipelines ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "pipelines.user_id",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN pipeline_id VARCHAR(36) NULL AFTER account_id",
+    "deals.pipeline_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN user_id VARCHAR(36) NULL AFTER stage_id",
+    "deals.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN currency VARCHAR(10) DEFAULT 'USD' AFTER value",
+    "deals.currency",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN assigned_to VARCHAR(36) NULL AFTER contact_id",
+    "deals.assigned_to",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN notes TEXT NULL AFTER assigned_to",
+    "deals.notes",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE deals ADD COLUMN expected_close_date DATE NULL AFTER notes",
+    "deals.expected_close_date",
+  );
+
+  await ensureIndex(
+    connection,
+    "CREATE INDEX idx_contacts_assigned_to ON contacts(assigned_to)",
+    "idx_contacts_assigned_to",
+  );
+
+  // Automations & flows — align live DB with application inserts/filters
+  await ensureColumn(
+    connection,
+    "ALTER TABLE whatsapp_config ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "whatsapp_config.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "message_templates.user_id",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcasts ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "broadcasts.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcasts ADD COLUMN template_variables JSON NULL AFTER template_language",
+    "broadcasts.template_variables",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcasts ADD COLUMN audience_filter JSON NULL AFTER template_variables",
+    "broadcasts.audience_filter",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcasts ADD COLUMN scheduled_at TIMESTAMP NULL AFTER audience_filter",
+    "broadcasts.scheduled_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcasts ADD COLUMN replied_count INT DEFAULT 0 AFTER read_count",
+    "broadcasts.replied_count",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automations ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "automations.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automations ADD COLUMN description TEXT NULL AFTER name",
+    "automations.description",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automations ADD COLUMN execution_count INT DEFAULT 0 AFTER is_active",
+    "automations.execution_count",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automations ADD COLUMN last_executed_at TIMESTAMP NULL AFTER execution_count",
+    "automations.last_executed_at",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_logs ADD COLUMN user_id VARCHAR(36) NULL AFTER automation_id",
+    "automation_logs.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_logs ADD COLUMN steps_executed JSON NULL AFTER trigger_event",
+    "automation_logs.steps_executed",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN user_id VARCHAR(36) NULL AFTER automation_id",
+    "automation_pending_executions.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN log_id VARCHAR(36) NULL AFTER contact_id",
+    "automation_pending_executions.log_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN parent_step_id VARCHAR(36) NULL AFTER log_id",
+    "automation_pending_executions.parent_step_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN branch VARCHAR(50) NULL AFTER parent_step_id",
+    "automation_pending_executions.branch",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN next_step_position INT NULL AFTER branch",
+    "automation_pending_executions.next_step_position",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN context JSON NULL AFTER next_step_position",
+    "automation_pending_executions.context",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN run_at TIMESTAMP NULL AFTER context",
+    "automation_pending_executions.run_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions ADD COLUMN status VARCHAR(50) DEFAULT 'pending' AFTER run_at",
+    "automation_pending_executions.status",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions MODIFY COLUMN step_index INT NULL",
+    "automation_pending_executions.step_index_nullable",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE automation_pending_executions MODIFY COLUMN execute_at TIMESTAMP NULL",
+    "automation_pending_executions.execute_at_nullable",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flows ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
+    "flows.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flows ADD COLUMN execution_count INT DEFAULT 0 AFTER status",
+    "flows.execution_count",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flows ADD COLUMN last_executed_at TIMESTAMP NULL AFTER execution_count",
+    "flows.last_executed_at",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN user_id VARCHAR(36) NULL AFTER flow_id",
+    "flow_runs.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN conversation_id VARCHAR(36) NULL AFTER contact_id",
+    "flow_runs.conversation_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN current_node_key VARCHAR(255) NULL AFTER conversation_id",
+    "flow_runs.current_node_key",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN vars JSON NULL AFTER current_node_id",
+    "flow_runs.vars",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN reprompt_count INT DEFAULT 0 AFTER status",
+    "flow_runs.reprompt_count",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN last_prompt_message_id VARCHAR(255) NULL AFTER reprompt_count",
+    "flow_runs.last_prompt_message_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER last_prompt_message_id",
+    "flow_runs.started_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN last_advanced_at TIMESTAMP NULL AFTER started_at",
+    "flow_runs.last_advanced_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN ended_at TIMESTAMP NULL AFTER last_advanced_at",
+    "flow_runs.ended_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE flow_runs ADD COLUMN end_reason VARCHAR(255) NULL AFTER ended_at",
+    "flow_runs.end_reason",
+  );
+}
+
 async function ensureEmailVerifiedColumn(connection: mysql.PoolConnection) {
   let columnAdded = false;
   try {
@@ -103,7 +382,7 @@ async function initializeDatabase(p: mysql.Pool) {
         }
       }
 
-      await ensureEmailVerifiedColumn(connection);
+      await ensureSchemaMigrations(connection);
 
       console.log('[MySQL] Database schema initialized/verified successfully');
     } finally {

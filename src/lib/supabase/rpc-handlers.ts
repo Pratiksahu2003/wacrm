@@ -5,14 +5,26 @@ export async function executeRpc(fnName: string, args: any, currentUserId?: stri
   try {
     switch (fnName) {
       case 'increment_flow_execution_count': {
-        const { id } = args || {};
-        await query('UPDATE flows SET execution_count = COALESCE(execution_count, 0) + 1 WHERE id = ?', [id]);
+        const id = args?.p_flow_id ?? args?.id;
+        if (!id) {
+          return { data: null, error: { message: 'Missing flow id' } };
+        }
+        await query(
+          'UPDATE flows SET execution_count = COALESCE(execution_count, 0) + 1, last_executed_at = NOW() WHERE id = ?',
+          [id],
+        );
         return { data: null, error: null };
       }
 
       case 'increment_automation_execution_count': {
-        const { id } = args || {};
-        await query('UPDATE automations SET execution_count = COALESCE(execution_count, 0) + 1 WHERE id = ?', [id]);
+        const id = args?.p_automation_id ?? args?.id;
+        if (!id) {
+          return { data: null, error: { message: 'Missing automation id' } };
+        }
+        await query(
+          'UPDATE automations SET execution_count = COALESCE(execution_count, 0) + 1, last_executed_at = NOW() WHERE id = ?',
+          [id],
+        );
         return { data: null, error: null };
       }
 

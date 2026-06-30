@@ -66,6 +66,8 @@ export async function POST(request: Request) {
       conditions,
       orderColumns,
       limitCount,
+      offsetCount,
+      orFilter,
       countOption,
       singleResult,
       maybeSingleResult,
@@ -121,6 +123,8 @@ export async function POST(request: Request) {
     builder['conditions'] = finalConditions;
     builder['orderColumns'] = orderColumns || [];
     builder['limitCount'] = limitCount;
+    builder['offsetCount'] = offsetCount ?? null;
+    builder['orFilter'] = orFilter ?? null;
     builder['countOption'] = countOption;
     builder['singleResult'] = singleResult;
     builder['maybeSingleResult'] = maybeSingleResult;

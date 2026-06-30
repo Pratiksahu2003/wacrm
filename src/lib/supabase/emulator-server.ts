@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { compileAndConditions, compileWhereClause, serializeSqlValue } from './emulator-query-utils';
 
 // Central mapping of relation names to tables and foreign keys
 const RELATIONSHIPS: Record<string, string> = {
@@ -161,6 +162,8 @@ export class EmulatorQueryBuilder {
   private conditions: { column: string; operator: string; value: any }[] = [];
   private orderColumns: { column: string; ascending: boolean }[] = [];
   private limitCount: number | null = null;
+  private offsetCount: number | null = null;
+  private orFilter: string | null = null;
   private countOption: string | null = null;
   private singleResult: boolean = false;
   private maybeSingleResult: boolean = false;
@@ -270,6 +273,17 @@ export class EmulatorQueryBuilder {
     return this;
   }
 
+  range(from: number, to: number) {
+    this.offsetCount = from;
+    this.limitCount = to - from + 1;
+    return this;
+  }
+
+  or(filter: string) {
+    this.orFilter = filter;
+    return this;
+  }
+
   single() {
     this.singleResult = true;
     return this;
@@ -292,29 +306,11 @@ export class EmulatorQueryBuilder {
   }
 
   private compileConditions() {
-    const whereParts: string[] = [];
-    const whereParams: any[] = [];
-    for (const cond of this.conditions) {
-      if (cond.operator === 'IS NULL') {
-        whereParts.push(`\`${cond.column}\` IS NULL`);
-      } else if (cond.operator === 'IN') {
-        if (cond.value && cond.value.length > 0) {
-          const placeholders = cond.value.map(() => '?').join(', ');
-          whereParts.push(`\`${cond.column}\` IN (${placeholders})`);
-          whereParams.push(...cond.value);
-        } else {
-          // Empty in clause, force false
-          whereParts.push('1 = 0');
-        }
-      } else {
-        whereParts.push(`\`${cond.column}\` ${cond.operator} ?`);
-        whereParams.push(cond.value);
-      }
-    }
-    return {
-      whereSql: whereParts.join(' AND '),
-      whereParams
-    };
+    return compileAndConditions(this.conditions);
+  }
+
+  private compileFullWhere() {
+    return compileWhereClause(this.conditions, this.orFilter);
   }
 
   private async execute() {
@@ -329,6 +325,8 @@ export class EmulatorQueryBuilder {
           conditions: this.conditions,
           orderColumns: this.orderColumns,
           limitCount: this.limitCount,
+          offsetCount: this.offsetCount,
+          orFilter: this.orFilter,
           countOption: this.countOption,
           singleResult: this.singleResult,
           maybeSingleResult: this.maybeSingleResult,
@@ -360,13 +358,7 @@ export class EmulatorQueryBuilder {
               rowCopy.id = crypto.randomUUID();
             }
             const keys = Object.keys(rowCopy);
-            const values = keys.map(k => {
-              const val = rowCopy[k];
-              if (val !== null && typeof val === 'object') {
-                return JSON.stringify(val);
-              }
-              return val;
-            });
+            const values = keys.map(k => serializeSqlValue(rowCopy[k]));
              let sql = `INSERT INTO \`${this.tableName}\` (${keys.map(k => `\`${k}\``).join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
              if (this.isUpsert) {
                const updateClause = keys.map(k => `\`${k}\` = VALUES(\`${k}\`)`).join(', ');
@@ -393,13 +385,7 @@ export class EmulatorQueryBuilder {
         // Handle UPDATE
         if (this.isUpdate) {
           const keys = Object.keys(this.dataToSet);
-          const values = keys.map(k => {
-            const val = this.dataToSet[k];
-            if (val !== null && typeof val === 'object') {
-              return JSON.stringify(val);
-            }
-            return val;
-          });
+          const values = keys.map(k => serializeSqlValue(this.dataToSet[k]));
           let sql = `UPDATE \`${this.tableName}\` SET ${keys.map(k => `\`${k}\` = ?`).join(', ')}`;
           const params = [...values];
           if (this.conditions.length > 0) {
@@ -451,8 +437,8 @@ export class EmulatorQueryBuilder {
         if (this.countOption) {
           let countSql = `SELECT COUNT(*) as count FROM \`${this.tableName}\``;
           const countParams: any[] = [];
-          if (this.conditions.length > 0) {
-            const { whereSql, whereParams } = this.compileConditions();
+          const { whereSql, whereParams } = this.compileFullWhere();
+          if (whereSql) {
             countSql += ` WHERE ${whereSql}`;
             countParams.push(...whereParams);
           }
@@ -463,8 +449,8 @@ export class EmulatorQueryBuilder {
         // Handle SELECT
         let sql = `SELECT * FROM \`${this.tableName}\``;
         const params: any[] = [];
-        if (this.conditions.length > 0) {
-          const { whereSql, whereParams } = this.compileConditions();
+        const { whereSql, whereParams } = this.compileFullWhere();
+        if (whereSql) {
           sql += ` WHERE ${whereSql}`;
           params.push(...whereParams);
         }
@@ -473,6 +459,9 @@ export class EmulatorQueryBuilder {
         }
         if (this.limitCount !== null) {
           sql += ` LIMIT ${this.limitCount}`;
+        }
+        if (this.offsetCount !== null && this.offsetCount > 0) {
+          sql += ` OFFSET ${this.offsetCount}`;
         }
 
         let rows = await query(sql, params);

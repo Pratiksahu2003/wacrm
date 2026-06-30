@@ -39,26 +39,33 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS contacts (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   phone VARCHAR(255) NOT NULL,
   name VARCHAR(255),
   email VARCHAR(255),
   company VARCHAR(255),
+  assigned_to VARCHAR(36),
   avatar_url TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_contacts_account_id ON contacts(account_id);
 CREATE INDEX idx_contacts_phone ON contacts(phone);
+CREATE INDEX idx_contacts_assigned_to ON contacts(assigned_to);
 
 CREATE TABLE IF NOT EXISTS tags (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
   color VARCHAR(50) DEFAULT '#3b82f6',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS contact_tags (
@@ -163,6 +170,7 @@ CREATE INDEX idx_message_reactions_message ON message_reactions(message_id);
 CREATE TABLE IF NOT EXISTS whatsapp_config (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   phone_number_id VARCHAR(255) NOT NULL,
   waba_id VARCHAR(255),
   access_token TEXT NOT NULL,
@@ -174,7 +182,8 @@ CREATE TABLE IF NOT EXISTS whatsapp_config (
   meta_app_secret TEXT,
   UNIQUE(phone_number_id),
   UNIQUE(account_id),
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS member_whatsapp_config (
@@ -196,6 +205,7 @@ CREATE INDEX idx_member_whatsapp_config_account ON member_whatsapp_config(accoun
 CREATE TABLE IF NOT EXISTS message_templates (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
   language VARCHAR(50) NOT NULL,
   category VARCHAR(50) NOT NULL,
@@ -206,17 +216,20 @@ CREATE TABLE IF NOT EXISTS message_templates (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   header_media_id VARCHAR(255),
   UNIQUE(account_id, name, language),
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS pipelines (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
   position INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS pipeline_stages (
@@ -235,34 +248,49 @@ CREATE INDEX idx_pipeline_stages_pipeline ON pipeline_stages(pipeline_id);
 CREATE TABLE IF NOT EXISTS deals (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  pipeline_id VARCHAR(36),
   stage_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   title VARCHAR(255) NOT NULL,
   value DECIMAL(15, 2),
+  currency VARCHAR(10) DEFAULT 'USD',
   status VARCHAR(50) DEFAULT 'open',
   position INT DEFAULT 0,
   contact_id VARCHAR(36),
+  assigned_to VARCHAR(36),
+  notes TEXT,
+  expected_close_date DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (pipeline_id) REFERENCES pipelines(id) ON DELETE SET NULL,
   FOREIGN KEY (stage_id) REFERENCES pipeline_stages(id) ON DELETE CASCADE,
-  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS broadcasts (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
   template_name VARCHAR(255),
   template_language VARCHAR(50),
+  template_variables JSON,
+  audience_filter JSON,
+  scheduled_at TIMESTAMP NULL,
   status VARCHAR(50) DEFAULT 'draft',
   total_recipients INT DEFAULT 0,
   sent_count INT DEFAULT 0,
   delivered_count INT DEFAULT 0,
   read_count INT DEFAULT 0,
+  replied_count INT DEFAULT 0,
   failed_count INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS broadcast_recipients (
@@ -283,14 +311,19 @@ CREATE TABLE IF NOT EXISTS broadcast_recipients (
 CREATE TABLE IF NOT EXISTS automations (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
+  description TEXT,
   trigger_type VARCHAR(50) NOT NULL,
   trigger_config JSON,
   steps JSON,
   is_active BOOLEAN DEFAULT FALSE,
+  execution_count INT DEFAULT 0,
+  last_executed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS automation_steps (
@@ -312,33 +345,46 @@ CREATE TABLE IF NOT EXISTS automation_logs (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
   automation_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   contact_id VARCHAR(36) NOT NULL,
   trigger_event VARCHAR(255) NOT NULL,
+  steps_executed JSON,
   status VARCHAR(50) NOT NULL,
   error_message TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
-  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS automation_pending_executions (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
   automation_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   contact_id VARCHAR(36) NOT NULL,
-  step_index INT NOT NULL,
+  log_id VARCHAR(36),
+  parent_step_id VARCHAR(36),
+  branch VARCHAR(50),
+  next_step_position INT,
+  context JSON,
+  run_at TIMESTAMP NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  step_index INT,
   variables JSON,
-  execute_at TIMESTAMP NOT NULL,
+  execute_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
-  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS flows (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   name VARCHAR(255) NOT NULL,
   description TEXT,
   trigger_type VARCHAR(50),
@@ -346,9 +392,12 @@ CREATE TABLE IF NOT EXISTS flows (
   entry_node_id VARCHAR(255),
   fallback_policy JSON,
   status VARCHAR(50) DEFAULT 'draft',
+  execution_count INT DEFAULT 0,
+  last_executed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS flow_nodes (
@@ -368,15 +417,26 @@ CREATE TABLE IF NOT EXISTS flow_runs (
   id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,
   flow_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
   contact_id VARCHAR(36) NOT NULL,
+  conversation_id VARCHAR(36),
+  current_node_key VARCHAR(255),
   current_node_id VARCHAR(255),
+  vars JSON,
   variables JSON,
   status VARCHAR(50) DEFAULT 'active',
+  reprompt_count INT DEFAULT 0,
+  last_prompt_message_id VARCHAR(255),
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_advanced_at TIMESTAMP NULL,
+  ended_at TIMESTAMP NULL,
+  end_reason VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (flow_id) REFERENCES flows(id) ON DELETE CASCADE,
-  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS flow_run_events (

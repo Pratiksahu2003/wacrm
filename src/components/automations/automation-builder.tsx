@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
@@ -40,8 +40,14 @@ import type {
   AutomationStepType,
   AutomationTriggerType,
   KeywordMatchTriggerConfig,
+  Tag as TagRecord,
 } from "@/types"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import {
+  validateStepsForActivation,
+  validateTriggerForActivation,
+} from "@/lib/automations/validate"
 
 // ------------------------------------------------------------
 // Types (builder-local — mirror the flattened rows we POST)
@@ -165,6 +171,29 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   const [state, setState] = useState<BuilderInitial>(initial)
   const [saving, setSaving] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [tags, setTags] = useState<TagRecord[]>([])
+  const [tagsLoading, setTagsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadTags() {
+      setTagsLoading(true)
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from("tags")
+          .select("id, name, color, user_id, created_at")
+          .order("name")
+        if (!cancelled) setTags(data ?? [])
+      } finally {
+        if (!cancelled) setTagsLoading(false)
+      }
+    }
+    loadTags()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function patchTop<K extends keyof BuilderInitial>(key: K, value: BuilderInitial[K]) {
     setState((s) => ({ ...s, [key]: value }))
@@ -198,13 +227,32 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   async function save() {
     setSaving(true)
     try {
+      const apiSteps = toApiSteps(state.steps)
+      if (state.is_active) {
+        const issues = [
+          ...validateTriggerForActivation(state.trigger_type, state.trigger_config),
+          ...validateStepsForActivation(apiSteps),
+        ]
+        if (issues.length > 0) {
+          const first = issues[0]
+          const stepMatch = first.path.match(/^steps\[(\d+)\]/)
+          const stepHint = stepMatch
+            ? `Step ${Number(stepMatch[1]) + 1}`
+            : first.path
+          toast.error(first.message, {
+            description: `Fix ${stepHint} before turning this automation on`,
+          })
+          return
+        }
+      }
+
       const payload = {
         name: state.name || "Untitled automation",
         description: state.description || null,
         trigger_type: state.trigger_type,
         trigger_config: state.trigger_config,
         is_active: state.is_active,
-        steps: toApiSteps(state.steps),
+        steps: apiSteps,
       }
 
       const res = isEditing
@@ -289,12 +337,16 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           <TriggerCard
             type={state.trigger_type}
             config={state.trigger_config}
+            tags={tags}
+            tagsLoading={tagsLoading}
             onTypeChange={(t) => patchTop("trigger_type", t)}
             onConfigChange={(c) => patchTop("trigger_config", c)}
           />
           <StepList
             steps={state.steps}
             parentPath={[]}
+            tags={tags}
+            tagsLoading={tagsLoading}
             expandedId={expandedId}
             setExpandedId={setExpandedId}
             updateStep={updateStep}
@@ -315,11 +367,15 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
 function TriggerCard({
   type,
   config,
+  tags,
+  tagsLoading,
   onTypeChange,
   onConfigChange,
 }: {
   type: AutomationTriggerType
   config: Record<string, unknown>
+  tags: TagRecord[]
+  tagsLoading: boolean
   onTypeChange: (t: AutomationTriggerType) => void
   onConfigChange: (c: Record<string, unknown>) => void
 }) {
@@ -375,14 +431,16 @@ function TriggerCard({
               />
             )}
             {type === "tag_added" && (
-              <Input
-                placeholder="Tag id"
-                value={(config.tag_id as string) ?? ""}
-                onChange={(e) =>
-                  onConfigChange({ ...config, tag_id: e.target.value })
-                }
-                className="bg-slate-800 text-white"
-              />
+              <FieldBlock label="Tag">
+                <TagSelect
+                  value={(config.tag_id as string) ?? ""}
+                  onChange={(tagId) =>
+                    onConfigChange({ ...config, tag_id: tagId })
+                  }
+                  tags={tags}
+                  loading={tagsLoading}
+                />
+              </FieldBlock>
             )}
             {type === "time_based" && (
               <Input
@@ -462,6 +520,8 @@ type StepPath = (
 interface StepListProps {
   steps: BuilderStep[]
   parentPath: StepPath
+  tags: TagRecord[]
+  tagsLoading: boolean
   expandedId: string | null
   setExpandedId: (id: string | null) => void
   updateStep: (path: StepPath, updater: (s: BuilderStep) => BuilderStep) => void
@@ -563,6 +623,8 @@ function StepRenderer({
             <div className="border-t border-slate-800 px-4 py-3">
               <StepEditor
                 step={step}
+                tags={props.tags}
+                tagsLoading={props.tagsLoading}
                 onChange={(next) => props.updateStep(path, () => next)}
               />
               <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
@@ -701,9 +763,13 @@ function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
 
 function StepEditor({
   step,
+  tags,
+  tagsLoading,
   onChange,
 }: {
   step: BuilderStep
+  tags: TagRecord[]
+  tagsLoading: boolean
   onChange: (s: BuilderStep) => void
 }) {
   const cfg = step.step_config
@@ -744,11 +810,12 @@ function StepEditor({
     case "add_tag":
     case "remove_tag":
       return (
-        <FieldBlock label="Tag id">
-          <Input
+        <FieldBlock label="Tag">
+          <TagSelect
             value={(cfg.tag_id as string) ?? ""}
-            onChange={(e) => set({ tag_id: e.target.value })}
-            className="bg-slate-800 text-white"
+            onChange={(tagId) => set({ tag_id: tagId })}
+            tags={tags}
+            loading={tagsLoading}
           />
         </FieldBlock>
       )
@@ -873,21 +940,28 @@ function StepEditor({
               <option value="time_of_day">Time of day</option>
             </select>
           </FieldBlock>
-          <FieldBlock label="Operand">
-            <Input
-              placeholder={
-                cfg.subject === "time_of_day"
-                  ? "HH:mm-HH:mm"
-                  : cfg.subject === "contact_field"
-                  ? "name / email / company"
-                  : cfg.subject === "tag_presence"
-                  ? "tag id"
-                  : ""
-              }
-              value={(cfg.operand as string) ?? ""}
-              onChange={(e) => set({ operand: e.target.value })}
-              className="bg-slate-800 text-white"
-            />
+          <FieldBlock label={cfg.subject === "tag_presence" ? "Tag" : "Operand"}>
+            {cfg.subject === "tag_presence" ? (
+              <TagSelect
+                value={(cfg.operand as string) ?? ""}
+                onChange={(tagId) => set({ operand: tagId })}
+                tags={tags}
+                loading={tagsLoading}
+              />
+            ) : (
+              <Input
+                placeholder={
+                  cfg.subject === "time_of_day"
+                    ? "HH:mm-HH:mm"
+                    : cfg.subject === "contact_field"
+                      ? "name / email / company"
+                      : ""
+                }
+                value={(cfg.operand as string) ?? ""}
+                onChange={(e) => set({ operand: e.target.value })}
+                className="bg-slate-800 text-white"
+              />
+            )}
           </FieldBlock>
           {(cfg.subject === "contact_field" || cfg.subject === "message_content") && (
             <FieldBlock label="Value">
@@ -928,6 +1002,47 @@ function StepEditor({
     default:
       return null
   }
+}
+
+function TagSelect({
+  value,
+  onChange,
+  tags,
+  loading,
+}: {
+  value: string
+  onChange: (tagId: string) => void
+  tags: TagRecord[]
+  loading?: boolean
+}) {
+  if (loading) {
+    return <p className="text-xs text-slate-500">Loading tags…</p>
+  }
+  if (tags.length === 0) {
+    return (
+      <p className="text-xs text-amber-400">
+        No tags yet.{" "}
+        <a href="/settings" className="underline hover:text-amber-300">
+          Create tags in Settings
+        </a>{" "}
+        first.
+      </p>
+    )
+  }
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
+    >
+      <option value="">Select a tag…</option>
+      {tags.map((tag) => (
+        <option key={tag.id} value={tag.id}>
+          {tag.name}
+        </option>
+      ))}
+    </select>
+  )
 }
 
 function FieldBlock({

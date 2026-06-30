@@ -7,6 +7,8 @@ export class EmulatorQueryBuilder {
   private conditions: { column: string; operator: string; value: any }[] = [];
   private orderColumns: { column: string; ascending: boolean }[] = [];
   private limitCount: number | null = null;
+  private offsetCount: number | null = null;
+  private orFilter: string | null = null;
   private countOption: string | null = null;
   private singleResult: boolean = false;
   private maybeSingleResult: boolean = false;
@@ -116,6 +118,17 @@ export class EmulatorQueryBuilder {
     return this;
   }
 
+  range(from: number, to: number) {
+    this.offsetCount = from;
+    this.limitCount = to - from + 1;
+    return this;
+  }
+
+  or(filter: string) {
+    this.orFilter = filter;
+    return this;
+  }
+
   single() {
     this.singleResult = true;
     return this;
@@ -148,6 +161,8 @@ export class EmulatorQueryBuilder {
         conditions: this.conditions,
         orderColumns: this.orderColumns,
         limitCount: this.limitCount,
+        offsetCount: this.offsetCount,
+        orFilter: this.orFilter,
         countOption: this.countOption,
         singleResult: this.singleResult,
         maybeSingleResult: this.maybeSingleResult,

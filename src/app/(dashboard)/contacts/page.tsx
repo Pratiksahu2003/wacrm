@@ -140,66 +140,75 @@ function ContactsPageContent() {
   const fetchContacts = useCallback(async () => {
     setLoading(true);
 
-    const from = page * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    try {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-    let query = supabase
-      .from('contacts')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      let query = supabase
+        .from('contacts')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    if (search.trim()) {
-      const term = `%${search.trim()}%`;
-      query = query.or(`name.ilike.${term},phone.ilike.${term},email.ilike.${term}`);
-    }
+      if (search.trim()) {
+        const term = `%${search.trim()}%`;
+        query = query.or(`name.ilike.${term},phone.ilike.${term},email.ilike.${term}`);
+      }
 
-    if (assignFilter === 'mine' && user?.id) {
-      query = query.eq('assigned_to', user.id);
-    } else if (assignFilter === 'unassigned') {
-      query = query.is('assigned_to', null);
-    }
+      if (assignFilter === 'mine' && user?.id) {
+        query = query.eq('assigned_to', user.id);
+      } else if (assignFilter === 'unassigned') {
+        query = query.is('assigned_to', null);
+      }
 
-    const { data, count, error } = await query;
+      const { data, count, error } = await query;
 
-    if (error) {
+      if (error) {
+        toast.error('Failed to load contacts');
+        return;
+      }
+
+      setTotalCount(count ?? 0);
+
+      if (!data || data.length === 0) {
+        setContacts([]);
+        return;
+      }
+
+      const { data: allTags } = await supabase.from('tags').select('*');
+      const tagLookup: Record<string, Tag> = {};
+      allTags?.forEach((t) => {
+        tagLookup[t.id] = t;
+      });
+
+      const contactIds = data.map((c) => c.id);
+      const { data: contactTags } = await supabase
+        .from('contact_tags')
+        .select('contact_id, tag_id')
+        .in('contact_id', contactIds);
+
+      const tagsByContact: Record<string, string[]> = {};
+      contactTags?.forEach((ct) => {
+        if (!tagsByContact[ct.contact_id]) tagsByContact[ct.contact_id] = [];
+        tagsByContact[ct.contact_id].push(ct.tag_id);
+      });
+
+      const enriched: ContactWithTags[] = data.map((c) => ({
+        ...c,
+        tags: (tagsByContact[c.id] ?? [])
+          .map((tid) => tagLookup[tid])
+          .filter(Boolean),
+      }));
+
+      setContacts(enriched);
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error('[contacts] fetchContacts failed:', err);
       toast.error('Failed to load contacts');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setTotalCount(count ?? 0);
-
-    if (!data || data.length === 0) {
-      setContacts([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch tags for these contacts
-    const contactIds = data.map((c) => c.id);
-    const { data: contactTags } = await supabase
-      .from('contact_tags')
-      .select('contact_id, tag_id')
-      .in('contact_id', contactIds);
-
-    const tagsByContact: Record<string, string[]> = {};
-    contactTags?.forEach((ct) => {
-      if (!tagsByContact[ct.contact_id]) tagsByContact[ct.contact_id] = [];
-      tagsByContact[ct.contact_id].push(ct.tag_id);
-    });
-
-    const enriched: ContactWithTags[] = data.map((c) => ({
-      ...c,
-      tags: (tagsByContact[c.id] ?? [])
-        .map((tid) => tagsMap[tid])
-        .filter(Boolean),
-    }));
-
-    setContacts(enriched);
-    setLoading(false);
-    setSelectedIds(new Set());
-  }, [supabase, page, search, assignFilter, user?.id, tagsMap]);
+  }, [supabase, page, search, assignFilter, user?.id]);
 
   // Load-once-on-mount-ish data fetches. Each setter inside runs
   // inside an async promise completion (Supabase await), not

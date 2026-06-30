@@ -694,9 +694,9 @@ async function findOrCreateContact(
     .from('contacts')
     .insert({
       account_id: accountId,
+      user_id: configOwnerUserId,
       name: contactName,
       phone: senderPhone,
-      created_by: configOwnerUserId,
     })
     .select('id')
     .single()
@@ -737,7 +737,6 @@ async function findOrCreateConversation(
     .insert({
       account_id: accountId,
       contact_id: contactId,
-      created_by: configOwnerUserId,
     })
     .select('id')
     .single()

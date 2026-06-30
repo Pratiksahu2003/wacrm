@@ -1250,7 +1250,6 @@ async function findOrCreateConversation(
     .from('conversations')
     .insert({
       account_id: accountId,
-      user_id: configOwnerUserId,
       contact_id: contactId,
     })
     .select()
