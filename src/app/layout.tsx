@@ -4,7 +4,7 @@ import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { COMPANY_NAME, META_DESCRIPTION } from "@/lib/brand";
+import { COMPANY_NAME, META_DESCRIPTION, OFFICIAL_APP_URL } from "@/lib/brand";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
 
 const inter = Inter({
@@ -18,10 +18,11 @@ export const metadata: Metadata = {
     template: `%s — ${COMPANY_NAME}`,
   },
   description: META_DESCRIPTION,
-  robots: {
-    index: false,
-    follow: false,
-  },
+  metadataBase: new URL(OFFICIAL_APP_URL),
+  applicationName: COMPANY_NAME,
+  authors: [{ name: COMPANY_NAME, url: OFFICIAL_APP_URL }],
+  creator: COMPANY_NAME,
+  publisher: COMPANY_NAME,
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",

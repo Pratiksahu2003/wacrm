@@ -316,7 +316,7 @@ export function createEmulatorClient() {
 
         getPublicUrl(pathStr: string) {
           const key = `${bucketName}/${pathStr}`;
-          const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-r2.vedmint-crm.com'}/${key}`;
+          const publicUrl = `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-r2.wa.vedmint.com'}/${key}`;
           return { data: { publicUrl } };
         },
 

@@ -18,6 +18,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Signed-in users visiting the public home page go straight to the app.
+  if (user && request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
   // Supabase may redirect to Site URL root with ?code= when emailRedirectTo
   // wasn't allow-listed — forward to the auth callback handler.
   if (

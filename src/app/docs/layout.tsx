@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     template: `%s — ${COMPANY_NAME}`,
   },
   description: `${COMPANY_NAME} documentation — getting started, WhatsApp setup, and troubleshooting.`,
+  robots: { index: true, follow: true },
 };
 
 export default function DocsLayout({

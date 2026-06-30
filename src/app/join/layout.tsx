@@ -27,9 +27,11 @@
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { AuthTrustNotice } from '@/components/auth/auth-trust-notice';
+import { COMPANY_NAME } from '@/lib/brand';
 
 export const metadata: Metadata = {
-  title: 'Join Team',
+  title: `Join Team — ${COMPANY_NAME}`,
   referrer: 'no-referrer',
   // Belt-and-braces against an invite URL ending up in search
   // results if a join page is ever crawled.
@@ -38,7 +40,8 @@ export const metadata: Metadata = {
 
 export default function JoinLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12">
+      <AuthTrustNotice />
       {children}
     </div>
   );

@@ -4,14 +4,14 @@
   "private": true,
   "description": "WhatsApp Business CRM by VedMint Consultancy Services — shared inbox, contacts, pipelines, broadcasts, and automations.",
   "license": "MIT",
-  "author": "Arnas Donauskas",
-  "homepage": "https://github.com/ArnasDon/VedMint Crm",
+  "author": "VedMint Consultancy Services",
+  "homepage": "https://wa.vedmint.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ArnasDon/VedMint Crm.git"
+    "url": "git+https://github.com/vedmint/vedmint-crm.git"
   },
   "bugs": {
-    "url": "https://github.com/ArnasDon/VedMint Crm/issues"
+    "url": "mailto:support@vedmint.com"
   },
   "keywords": [
     "crm",
@@ -21,8 +21,7 @@
     "supabase",
     "automation",
     "broadcast",
-    "self-hosted",
-    "template"
+    "vedmint"
   ],
   "engines": {
     "node": ">=20.0.0"

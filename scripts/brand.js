@@ -30,8 +30,8 @@ const replaceInFile = (filePath) => {
   content = content.replace(/wacrm_session/g, 'vedmint_crm_session');
   content = content.replace(/wacrm\.theme/g, 'vedmint_crm.theme');
   content = content.replace(/wacrm\.bypass_assignee_guard/g, 'vedmint_crm.bypass_assignee_guard');
-  content = content.replace(/wacrm\.tech/g, 'vedmint-crm.tech');
-  content = content.replace(/wacrm\.example/g, 'vedmint-crm.example');
+  content = content.replace(/wacrm\.tech/g, 'wa.vedmint.com');
+  content = content.replace(/wacrm\.example/g, 'wa.vedmint.example');
   content = content.replace(/'wacrm'/g, "'vedmint_crm'");
   content = content.replace(/"wacrm"/g, '"vedmint_crm"');
 

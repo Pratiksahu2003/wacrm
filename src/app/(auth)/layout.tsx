@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { COMPANY_NAME, META_DESCRIPTION, OFFICIAL_APP_URL } from "@/lib/brand";
 
-// Shared metadata for auth pages (login / signup / forgot-password).
-// None of these should be indexed — they'd compete with the marketing
-// landing in SERPs and offer nothing to a searcher who hasn't already
-// signed up. Each page still gets its own <title> via its own
-// metadata.title override below the route group layout.
 export const metadata: Metadata = {
+  title: {
+    default: `Sign In — ${COMPANY_NAME}`,
+    template: `%s — ${COMPANY_NAME}`,
+  },
+  description: META_DESCRIPTION,
+  metadataBase: new URL(OFFICIAL_APP_URL),
+  applicationName: COMPANY_NAME,
+  authors: [{ name: COMPANY_NAME, url: OFFICIAL_APP_URL }],
+  creator: COMPANY_NAME,
+  publisher: COMPANY_NAME,
   robots: {
     index: false,
     follow: false,
