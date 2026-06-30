@@ -2,7 +2,7 @@
   "name": "vedmint_crm",
   "version": "0.2.2",
   "private": true,
-  "description": "Self-hostable CRM template for WhatsApp built on Next.js and Supabase — shared inbox, contacts, sales pipelines, broadcasts, and no-code automations.",
+  "description": "WhatsApp Business CRM by VedMint Consultancy Services — shared inbox, contacts, pipelines, broadcasts, and automations.",
   "license": "MIT",
   "author": "Arnas Donauskas",
   "homepage": "https://github.com/ArnasDon/VedMint Crm",

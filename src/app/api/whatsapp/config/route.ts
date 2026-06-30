@@ -210,7 +210,7 @@ export async function POST(request: Request) {
     }
 
     // Reject if another account has already claimed this phone_number_id.
-    // VedMint Crm is single-tenant-per-WhatsApp-number — letting two accounts
+    // VedMint Consultancy Services is single-tenant-per-WhatsApp-number — letting two accounts
     // bind the same number causes the webhook's `.single()` lookup to
     // throw PGRST116 ("multiple rows"), silently dropping every
     // inbound message. See issue #136. Post-multi-user we key on
@@ -235,7 +235,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            'This WhatsApp phone number is already linked to another account on this instance. Each phone number can only be connected to one VedMint Crm user.',
+            'This WhatsApp phone number is already linked to another account on this instance. Each phone number can only be connected to one VedMint Consultancy Services user.',
         },
         { status: 409 }
       )
@@ -304,7 +304,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error:
-              'Two-step verification PIN is required to subscribe this number to VedMint Crm. ' +
+              'Two-step verification PIN is required to subscribe this number to VedMint Consultancy Services. ' +
               'Set a 6-digit PIN in Meta WhatsApp Manager → Phone Numbers → Two-step verification, then paste it below.',
           },
           { status: 400 }

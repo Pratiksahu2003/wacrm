@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { PublicDocsShell } from "@/components/docs/public-docs-shell";
+import { COMPANY_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: {
     default: "Documentation",
-    template: "%s — VedMint CRM Docs",
+    template: `%s — ${COMPANY_NAME}`,
   },
-  description:
-    "VedMint CRM documentation — getting started, WhatsApp setup, and troubleshooting.",
+  description: `${COMPANY_NAME} documentation — getting started, WhatsApp setup, and troubleshooting.`,
 };
 
 export default function DocsLayout({

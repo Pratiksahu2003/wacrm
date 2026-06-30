@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
+import { COMPANY_NAME, COPYRIGHT_NOTICE } from "@/lib/brand";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -122,7 +123,7 @@ function SignupPageInner() {
           <CardDescription className="text-slate-400 mt-1">
             {inviteToken
               ? "Accept your invitation and get started."
-              : "Get started with VedMint Crm"}
+              : `Get started with ${COMPANY_NAME}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -218,7 +219,7 @@ function SignupPageInner() {
         </CardContent>
       </Card>
       <p className="mt-6 text-center text-xs text-slate-600 select-none">
-        © 2026 Vedmint Consultancy Services. All Rights Reserved.
+        {COPYRIGHT_NOTICE}
       </p>
     </div>
   );

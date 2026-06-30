@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { COMPANY_NAME, META_DESCRIPTION } from "@/lib/brand";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
 
 const inter = Inter({
@@ -13,10 +14,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "VedMint CRM",
-    template: "%s — VedMint CRM",
+    default: COMPANY_NAME,
+    template: `%s — ${COMPANY_NAME}`,
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: META_DESCRIPTION,
   robots: {
     index: false,
     follow: false,

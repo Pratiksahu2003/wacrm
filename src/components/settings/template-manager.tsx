@@ -825,7 +825,7 @@ export function TemplateManager() {
                   {!form.header_media_url.trim() && (
                     <p className="text-[11px] text-amber-400 leading-relaxed">
                       Image, video, and document headers need a public HTTPS
-                      sample URL. VedMint Crm uploads it to Meta automatically when
+                      sample URL. VedMint Consultancy Services uploads it to Meta automatically when
                       you submit the template for review.
                     </p>
                   )}
@@ -1078,8 +1078,8 @@ export function TemplateManager() {
             <DialogTitle className="text-white">Delete template?</DialogTitle>
             <DialogDescription className="text-slate-400">
               {templateToDelete?.meta_template_id
-                ? `"${templateToDelete?.name}" will be deleted from Meta and from VedMint Crm. Active broadcasts using this template will start failing on their next send. This can't be undone.`
-                : `"${templateToDelete?.name}" will be deleted from VedMint Crm. It was never submitted to Meta, so no remote cleanup is needed.`}
+                ? `"${templateToDelete?.name}" will be deleted from Meta and from VedMint Consultancy Services. Active broadcasts using this template will start failing on their next send. This can't be undone.`
+                : `"${templateToDelete?.name}" will be deleted from VedMint Consultancy Services. It was never submitted to Meta, so no remote cleanup is needed.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="bg-slate-900 border-slate-700">

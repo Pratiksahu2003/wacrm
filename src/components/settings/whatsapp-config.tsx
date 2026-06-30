@@ -472,7 +472,7 @@ export function WhatsAppConfig() {
                   }
                 >
                   {isRegistered
-                    ? 'Registered — Meta will deliver events to VedMint Crm'
+                    ? 'Registered — Meta will deliver events to VedMint CRM'
                     : 'Not registered — Meta will not deliver events'}
                 </AlertTitle>
               </div>
@@ -663,7 +663,7 @@ export function WhatsAppConfig() {
                   Numbers → Two-step verification
                 </strong>
                 . Without this PIN, Meta saves your credentials but
-                won&apos;t actually route inbound messages to VedMint Crm —
+                won&apos;t actually route inbound messages to VedMint Consultancy Services —
                 the symptom that hits second numbers under a shared
                 WABA. Leave blank to keep an existing registration
                 untouched.
@@ -680,7 +680,7 @@ export function WhatsAppConfig() {
             </AlertTitle>
             <AlertDescription className="text-slate-400 text-sm leading-relaxed">
               Meta signs every webhook POST with your App Secret. Without it,
-              VedMint Crm returns <strong className="text-red-300">401</strong> and
+              VedMint Consultancy Services returns <strong className="text-red-300">401</strong> and
               Meta&apos;s &quot;Test&quot; button fails with the error you saw.
               Add your App Secret in{' '}
               <Link
@@ -863,7 +863,7 @@ export function WhatsAppConfig() {
                     <li>
                       Set the webhook API version to{' '}
                       <strong className="text-slate-200">v25.0</strong> in Meta
-                      (must match VedMint Crm&apos;s Graph API version)
+                      (must match VedMint Consultancy Services&apos;s Graph API version)
                     </li>
                     <li>
                       Save your{' '}
@@ -873,7 +873,7 @@ export function WhatsAppConfig() {
                       >
                         Meta App Secret
                       </Link>{' '}
-                      in VedMint Crm — required for webhook POSTs to be accepted
+                      in VedMint Consultancy Services — required for webhook POSTs to be accepted
                     </li>
                   </ol>
                 </AccordionContent>

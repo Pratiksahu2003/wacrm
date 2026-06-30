@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
+import { COPYRIGHT_NOTICE } from "@/lib/brand";
 import { CheckCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
@@ -93,7 +94,7 @@ export default function ResetPasswordPage() {
           </CardContent>
         </Card>
         <p className="mt-6 text-center text-xs text-slate-600 select-none">
-          © 2026 Vedmint Consultancy Services. All Rights Reserved.
+          {COPYRIGHT_NOTICE}
         </p>
       </div>
     );
@@ -172,7 +173,7 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
       <p className="mt-6 text-center text-xs text-slate-600 select-none">
-        © 2026 Vedmint Consultancy Services. All Rights Reserved.
+        {COPYRIGHT_NOTICE}
       </p>
     </div>
   );

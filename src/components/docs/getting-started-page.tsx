@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { COMPANY_NAME } from "@/lib/brand";
 import {
   DocsShell,
   DocLinkButton,
@@ -43,7 +44,7 @@ export function GettingStartedPage() {
         <SectionHeading
           id="overview"
           title="Overview"
-          description="VedMint CRM is a WhatsApp Business CRM with shared inbox, contacts, pipelines, broadcasts, automations, and interactive flows."
+          description={`${COMPANY_NAME} WhatsApp Business CRM — shared inbox, contacts, pipelines, broadcasts, automations, and interactive flows.`}
         />
         <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
@@ -72,7 +73,7 @@ export function GettingStartedPage() {
         <SectionHeading
           id="implementation-plan"
           title="Implementation Plan"
-          description="Follow these steps in order to connect Meta WhatsApp and start using VedMint CRM."
+          description={`Follow these steps in order to connect Meta WhatsApp and start using ${COMPANY_NAME}.`}
         />
         <div className="space-y-3">
           {IMPLEMENTATION_STEPS.map((step, index) => (

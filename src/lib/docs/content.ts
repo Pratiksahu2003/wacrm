@@ -1,3 +1,5 @@
+import { COMPANY_NAME } from "@/lib/brand";
+
 export type DocLink = {
   label: string;
   href: string;
@@ -93,7 +95,7 @@ export const IMPLEMENTATION_STEPS: DocStep[] = [
     ],
   },
   {
-    title: "Save credentials in VedMint CRM",
+    title: `Save credentials in ${COMPANY_NAME}`,
     body:
       "Open Settings → WhatsApp Config. Enter Phone Number ID, WABA ID, permanent access token, webhook verify token, and the 6-digit two-step verification PIN. Click Save — the app verifies with Meta, encrypts tokens, registers the number, and subscribes the WABA.",
     links: [
@@ -135,7 +137,7 @@ export const IMPLEMENTATION_STEPS: DocStep[] = [
     links: [{ label: "Team", href: "/settings?tab=members" }],
   },
   {
-    title: "Start using VedMint CRM",
+    title: `Start using ${COMPANY_NAME}`,
     body:
       "Import contacts, configure pipelines, set up automations, and start handling conversations from the Inbox.",
     links: [

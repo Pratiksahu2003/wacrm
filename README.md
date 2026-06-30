@@ -1,8 +1,7 @@
-# VedMint Crm — CRM Template for WhatsApp
+# VedMint Consultancy Services
 
-> Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
-> sales pipelines, broadcasts, and no-code automations. Fork it, brand
-> it, host it.
+> WhatsApp Business CRM by VedMint Consultancy Services — shared inbox, contacts,
+> sales pipelines, broadcasts, and no-code automations.
 
 <p align="center">
   <a href="https://www.hostinger.com/web-apps-hosting">
@@ -85,7 +84,7 @@ Open <http://localhost:3000>. You'll be redirected to `/login` (or
   </a>
 </p>
 
-**VedMint Crm is built to run on [Hostinger](https://www.hostinger.com/web-apps-hosting).**
+**VedMint Consultancy Services** CRM is built to run on [Hostinger](https://www.hostinger.com/web-apps-hosting).
 It's the path we test, document, and recommend — and the fastest way
 to get a production-grade CRM live without owning a VPS or a
 Kubernetes cluster.
@@ -114,7 +113,7 @@ Kubernetes cluster.
 Full walkthrough with screenshots:
 **[vedmint-crm.tech/docs/deployment-hostinger](https://vedmint-crm.tech/docs/deployment-hostinger)**.
 
-> _Note: VedMint Crm is MIT-licensed and runs anywhere Node.js does
+> _Note: VedMint Consultancy Services CRM is MIT-licensed and runs anywhere Node.js does
 > (Vercel, Railway, your own VPS). Hostinger is recommended, not
 > required._
 

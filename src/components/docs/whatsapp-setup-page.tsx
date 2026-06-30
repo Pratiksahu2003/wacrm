@@ -12,6 +12,7 @@ import {
   DocLinkButton,
   SectionHeading,
 } from "@/components/docs/docs-shared";
+import { COMPANY_NAME } from "@/lib/brand";
 import { META_WEBHOOK_FIELDS } from "@/lib/docs/content";
 
 export function WhatsAppSetupPage() {
@@ -35,7 +36,7 @@ export function WhatsAppSetupPage() {
         <SectionHeading
           id="meta-app"
           title="Create a Meta Business App"
-          description="Set up your app in Meta for Developers before entering credentials in VedMint CRM."
+          description={`Set up your app in Meta for Developers before entering credentials in ${COMPANY_NAME}.`}
         />
         <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
@@ -66,7 +67,7 @@ export function WhatsAppSetupPage() {
       <section className="space-y-4">
         <SectionHeading
           id="credentials"
-          title="Save credentials in VedMint CRM"
+          title={`Save credentials in ${COMPANY_NAME}`}
           description="Settings → WhatsApp Config — all fields and what they do."
         />
         <div className="grid gap-4 md:grid-cols-2">

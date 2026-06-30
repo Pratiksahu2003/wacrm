@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
+import { COPYRIGHT_NOTICE } from "@/lib/brand";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -177,7 +178,7 @@ function LoginPageInner() {
         </CardContent>
       </Card>
       <p className="mt-6 text-center text-xs text-slate-600 select-none">
-        © 2026 Vedmint Consultancy Services. All Rights Reserved.
+        {COPYRIGHT_NOTICE}
       </p>
     </div>
   );

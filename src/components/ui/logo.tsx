@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { COMPANY_NAME } from "@/lib/brand"
 
 interface LogoProps {
   variant?: "auth" | "sidebar";
@@ -17,7 +18,7 @@ export function Logo({ variant = "auth", className }: LogoProps) {
       >
         <img
           src="/logo.png"
-          alt="VedMint CRM"
+          alt={COMPANY_NAME}
           className="h-full w-full max-w-full object-contain object-left"
         />
       </div>
@@ -33,7 +34,7 @@ export function Logo({ variant = "auth", className }: LogoProps) {
     >
       <img
         src="/logo.png"
-        alt="VedMint CRM"
+        alt={COMPANY_NAME}
         className="h-full w-full object-contain"
       />
     </div>

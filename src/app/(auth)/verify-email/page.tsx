@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
+import { COPYRIGHT_NOTICE } from "@/lib/brand";
 import { CheckCircle, Mail, ArrowLeft } from "lucide-react";
 
 export default function VerifyEmailPage() {
@@ -140,7 +141,7 @@ function VerifyEmailPageInner() {
         </CardContent>
       </Card>
       <p className="mt-6 text-center text-xs text-slate-600 select-none">
-        © 2026 Vedmint Consultancy Services. All Rights Reserved.
+        {COPYRIGHT_NOTICE}
       </p>
     </div>
   );

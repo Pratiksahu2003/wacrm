@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { COMPANY_NAME } from "@/lib/brand";
 
 function getSmtpTransporter() {
   const smtpPort = Number(process.env.SMTP_PORT) || 587;
@@ -68,7 +69,7 @@ export async function sendVerificationEmail(
   await transporter.sendMail({
     from: process.env.SMTP_FROM || "no-reply@vedmint.com",
     to: email,
-    subject: "Verify your VedMint CRM email address",
+    subject: `Verify your ${COMPANY_NAME} email address`,
     html: `<p>Thanks for signing up. Click <a href="${verifyLink}">here</a> to verify your email address and access your dashboard.</p><p>This link is valid for 24 hours.</p><p>If you did not create an account, you can ignore this email.</p>`,
   });
 }
@@ -88,7 +89,7 @@ export async function sendPasswordResetEmail(
   await transporter.sendMail({
     from: process.env.SMTP_FROM || "no-reply@vedmint.com",
     to: email,
-    subject: "Reset your VedMint CRM password",
+    subject: `Reset your ${COMPANY_NAME} password`,
     html: `<p>Click <a href="${resetLink}">here</a> to reset your password. The link is valid for 1 hour.</p><p>If you did not request this, you can ignore this email.</p>`,
   });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { COPYRIGHT_NOTICE } from "@/lib/brand";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -376,7 +378,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
          </div>
          <div className="border-t border-slate-800 p-3 text-center">
            <p className="text-[10px] text-slate-500">
-             © 2026 Vedmint Consultancy Services. All Rights Reserved.
+             {COPYRIGHT_NOTICE}
            </p>
          </div>
        </aside>
