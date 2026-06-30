@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import {
@@ -181,7 +182,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             close button is hidden since the sidebar is always-visible. */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="VedMint Crm" className="h-8 w-8 object-contain rounded" />
+            <Logo variant="sidebar" />
             <span className="text-sm font-semibold text-white">
               VedMint Crm
             </span>

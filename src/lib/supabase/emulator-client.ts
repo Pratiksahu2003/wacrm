@@ -163,38 +163,33 @@ export class EmulatorQueryBuilder {
 }
 
 export function createEmulatorClient() {
+  const authCallbacks: ((event: string, session: any) => void)[] = [];
+
+  const triggerAuthChange = (event: string, session: any) => {
+    authCallbacks.forEach(cb => {
+      try {
+        cb(event, session);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  };
+
   const auth = {
     async getSession() {
       if (typeof window === 'undefined') {
         return { data: { session: null }, error: null };
       }
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const sessionCookie = cookies.find(c => c.startsWith('vedmint_crm_session='));
-      if (!sessionCookie) return { data: { session: null }, error: null };
-      const token = sessionCookie.split('=')[1];
       try {
-        // Safe base64 decoding of JWT payload in browser
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          window.atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
-        const decoded = JSON.parse(jsonPayload);
-        return {
-          data: {
-            session: {
-              user: { id: decoded.userId, email: decoded.email },
-              access_token: token
-            }
-          },
-          error: null
-        };
-      } catch {
-        return { data: { session: null }, error: null };
+        const res = await fetch('/api/auth/session', { method: 'GET' }).catch(() => null);
+        if (res && res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          return { data: { session: payload.data?.session || null }, error: null };
+        }
+      } catch (e) {
+        // Ignored
       }
+      return { data: { session: null }, error: null };
     },
 
     async getUser() {
@@ -208,7 +203,11 @@ export function createEmulatorClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      return await res.json();
+      const payload = await res.json();
+      if (res.ok && payload.data?.session) {
+        triggerAuthChange('SIGNED_IN', payload.data.session);
+      }
+      return payload;
     },
 
     async signUp({ email, password, options }: any) {
@@ -217,13 +216,18 @@ export function createEmulatorClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, options })
       });
-      return await res.json();
+      const payload = await res.json();
+      if (res.ok && payload.data?.session) {
+        triggerAuthChange('SIGNED_IN', payload.data.session);
+      }
+      return payload;
     },
 
     async signOut() {
       if (typeof window !== 'undefined') {
         document.cookie = 'vedmint_crm_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       }
+      triggerAuthChange('SIGNED_OUT', null);
       return { error: null };
     },
 
@@ -246,10 +250,25 @@ export function createEmulatorClient() {
     },
 
     onAuthStateChange(callback: any) {
+      authCallbacks.push(callback);
+      // Trigger it once initially with current session status
+      this.getSession().then(({ data }) => {
+        if (data?.session) {
+          callback('SIGNED_IN', data.session);
+        } else {
+          callback('SIGNED_OUT', null);
+        }
+      });
+
       return {
         data: {
           subscription: {
-            unsubscribe() {}
+            unsubscribe: () => {
+              const idx = authCallbacks.indexOf(callback);
+              if (idx !== -1) {
+                authCallbacks.splice(idx, 1);
+              }
+            }
           }
         }
       };
