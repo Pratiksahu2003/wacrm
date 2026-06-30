@@ -38,6 +38,13 @@ export async function middleware(request: NextRequest) {
   // they can accept the invitation in one click. Without this,
   // a forwarded invite link to someone who's already signed in
   // would silently drop them on /dashboard.
+  if (user && request.nextUrl.pathname === '/verify-email') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
   if (user && (
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/signup' ||

@@ -3,6 +3,11 @@ import jwt from "jsonwebtoken";
 import { query } from "@/lib/mysql";
 import { createClient } from "@/lib/supabase/server";
 import {
+  createVerifiedSessionToken,
+  markEmailVerified,
+  setSessionCookie,
+} from "@/lib/auth-verification";
+import {
   getConfiguredSiteUrl,
   sanitizeAuthNextPath,
 } from "@/lib/site-url";
@@ -13,46 +18,69 @@ const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-enc
  * PKCE and password-reset callback handler.
  * - Handles code exchange for standard Supabase flows.
  * - Handles token verification and session bootstrapping for emulator password reset links.
+ * - Handles email verification links for new accounts.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const token = searchParams.get("token");
-  const next = sanitizeAuthNextPath(searchParams.get("next"), "/login");
+  const next = sanitizeAuthNextPath(searchParams.get("next"), "/dashboard");
 
   const redirectBase =
     getConfiguredSiteUrl() ?? new URL(request.url).origin.replace(/\/+$/, "");
 
-  // Custom JWT password reset link handling
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { email?: string; type?: string };
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        email?: string;
+        type?: string;
+      };
+
+      if (decoded.type === "verify-email" && decoded.email) {
+        const verified = await markEmailVerified(decoded.email);
+        if (verified) {
+          const users = await query<{ id: string; email: string }>(
+            "SELECT id, email FROM users WHERE email = ?",
+            [decoded.email.toLowerCase().trim()],
+          );
+          const dbUser = users[0];
+
+          if (dbUser) {
+            const sessionToken = createVerifiedSessionToken(
+              dbUser.id,
+              dbUser.email,
+            );
+            const response = NextResponse.redirect(`${redirectBase}${next}`);
+            setSessionCookie(response, sessionToken);
+            return response;
+          }
+        }
+
+        return NextResponse.redirect(
+          `${redirectBase}/verify-email?error=invalid_or_expired`,
+        );
+      }
+
       if (decoded.type === "reset-password" && decoded.email) {
         const users = await query("SELECT id, email FROM users WHERE email = ?", [decoded.email.toLowerCase().trim()]);
         const dbUser = users[0];
         
         if (dbUser) {
-          const sessionToken = jwt.sign(
-            { userId: dbUser.id, email: dbUser.email },
-            JWT_SECRET,
-            { expiresIn: "7d" }
+          const sessionToken = createVerifiedSessionToken(
+            dbUser.id,
+            dbUser.email,
           );
 
           const response = NextResponse.redirect(`${redirectBase}${next}`);
-          
-          response.cookies.set("vedmint_crm_session", sessionToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 60 * 60 * 24 * 7, // 7 days
-          });
-
+          setSessionCookie(response, sessionToken);
           return response;
         }
       }
     } catch (err) {
       console.error("[auth/callback] custom token verification failed:", err);
+      return NextResponse.redirect(
+        `${redirectBase}/verify-email?error=invalid_or_expired`,
+      );
     }
   }
 

@@ -58,7 +58,7 @@ function SignupPageInner() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const result = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -69,9 +69,28 @@ function SignupPageInner() {
         }
       });
 
+      const { error } = result;
+      const needsVerification = Boolean(
+        (result.data as { needsVerification?: boolean } | null)?.needsVerification,
+      );
+
       if (error) {
+        if (needsVerification) {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`,
+          );
+          return;
+        }
+
         setError(error.message);
         setLoading(false);
+        return;
+      }
+
+      if (needsVerification) {
+        router.push(
+          `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`,
+        );
         return;
       }
 

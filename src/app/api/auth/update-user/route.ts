@@ -26,8 +26,8 @@ export async function POST(request: Request) {
     }
 
     const { password } = await request.json();
-    if (!password || password.length < 6) {
-      return NextResponse.json({ error: { message: 'Password must be at least 6 characters' } }, { status: 400 });
+    if (!password || password.length < 8) {
+      return NextResponse.json({ error: { message: 'Password must be at least 8 characters' } }, { status: 400 });
     }
 
     const hash = bcrypt.hashSync(password, 10);

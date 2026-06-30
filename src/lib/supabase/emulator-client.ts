@@ -207,6 +207,15 @@ export function createEmulatorClient() {
       if (res.ok && payload.data?.session) {
         triggerAuthChange('SIGNED_IN', payload.data.session);
       }
+      if (payload.data?.needsVerification) {
+        return {
+          data: payload.data,
+          error: payload.error ?? {
+            message: 'Please verify your email to continue.',
+            code: 'EMAIL_NOT_VERIFIED',
+          },
+        };
+      }
       return payload;
     },
 
@@ -219,6 +228,12 @@ export function createEmulatorClient() {
       const payload = await res.json();
       if (res.ok && payload.data?.session) {
         triggerAuthChange('SIGNED_IN', payload.data.session);
+      }
+      if (payload.data?.needsVerification) {
+        return {
+          data: payload.data,
+          error: null,
+        };
       }
       return payload;
     },

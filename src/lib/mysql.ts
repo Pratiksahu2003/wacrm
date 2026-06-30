@@ -45,6 +45,28 @@ export function getPool(): mysql.Pool {
   return pool;
 }
 
+async function ensureEmailVerifiedColumn(connection: mysql.PoolConnection) {
+  let columnAdded = false;
+  try {
+    await connection.query(
+      'ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0',
+    );
+    columnAdded = true;
+  } catch (err: any) {
+    const alreadyExists =
+      err.code === 'ER_DUP_FIELDNAME' ||
+      err.errno === 1060;
+    if (!alreadyExists) {
+      console.warn('[MySQL] email_verified migration:', err.message);
+    }
+  }
+
+  if (columnAdded) {
+    await connection.query('UPDATE users SET email_verified = 1');
+    console.log('[MySQL] Grandfathered existing users as email-verified');
+  }
+}
+
 async function initializeDatabase(p: mysql.Pool) {
   try {
     const schemaPath = path.join(process.cwd(), 'supabase', 'mysql_schema.sql');
@@ -80,6 +102,9 @@ async function initializeDatabase(p: mysql.Pool) {
           }
         }
       }
+
+      await ensureEmailVerifiedColumn(connection);
+
       console.log('[MySQL] Database schema initialized/verified successfully');
     } finally {
       connection.release();

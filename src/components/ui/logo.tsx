@@ -23,7 +23,7 @@ export function Logo({ variant = "auth", className }: LogoProps) {
   return (
     <div
       className={cn(
-        "flex h-24 w-[220px] items-center justify-center rounded-2xl bg-white shadow-[0_8px_30px_rgba(255,255,255,0.05)] border border-slate-100 p-3 overflow-hidden transition-all duration-300 hover:scale-[1.02]",
+        "flex h-24 w-[220px] items-center justify-center rounded-2xl bg-white shadow-[0_8px_30px_rgba(255,255,255,0.05)] border border-slate-100  overflow-hidden transition-all duration-300 hover:scale-[1.02]",
         className
       )}
     >

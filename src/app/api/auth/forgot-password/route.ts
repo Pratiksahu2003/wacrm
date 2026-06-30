@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAuthEmailRedirectTo } from "@/lib/site-url";
+import { smtpErrorMessage } from "@/lib/auth-mail";
 
 export async function POST(request: Request) {
   try {
@@ -32,14 +33,18 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : smtpErrorMessage(error);
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[POST /api/auth/forgot-password] unexpected error:", err);
     return NextResponse.json(
-      { error: "Could not send reset email" },
+      { error: smtpErrorMessage(err) },
       { status: 500 },
     );
   }

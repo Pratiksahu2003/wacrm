@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { query, transaction } from '@/lib/mysql';
-
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
+import {
+  isEmailVerifiedFlag,
+  sendUserVerificationEmail,
+  verificationEmailErrorMessage,
+} from '@/lib/auth-verification';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +16,10 @@ export async function POST(request: Request) {
     
     // Support both direct client form field and options structure from emulator client
     const fullName = (body.fullName || body.options?.data?.full_name || '').trim();
+    const inviteToken = body.options?.data?.invite_token as string | undefined;
+    const verificationNext = inviteToken
+      ? `/join/${encodeURIComponent(inviteToken)}`
+      : '/dashboard';
 
     if (!email || !password) {
       return NextResponse.json({ error: { message: 'Email and password are required' } }, { status: 400 });
@@ -23,9 +29,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { message: 'Password must be at least 6 characters' } }, { status: 400 });
     }
 
-    const existing = await query('SELECT id FROM users WHERE email = ?', [email]);
+    const existing = await query<{ id: string; email_verified?: number | boolean }>(
+      'SELECT id, email_verified FROM users WHERE email = ?',
+      [email],
+    );
     if (existing.length > 0) {
-      return NextResponse.json({ error: { message: 'User already exists' } }, { status: 400 });
+      if (isEmailVerifiedFlag(existing[0].email_verified)) {
+        return NextResponse.json({ error: { message: 'User already exists' } }, { status: 400 });
+      }
+
+      try {
+        await sendUserVerificationEmail(email, verificationNext);
+      } catch (err) {
+        console.error('[POST /api/auth/signup] verification email failed:', err);
+        return NextResponse.json(
+          {
+            error: {
+              message: verificationEmailErrorMessage(err),
+              code: 'EMAIL_NOT_VERIFIED',
+            },
+            data: { needsVerification: true, email },
+          },
+          { status: 400 },
+        );
+      }
+
+      return NextResponse.json({
+        data: { needsVerification: true, email },
+        error: null,
+      });
     }
 
     const userId = crypto.randomUUID();
@@ -35,29 +67,36 @@ export async function POST(request: Request) {
 
     // Bootstrap user, account, and profile inside transaction
     await transaction(async (conn) => {
-      await conn.query('INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)', [userId, email, hash]);
+      await conn.query(
+        'INSERT INTO users (id, email, password_hash, email_verified) VALUES (?, ?, ?, 0)',
+        [userId, email, hash],
+      );
       await conn.query('INSERT INTO accounts (id, name, owner_user_id) VALUES (?, ?, ?)', [accountId, fullName || email, userId]);
       await conn.query('INSERT INTO profiles (id, user_id, full_name, email, account_id, account_role) VALUES (?, ?, ?, ?, ?, ?)', [
         profileId, userId, fullName, email, accountId, 'owner'
       ]);
     });
 
-    const token = jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' });
-    const user = { id: userId, email };
-    const session = { user, access_token: token };
+    try {
+      await sendUserVerificationEmail(email, verificationNext);
+    } catch (err) {
+      console.error('[POST /api/auth/signup] verification email failed:', err);
+      return NextResponse.json(
+        {
+          error: {
+            message: verificationEmailErrorMessage(err),
+            code: 'EMAIL_NOT_VERIFIED',
+          },
+          data: { needsVerification: true, email },
+        },
+        { status: 500 },
+      );
+    }
 
-    const response = NextResponse.json({ data: { user, session }, error: null });
-
-    // Set HTTP-only cookie
-    response.cookies.set('vedmint_crm_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+    return NextResponse.json({
+      data: { needsVerification: true, email },
+      error: null,
     });
-
-    return response;
   } catch (err: any) {
     console.error('[POST /api/auth/signup] unexpected error:', err);
     return NextResponse.json({ error: { message: err.message } }, { status: 500 });

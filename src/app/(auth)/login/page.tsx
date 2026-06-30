@@ -55,7 +55,23 @@ function LoginPageInner() {
       });
 
       if (error) {
-        setError(error.message);
+        const code =
+          typeof error === "object" && error !== null && "code" in error
+            ? String((error as { code?: string }).code)
+            : "";
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message?: string }).message)
+            : "Sign in failed";
+
+        if (code === "EMAIL_NOT_VERIFIED") {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`,
+          );
+          return;
+        }
+
+        setError(message);
         setLoading(false);
         return;
       }

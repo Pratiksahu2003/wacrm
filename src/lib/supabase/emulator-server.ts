@@ -712,32 +712,24 @@ export function createEmulatorClient() {
         return await res.json();
       } else {
         const { query } = await import('@/lib/mysql');
-        const users = await query('SELECT id FROM users WHERE email = ?', [email]);
+        const { sendPasswordResetEmail, smtpErrorMessage } = await import('@/lib/auth-mail');
+        const normalizedEmail = email.trim().toLowerCase();
+        const users = await query('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
         if (users.length === 0) {
-          return { error: { message: 'User not found' } };
+          // Do not reveal whether the account exists.
+          return { error: null };
         }
-        // Send reset email via SMTP transporter
-        const nodemailer = await import('nodemailer');
-        const smtpPort = Number(process.env.SMTP_PORT) || 587;
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || '',
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: {
-            user: process.env.SMTP_USER || '',
-            pass: process.env.SMTP_PASSWORD || ''
-          }
-        });
 
-        const token = jwt.sign({ email, type: 'reset-password' }, JWT_SECRET, { expiresIn: '1h' });
-        const resetLink = `${options?.redirectTo || 'http://localhost:3000/auth/callback'}?token=${token}`;
+        const token = jwt.sign({ email: normalizedEmail, type: 'reset-password' }, JWT_SECRET, { expiresIn: '1h' });
+        const redirectTo =
+          options?.redirectTo || 'http://localhost:3000/auth/callback?next=%2Freset-password';
 
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM || 'no-reply@VedMint Crm.com',
-          to: email,
-          subject: 'Reset Password',
-          html: `<p>Click <a href="${resetLink}">here</a> to reset your password. The link is valid for 1 hour.</p>`
-        });
+        try {
+          await sendPasswordResetEmail(normalizedEmail, redirectTo, token);
+        } catch (err) {
+          console.error('[auth.resetPasswordForEmail] SMTP error:', err);
+          return { error: { message: smtpErrorMessage(err) } };
+        }
 
         return { error: null };
       }

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { query } from '@/lib/mysql';
-
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
+import {
+  createVerifiedSessionToken,
+  isEmailVerifiedFlag,
+  sendUserVerificationEmail,
+  setSessionCookie,
+  verificationEmailErrorMessage,
+} from '@/lib/auth-verification';
 
 export async function POST(request: Request) {
   try {
@@ -13,27 +17,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { message: 'Email and password are required' } }, { status: 400 });
     }
 
-    const dbUsers = await query('SELECT * FROM users WHERE email = ?', [email.trim()]);
+    const normalizedEmail = email.trim().toLowerCase();
+    const dbUsers = await query<{
+      id: string;
+      email: string;
+      password_hash: string;
+      email_verified?: number | boolean;
+    }>('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
     const dbUser = dbUsers[0];
 
     if (!dbUser || !bcrypt.compareSync(password, dbUser.password_hash)) {
       return NextResponse.json({ error: { message: 'Invalid credentials' } }, { status: 400 });
     }
 
-    const token = jwt.sign({ userId: dbUser.id, email: dbUser.email }, JWT_SECRET, { expiresIn: '7d' });
+    if (!isEmailVerifiedFlag(dbUser.email_verified)) {
+      try {
+        await sendUserVerificationEmail(dbUser.email);
+      } catch (err) {
+        console.error('[POST /api/auth/signin] verification email failed:', err);
+        return NextResponse.json(
+          {
+            error: {
+              message: verificationEmailErrorMessage(err),
+              code: 'EMAIL_NOT_VERIFIED',
+            },
+            data: { needsVerification: true, email: dbUser.email },
+          },
+          { status: 403 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              'Please verify your email before signing in. We sent a new verification link to your inbox.',
+            code: 'EMAIL_NOT_VERIFIED',
+          },
+          data: { needsVerification: true, email: dbUser.email },
+        },
+        { status: 403 },
+      );
+    }
+
+    const token = createVerifiedSessionToken(dbUser.id, dbUser.email);
     const user = { id: dbUser.id, email: dbUser.email };
     const session = { user, access_token: token };
 
     const response = NextResponse.json({ data: { user, session }, error: null });
-
-    // Set HTTP-only cookie
-    response.cookies.set('vedmint_crm_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
-    });
+    setSessionCookie(response, token);
 
     return response;
   } catch (err: any) {
