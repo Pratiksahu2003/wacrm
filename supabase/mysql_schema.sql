@@ -1,0 +1,512 @@
+-- ============================================================
+-- wacrm MySQL Database Schema
+-- Sets up all the tables required for the CRM.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(36) PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS accounts (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  owner_user_id VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id VARCHAR(36) UNIQUE NOT NULL,
+  full_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  avatar_url TEXT,
+  role VARCHAR(50) DEFAULT 'user',
+  account_id VARCHAR(36),
+  account_role VARCHAR(50),
+  beta_features JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  phone VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  email VARCHAR(255),
+  company VARCHAR(255),
+  avatar_url TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_contacts_account_id ON contacts(account_id);
+CREATE INDEX idx_contacts_phone ON contacts(phone);
+
+CREATE TABLE IF NOT EXISTS tags (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  color VARCHAR(50) DEFAULT '#3b82f6',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contact_tags (
+  id VARCHAR(36) PRIMARY KEY,
+  contact_id VARCHAR(36) NOT NULL,
+  tag_id VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(contact_id, tag_id),
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_contact_tags_contact ON contact_tags(contact_id);
+CREATE INDEX idx_contact_tags_tag ON contact_tags(tag_id);
+
+CREATE TABLE IF NOT EXISTS custom_fields (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  field_name VARCHAR(255) NOT NULL,
+  field_type VARCHAR(50) DEFAULT 'text',
+  field_options JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contact_custom_values (
+  id VARCHAR(36) PRIMARY KEY,
+  contact_id VARCHAR(36) NOT NULL,
+  custom_field_id VARCHAR(36) NOT NULL,
+  value TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(contact_id, custom_field_id),
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (custom_field_id) REFERENCES custom_fields(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contact_notes (
+  id VARCHAR(36) PRIMARY KEY,
+  contact_id VARCHAR(36) NOT NULL,
+  account_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  note_text TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36) NOT NULL,
+  status VARCHAR(50) DEFAULT 'open',
+  assigned_agent_id VARCHAR(36),
+  last_message_text TEXT,
+  last_message_at TIMESTAMP NULL,
+  unread_count INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
+  FOREIGN KEY (assigned_agent_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_conversations_account_id ON conversations(account_id);
+CREATE INDEX idx_conversations_contact_id ON conversations(contact_id);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id VARCHAR(36) PRIMARY KEY,
+  conversation_id VARCHAR(36) NOT NULL,
+  sender_type VARCHAR(50) NOT NULL,
+  sender_id VARCHAR(36),
+  content_type VARCHAR(50) DEFAULT 'text',
+  content_text TEXT,
+  media_url TEXT,
+  template_name VARCHAR(255),
+  message_id VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'sent',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_message_id ON messages(message_id);
+
+CREATE TABLE IF NOT EXISTS message_reactions (
+  id VARCHAR(36) PRIMARY KEY,
+  message_id VARCHAR(36) NOT NULL,
+  conversation_id VARCHAR(36) NOT NULL,
+  actor_type VARCHAR(50) NOT NULL,
+  actor_id VARCHAR(36),
+  emoji VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(message_id, actor_type, actor_id),
+  FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_message_reactions_conversation ON message_reactions(conversation_id);
+CREATE INDEX idx_message_reactions_message ON message_reactions(message_id);
+
+CREATE TABLE IF NOT EXISTS whatsapp_config (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  phone_number_id VARCHAR(255) NOT NULL,
+  waba_id VARCHAR(255),
+  access_token TEXT NOT NULL,
+  verify_token VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'disconnected',
+  connected_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  meta_app_secret TEXT,
+  UNIQUE(phone_number_id),
+  UNIQUE(account_id),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS member_whatsapp_config (
+  user_id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  use_personal BOOLEAN NOT NULL DEFAULT false,
+  phone_number_id VARCHAR(255),
+  waba_id VARCHAR(255),
+  access_token TEXT,
+  verify_token VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES profiles(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_member_whatsapp_config_account ON member_whatsapp_config(account_id);
+
+CREATE TABLE IF NOT EXISTS message_templates (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  language VARCHAR(50) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  components JSON,
+  meta_template_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  header_media_id VARCHAR(255),
+  UNIQUE(account_id, name, language),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pipelines (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  position INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pipeline_stages (
+  id VARCHAR(36) PRIMARY KEY,
+  pipeline_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  color VARCHAR(50),
+  position INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (pipeline_id) REFERENCES pipelines(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_pipeline_stages_pipeline ON pipeline_stages(pipeline_id);
+
+CREATE TABLE IF NOT EXISTS deals (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  stage_id VARCHAR(36) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  value DECIMAL(15, 2),
+  status VARCHAR(50) DEFAULT 'open',
+  position INT DEFAULT 0,
+  contact_id VARCHAR(36),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (stage_id) REFERENCES pipeline_stages(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS broadcasts (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  template_name VARCHAR(255),
+  template_language VARCHAR(50),
+  status VARCHAR(50) DEFAULT 'draft',
+  total_recipients INT DEFAULT 0,
+  sent_count INT DEFAULT 0,
+  delivered_count INT DEFAULT 0,
+  read_count INT DEFAULT 0,
+  failed_count INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS broadcast_recipients (
+  id VARCHAR(36) PRIMARY KEY,
+  broadcast_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  wamid VARCHAR(255),
+  error_message TEXT,
+  sent_at TIMESTAMP NULL,
+  delivered_at TIMESTAMP NULL,
+  read_at TIMESTAMP NULL,
+  variables JSON,
+  FOREIGN KEY (broadcast_id) REFERENCES broadcasts(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS automations (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  trigger_type VARCHAR(50) NOT NULL,
+  trigger_config JSON,
+  steps JSON,
+  is_active BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS automation_steps (
+  id VARCHAR(36) PRIMARY KEY,
+  automation_id VARCHAR(36) NOT NULL,
+  parent_step_id VARCHAR(36),
+  branch VARCHAR(50),
+  step_type VARCHAR(50) NOT NULL,
+  step_config JSON,
+  position INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_step_id) REFERENCES automation_steps(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_automation_steps_automation_id ON automation_steps(automation_id, position);
+
+CREATE TABLE IF NOT EXISTS automation_logs (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  automation_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36) NOT NULL,
+  trigger_event VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS automation_pending_executions (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  automation_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36) NOT NULL,
+  step_index INT NOT NULL,
+  variables JSON,
+  execute_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS flows (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  trigger_type VARCHAR(50),
+  trigger_config JSON,
+  entry_node_id VARCHAR(255),
+  fallback_policy JSON,
+  status VARCHAR(50) DEFAULT 'draft',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS flow_nodes (
+  id VARCHAR(36) PRIMARY KEY,
+  flow_id VARCHAR(36) NOT NULL,
+  node_key VARCHAR(255) NOT NULL,
+  node_type VARCHAR(255) NOT NULL,
+  config JSON NOT NULL,
+  position_x INT DEFAULT 0,
+  position_y INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(flow_id, node_key),
+  FOREIGN KEY (flow_id) REFERENCES flows(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS flow_runs (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  flow_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36) NOT NULL,
+  current_node_id VARCHAR(255),
+  variables JSON,
+  status VARCHAR(50) DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (flow_id) REFERENCES flows(id) ON DELETE CASCADE,
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS flow_run_events (
+  id VARCHAR(36) PRIMARY KEY,
+  flow_run_id VARCHAR(36) NOT NULL,
+  event_type VARCHAR(50) NOT NULL,
+  node_key VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (flow_run_id) REFERENCES flow_runs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS flow_pending_executions (
+  id VARCHAR(36) PRIMARY KEY,
+  flow_run_id VARCHAR(36) NOT NULL,
+  node_id VARCHAR(255) NOT NULL,
+  execute_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (flow_run_id) REFERENCES flow_runs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS account_invitations (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id VARCHAR(36) NOT NULL,
+  token_hash VARCHAR(255) UNIQUE NOT NULL,
+  role VARCHAR(50) NOT NULL,
+  created_by_user_id VARCHAR(36),
+  label VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL,
+  accepted_at TIMESTAMP NULL,
+  accepted_by_user_id VARCHAR(36),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (accepted_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS webhook_events (
+  id VARCHAR(36) PRIMARY KEY,
+  event_id VARCHAR(255) UNIQUE NOT NULL,
+  event_type VARCHAR(255) NOT NULL,
+  payload JSON,
+  status VARCHAR(50) DEFAULT 'pending',
+  retry_count INT DEFAULT 0,
+  last_error TEXT,
+  processed_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS webhook_retry_queue (
+    id VARCHAR(36) PRIMARY KEY,
+    webhook_event_id VARCHAR(36) NOT NULL,
+    attempt_number INT NOT NULL,
+    scheduled_at TIMESTAMP NOT NULL,
+    executed_at TIMESTAMP NULL,
+    success BOOLEAN,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (webhook_event_id) REFERENCES webhook_events(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_webhook_retry_queue_scheduled ON webhook_retry_queue(scheduled_at);
+
+CREATE TABLE IF NOT EXISTS webhook_metrics (
+    id VARCHAR(36) PRIMARY KEY,
+    bucket_hour TIMESTAMP NOT NULL,
+    account_id VARCHAR(36),
+    event_type VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    event_count INT NOT NULL DEFAULT 0,
+    total_latency_ms INT NOT NULL DEFAULT 0,
+    retry_count INT NOT NULL DEFAULT 0,
+    dead_letter_count INT NOT NULL DEFAULT 0,
+    error_breakdown JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE(bucket_hour, account_id, event_type, status),
+    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS webhook_circuit_breakers (
+    id VARCHAR(36) PRIMARY KEY,
+    circuit_key VARCHAR(255) NOT NULL UNIQUE,
+    service_name VARCHAR(255) NOT NULL,
+    state VARCHAR(50) DEFAULT 'closed',
+    failure_count INT DEFAULT 0,
+    last_failure_at TIMESTAMP NULL,
+    last_failure_reason TEXT,
+    failure_threshold INT DEFAULT 5,
+    recovery_timeout_ms INT DEFAULT 30000,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- BROADCAST RECIPIENT COUNT TRIGGERS
+-- ============================================================
+
+DROP TRIGGER IF EXISTS broadcast_recipients_after_insert ON broadcast_recipients;
+CREATE TRIGGER broadcast_recipients_after_insert
+AFTER INSERT ON broadcast_recipients
+FOR EACH ROW
+  UPDATE broadcasts b
+  SET
+    sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('sent','delivered','read','replied')),
+    delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('delivered','read','replied')),
+    read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('read','replied')),
+    failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
+  WHERE b.id = NEW.broadcast_id;
+
+DROP TRIGGER IF EXISTS broadcast_recipients_after_update ON broadcast_recipients;
+CREATE TRIGGER broadcast_recipients_after_update
+AFTER UPDATE ON broadcast_recipients
+FOR EACH ROW
+  UPDATE broadcasts b
+  SET
+    sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('sent','delivered','read','replied')),
+    delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('delivered','read','replied')),
+    read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('read','replied')),
+    failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
+  WHERE b.id = NEW.broadcast_id;
+
+DROP TRIGGER IF EXISTS broadcast_recipients_after_delete ON broadcast_recipients;
+CREATE TRIGGER broadcast_recipients_after_delete
+AFTER DELETE ON broadcast_recipients
+FOR EACH ROW
+  UPDATE broadcasts b
+  SET
+    sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('sent','delivered','read','replied')),
+    delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('delivered','read','replied')),
+    read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('read','replied')),
+    failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status = 'failed')
+  WHERE b.id = OLD.broadcast_id;
