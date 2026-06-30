@@ -17,7 +17,13 @@ export function daysAgoStart(days: number): Date {
 
 /** Date-only key (YYYY-MM-DD) for bucketing rows by local calendar day. */
 export function localDayKey(d: Date | string): string {
-  const date = typeof d === 'string' ? new Date(d) : d
+  const date =
+    typeof d === "string"
+      ? new Date(d.includes("T") ? d : d.replace(" ", "T"))
+      : d
+  if (Number.isNaN(date.getTime())) {
+    return "unknown"
+  }
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')

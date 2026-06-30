@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { MyLeadsSummary } from "@/lib/dashboard/my-leads";
+import { parseDbDate } from "@/lib/dashboard/safe-date";
 import { cn } from "@/lib/utils";
 
 interface MyLeadsPanelProps {
@@ -110,7 +111,7 @@ export function MyLeadsPanel({ data, loading }: MyLeadsPanelProps) {
                     </p>
                   </div>
                   <span className="shrink-0 text-[10px] text-slate-600">
-                    {formatDistanceToNow(new Date(item.at), { addSuffix: true })}
+                    {safeRelativeTime(item.at)}
                   </span>
                   <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-600" />
                 </Link>
@@ -121,4 +122,10 @@ export function MyLeadsPanel({ data, loading }: MyLeadsPanelProps) {
       )}
     </div>
   );
+}
+
+function safeRelativeTime(at: string): string {
+  const date = parseDbDate(at);
+  if (Number.isNaN(date.getTime())) return "";
+  return formatDistanceToNow(date, { addSuffix: true });
 }

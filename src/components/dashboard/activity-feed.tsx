@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { ActivityItem, ActivityKind } from '@/lib/dashboard/types'
+import { parseDbDate } from '@/lib/dashboard/safe-date'
 import { cn } from '@/lib/utils'
 import { EmptyState } from './empty-state'
 import { Skeleton } from './skeleton'
@@ -155,12 +156,12 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
 }
 
 function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime()
+  const then = parseDbDate(iso).getTime()
   if (Number.isNaN(then)) return ''
   const diffSec = Math.round((Date.now() - then) / 1000)
   if (diffSec < 60) return `${Math.max(1, diffSec)}s ago`
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
   if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
   if (diffSec < 2_592_000) return `${Math.floor(diffSec / 86400)}d ago`
-  return new Date(iso).toLocaleDateString()
+  return new Date(iso.includes('T') ? iso : iso.replace(' ', 'T')).toLocaleDateString()
 }

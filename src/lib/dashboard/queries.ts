@@ -16,6 +16,7 @@ import type {
   ResponseTimeBucket,
   ResponseTimeSummary,
 } from './types'
+import { parseDbDate } from './safe-date'
 
 // ------------------------------------------------------------
 // All client-side aggregation. RLS scopes every query to the
@@ -75,26 +76,27 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
       .lt('created_at', todayStart),
   ])
 
-  const openDealsRows = (openDeals.data ?? []) as { value: number | null }[]
-  const openDealsValue = openDealsRows.reduce((sum, d) => sum + (d.value ?? 0), 0)
+  const openDealsRows = (openDeals.data ?? []) as { value: number | string | null }[]
+  const openDealsValue = openDealsRows.reduce(
+    (sum, d) => sum + (Number(d.value) || 0),
+    0,
+  )
 
   return {
     activeConversations: {
-      current: openConvCur.count ?? 0,
-      // "vs yesterday" on a current-state count has no clean answer
-      // without snapshots — we show the delta in NEW open conversations
-      // today vs yesterday. That's the business-meaningful daily signal.
-      previous: (newConvToday.count ?? 0) - (newConvYesterday.count ?? 0),
+      current: Number(openConvCur.count) || 0,
+      previous:
+        (Number(newConvToday.count) || 0) - (Number(newConvYesterday.count) || 0),
     },
     newContactsToday: {
-      current: newContactsToday.count ?? 0,
-      previous: newContactsYesterday.count ?? 0,
+      current: Number(newContactsToday.count) || 0,
+      previous: Number(newContactsYesterday.count) || 0,
     },
     openDealsValue,
     openDealsCount: openDealsRows.length,
     messagesSentToday: {
-      current: messagesToday.count ?? 0,
-      previous: messagesYesterday.count ?? 0,
+      current: Number(messagesToday.count) || 0,
+      previous: Number(messagesYesterday.count) || 0,
     },
   }
 }
@@ -138,13 +140,13 @@ export async function loadPipelineDonut(db: DB): Promise<PipelineDonutData> {
 
   const stages =
     (stagesRes.data ?? []) as { id: string; name: string; color: string }[]
-  const deals = (dealsRes.data ?? []) as { stage_id: string; value: number | null }[]
+  const deals = (dealsRes.data ?? []) as { stage_id: string; value: number | string | null }[]
 
   const byStage = new Map<string, { count: number; total: number }>()
   for (const d of deals) {
     const row = byStage.get(d.stage_id) ?? { count: 0, total: 0 }
     row.count += 1
-    row.total += d.value ?? 0
+    row.total += Number(d.value) || 0
     byStage.set(d.stage_id, row)
   }
 
@@ -207,7 +209,8 @@ export async function loadResponseTime(db: DB): Promise<ResponseTimeSummary> {
       currentConv = row.conversation_id
       pendingCustomer = null
     }
-    const ts = new Date(row.created_at)
+    const ts = parseDbDate(row.created_at)
+    if (Number.isNaN(ts.getTime())) continue
     if (row.sender_type === 'customer') {
       if (!pendingCustomer) pendingCustomer = ts
     } else if (pendingCustomer) {

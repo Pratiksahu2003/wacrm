@@ -32,6 +32,7 @@ import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
 import { MyLeadsPanel } from '@/components/dashboard/my-leads-panel'
+import { DashboardWidgetBoundary } from '@/components/dashboard/widget-boundary'
 import { loadMyLeads, type MyLeadsSummary } from '@/lib/dashboard/my-leads'
 import { useAuth } from '@/hooks/use-auth'
 
@@ -147,61 +148,72 @@ export default function DashboardPage() {
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metricsLoading || !metrics ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        ) : (
-          <>
-            <MetricCard
-              title="Active Conversations"
-              value={metrics.activeConversations.current.toLocaleString()}
-              icon={MessageSquare}
-              delta={{
-                sign: metrics.activeConversations.previous,
-                label: deltaLabel(metrics.activeConversations.previous, 'new today vs yesterday'),
-              }}
-            />
-            <MetricCard
-              title="New Contacts Today"
-              value={metrics.newContactsToday.current.toLocaleString()}
-              icon={UserPlus}
-              delta={{
-                sign:
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                label: deltaLabel(
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                  'vs yesterday',
-                ),
-              }}
-            />
-            <MetricCard
-              title="Open Deals Value"
-              value={formatCurrency(metrics.openDealsValue)}
-              icon={DollarSign}
-              subtitle={`${metrics.openDealsCount} open deal${metrics.openDealsCount === 1 ? '' : 's'}`}
-            />
-            <MetricCard
-              title="Messages Sent Today"
-              value={metrics.messagesSentToday.current.toLocaleString()}
-              icon={Send}
-              delta={{
-                sign:
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                label: deltaLabel(
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                  'vs yesterday',
-                ),
-              }}
-            />
-          </>
-        )}
-      </div>
+      <DashboardWidgetBoundary title="Metrics">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {metricsLoading || !metrics ? (
+            Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : (
+            <>
+              <MetricCard
+                title="Active Conversations"
+                value={metrics.activeConversations.current.toLocaleString()}
+                icon={MessageSquare}
+                delta={{
+                  sign: metrics.activeConversations.previous,
+                  label: deltaLabel(
+                    metrics.activeConversations.previous,
+                    'new today vs yesterday',
+                  ),
+                }}
+              />
+              <MetricCard
+                title="New Contacts Today"
+                value={metrics.newContactsToday.current.toLocaleString()}
+                icon={UserPlus}
+                delta={{
+                  sign:
+                    metrics.newContactsToday.current -
+                    metrics.newContactsToday.previous,
+                  label: deltaLabel(
+                    metrics.newContactsToday.current -
+                      metrics.newContactsToday.previous,
+                    'vs yesterday',
+                  ),
+                }}
+              />
+              <MetricCard
+                title="Open Deals Value"
+                value={formatCurrency(metrics.openDealsValue)}
+                icon={DollarSign}
+                subtitle={`${metrics.openDealsCount} open deal${metrics.openDealsCount === 1 ? '' : 's'}`}
+              />
+              <MetricCard
+                title="Messages Sent Today"
+                value={metrics.messagesSentToday.current.toLocaleString()}
+                icon={Send}
+                delta={{
+                  sign:
+                    metrics.messagesSentToday.current -
+                    metrics.messagesSentToday.previous,
+                  label: deltaLabel(
+                    metrics.messagesSentToday.current -
+                      metrics.messagesSentToday.previous,
+                    'vs yesterday',
+                  ),
+                }}
+              />
+            </>
+          )}
+        </div>
+      </DashboardWidgetBoundary>
 
       {/* Quick actions */}
       <QuickActions />
 
       {/* My assigned leads */}
-      <MyLeadsPanel data={myLeads} loading={myLeadsLoading} />
+      <DashboardWidgetBoundary title="My leads">
+        <MyLeadsPanel data={myLeads} loading={myLeadsLoading} />
+      </DashboardWidgetBoundary>
 
       {/* Charts row */}
       {/* items-stretch (the grid default) stretches the two columns to
@@ -212,23 +224,29 @@ export default function DashboardPage() {
           height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="h-full lg:col-span-3">
-          <ConversationsChart
-            series={series}
-            loading={seriesLoading}
-            range={range}
-            onRangeChange={handleRangeChange}
-          />
+          <DashboardWidgetBoundary title="Conversations chart">
+            <ConversationsChart
+              series={series}
+              loading={seriesLoading}
+              range={range}
+              onRangeChange={handleRangeChange}
+            />
+          </DashboardWidgetBoundary>
         </div>
         <div className="h-full lg:col-span-2">
-          <PipelineDonut data={pipeline} loading={pipelineLoading} />
+          <DashboardWidgetBoundary title="Pipeline chart">
+            <PipelineDonut data={pipeline} loading={pipelineLoading} />
+          </DashboardWidgetBoundary>
         </div>
       </div>
 
-      {/* Response time */}
-      <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
+      <DashboardWidgetBoundary title="Response time chart">
+        <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
+      </DashboardWidgetBoundary>
 
-      {/* Activity feed */}
-      <ActivityFeed items={activity} loading={activityLoading} />
+      <DashboardWidgetBoundary title="Activity feed">
+        <ActivityFeed items={activity} loading={activityLoading} />
+      </DashboardWidgetBoundary>
     </div>
   )
 }
@@ -236,12 +254,14 @@ export default function DashboardPage() {
 // ------------------------------------------------------------
 
 function formatCurrency(v: number): string {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return '$0'
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(v)
+  }).format(n)
 }
 
 function deltaLabel(delta: number, suffix: string): string {
