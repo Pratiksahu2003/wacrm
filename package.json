@@ -35,6 +35,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "db:migrate": "node scripts/migrate.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
