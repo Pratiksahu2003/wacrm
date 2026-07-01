@@ -1,28 +1,14 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { query } from '@/lib/mysql';
-
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
+import { sessionUserFromRequest } from '@/lib/session-token';
 
 export async function POST(request: Request) {
   try {
-    const cookiesHeader = request.headers.get('cookie') || '';
-    const sessionCookie = cookiesHeader
-      .split(';')
-      .map(c => c.trim())
-      .find(c => c.startsWith('vedmint_crm_session='));
+    const sessionUser = await sessionUserFromRequest(request);
 
-    if (!sessionCookie) {
+    if (!sessionUser) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
-    }
-
-    const token = sessionCookie.split('=')[1];
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return NextResponse.json({ error: { message: 'Invalid session' } }, { status: 401 });
     }
 
     const { password } = await request.json();
@@ -31,9 +17,9 @@ export async function POST(request: Request) {
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, decoded.userId]);
+    await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, sessionUser.id]);
 
-    return NextResponse.json({ data: { user: { id: decoded.userId, email: decoded.email } }, error: null });
+    return NextResponse.json({ data: { user: sessionUser }, error: null });
   } catch (err: any) {
     console.error('[POST /api/auth/update-user] unexpected error:', err);
     return NextResponse.json({ error: { message: err.message } }, { status: 500 });

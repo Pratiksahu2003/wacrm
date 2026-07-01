@@ -575,7 +575,7 @@ export function createEmulatorClient() {
         const cookies = document.cookie.split(';').map(c => c.trim());
         const sessionCookie = cookies.find(c => c.startsWith('vedmint_crm_session='));
         if (!sessionCookie) return { data: { session: null }, error: null };
-        const token = sessionCookie.split('=')[1];
+        const token = sessionCookie.slice('vedmint_crm_session='.length);
         try {
           const decoded: any = jwt.verify(token, JWT_SECRET);
           return {

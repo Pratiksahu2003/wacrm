@@ -182,58 +182,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
+    let sessionResolved = false;
 
-    const safetyTimer = setTimeout(() => {
-      if (mounted) {
-        console.warn("[AuthProvider] getSession() timed out after 3s");
-        setLoading(false);
-        setProfileLoading(false);
-      }
-    }, 3000);
-
-    const init = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) console.error("[AuthProvider] getSession error:", error.message);
-
-        if (!mounted) return;
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-
-        if (currentUser) {
-          // Don't block session loading on profile fetch — chrome
-          // (header, sidebar) can render from the user object alone,
-          // profile enriches async. Callers that need to branch on
-          // profile data gate on `profileLoading` instead.
-          fetchProfile(currentUser.id);
-        } else {
-          // No user → no profile to load. Flip profileLoading off so
-          // pages that gate on it don't wait forever on the logged-out
-          // path (the route guard or redirect should fire instead).
-          setProfileLoading(false);
-        }
-      } catch (err) {
-        console.error("[AuthProvider] init threw:", err);
-      } finally {
-        if (mounted) setLoading(false);
-        clearTimeout(safetyTimer);
-      }
-    };
-
-    init();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const applySession = (session: { user: User } | null) => {
       if (!mounted) return;
+      sessionResolved = true;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {
+        // Don't block session loading on profile fetch — chrome
+        // (header, sidebar) can render from the user object alone,
+        // profile enriches async. Callers that need to branch on
+        // profile data gate on `profileLoading` instead.
         fetchProfile(currentUser.id);
       } else {
         setProfile(null);
@@ -242,6 +203,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setLoading(false);
+    };
+
+    const safetyTimer = setTimeout(() => {
+      if (mounted && !sessionResolved) {
+        console.warn("[AuthProvider] getSession() timed out after 3s");
+        applySession(null);
+      }
+    }, 3000);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error("[AuthProvider] getSession error:", error.message);
+        }
+        applySession(session);
+      })
+      .catch((err) => {
+        console.error("[AuthProvider] getSession threw:", err);
+        applySession(null);
+      })
+      .finally(() => {
+        clearTimeout(safetyTimer);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // The emulator client fires an initial SIGNED_IN/SIGNED_OUT on
+      // subscribe in parallel with our explicit getSession() above.
+      // Ignore that first event — whichever getSession() resolves
+      // first owns the initial state. Without this guard a late
+      // SIGNED_OUT callback can wipe a valid session and leave the
+      // dashboard on a blank screen.
+      if (!sessionResolved) return;
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
+      applySession(session);
     });
 
     return () => {

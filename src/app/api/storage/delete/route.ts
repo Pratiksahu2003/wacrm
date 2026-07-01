@@ -1,29 +1,14 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 
 import { deleteObjects } from "@/lib/storage";
-
-const JWT_SECRET =
-  process.env.ENCRYPTION_KEY ||
-  "VedMint Crm-secret-default-encryption-key-32-chars";
+import { sessionUserFromRequest } from "@/lib/session-token";
 
 export async function POST(request: Request) {
   try {
-    const cookiesHeader = request.headers.get("cookie") || "";
-    const sessionCookie = cookiesHeader
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("vedmint_crm_session="));
+    const sessionUser = await sessionUserFromRequest(request);
 
-    if (!sessionCookie) {
+    if (!sessionUser) {
       return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
-    }
-
-    const token = sessionCookie.split("=")[1];
-    try {
-      jwt.verify(token, JWT_SECRET);
-    } catch {
-      return NextResponse.json({ error: { message: "Invalid session" } }, { status: 401 });
     }
 
     const { bucket, paths } = await request.json();

@@ -79,9 +79,9 @@ function LoginPageInner() {
       }
 
       if (inviteToken) {
-        router.push(`/join/${encodeURIComponent(inviteToken)}`);
+        window.location.assign(`/join/${encodeURIComponent(inviteToken)}`);
       } else {
-        router.push("/dashboard");
+        window.location.assign("/dashboard");
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");

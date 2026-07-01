@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { createEmulatorClient } from '@/lib/supabase/emulator-server';
 import { query } from '@/lib/mysql';
-
-const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
+import { sessionUserFromRequest } from '@/lib/session-token';
 
 const TABLES_WITH_ACCOUNT_ID = [
   'profiles',
@@ -29,25 +27,13 @@ const TABLES_WITH_ACCOUNT_ID = [
 export async function POST(request: Request) {
   try {
     // 1. Authenticate user from session cookie
-    const cookiesHeader = request.headers.get('cookie') || '';
-    const sessionCookie = cookiesHeader
-      .split(';')
-      .map(c => c.trim())
-      .find(c => c.startsWith('vedmint_crm_session='));
+    const sessionUser = await sessionUserFromRequest(request);
 
-    if (!sessionCookie) {
+    if (!sessionUser) {
       return NextResponse.json({ error: 'Unauthorized: No session cookie' }, { status: 401 });
     }
 
-    const token = sessionCookie.split('=')[1];
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
-    }
-
-    const userId = decoded.userId;
+    const userId = sessionUser.id;
 
     // 2. Fetch user's account_id and role
     const profiles = await query('SELECT account_id, account_role FROM profiles WHERE user_id = ?', [userId]);

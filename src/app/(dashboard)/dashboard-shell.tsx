@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
@@ -12,7 +11,6 @@ import { Header } from "@/components/layout/header";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
   // Sidebar drawer state — only used on mobile. On lg+ the sidebar is
   // always visible and this stays at `false` (ignored by the component).
@@ -20,10 +18,17 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+    if (loading || user) return;
+    // Clear any stale session cookie the middleware may still trust,
+    // then hard-navigate to login. Client-side router.push can loop
+    // forever when middleware sees an expired JWT but getSession()
+    // returns null — the shell would render nothing (black screen).
+    void fetch("/api/auth/signout", { method: "POST", credentials: "include" })
+      .catch(() => undefined)
+      .finally(() => {
+        window.location.replace("/login");
+      });
+  }, [user, loading]);
 
   if (loading) {
     return (
@@ -36,7 +41,16 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-slate-400">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-950">

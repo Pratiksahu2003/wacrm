@@ -196,7 +196,10 @@ export function createEmulatorClient() {
         return { data: { session: null }, error: null };
       }
       try {
-        const res = await fetch('/api/auth/session', { method: 'GET' }).catch(() => null);
+        const res = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include',
+        }).catch(() => null);
         if (res && res.ok) {
           const payload = await res.json().catch(() => ({}));
           return { data: { session: payload.data?.session || null }, error: null };
@@ -216,6 +219,7 @@ export function createEmulatorClient() {
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       const payload = await res.json();
@@ -238,6 +242,7 @@ export function createEmulatorClient() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password, options })
       });
       const payload = await res.json();
