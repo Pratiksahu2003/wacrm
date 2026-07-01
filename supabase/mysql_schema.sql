@@ -177,6 +177,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_config (
   verify_token VARCHAR(255),
   status VARCHAR(50) DEFAULT 'disconnected',
   connected_at TIMESTAMP NULL,
+  registered_at TIMESTAMP NULL,
+  subscribed_apps_at TIMESTAMP NULL,
+  last_registration_error TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   meta_app_secret TEXT,
@@ -210,11 +213,23 @@ CREATE TABLE IF NOT EXISTS message_templates (
   language VARCHAR(50) NOT NULL,
   category VARCHAR(50) NOT NULL,
   status VARCHAR(50) NOT NULL,
-  components JSON,
+  header_type VARCHAR(50),
+  header_content TEXT,
+  header_handle VARCHAR(512),
+  header_media_url TEXT,
+  header_media_id VARCHAR(255),
+  body_text TEXT NOT NULL DEFAULT '',
+  footer_text TEXT,
+  buttons JSON,
+  sample_values JSON,
   meta_template_id VARCHAR(255),
+  quality_score VARCHAR(20),
+  submission_error TEXT,
+  rejection_reason TEXT,
+  last_submitted_at TIMESTAMP NULL,
+  components JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  header_media_id VARCHAR(255),
   UNIQUE(account_id, name, language),
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -296,16 +311,18 @@ CREATE TABLE IF NOT EXISTS broadcasts (
 CREATE TABLE IF NOT EXISTS broadcast_recipients (
   id VARCHAR(36) PRIMARY KEY,
   broadcast_id VARCHAR(36) NOT NULL,
-  contact_id VARCHAR(36) NOT NULL,
+  contact_id VARCHAR(36),
   status VARCHAR(50) DEFAULT 'pending',
-  wamid VARCHAR(255),
+  whatsapp_message_id VARCHAR(255),
   error_message TEXT,
   sent_at TIMESTAMP NULL,
   delivered_at TIMESTAMP NULL,
   read_at TIMESTAMP NULL,
+  replied_at TIMESTAMP NULL,
   variables JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (broadcast_id) REFERENCES broadcasts(id) ON DELETE CASCADE,
-  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+  FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS automations (
@@ -545,6 +562,7 @@ FOR EACH ROW
     sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('sent','delivered','read','replied')),
     delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('delivered','read','replied')),
     read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('read','replied')),
+    replied_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'replied'),
     failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
   WHERE b.id = NEW.broadcast_id;
 
@@ -557,6 +575,7 @@ FOR EACH ROW
     sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('sent','delivered','read','replied')),
     delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('delivered','read','replied')),
     read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status IN ('read','replied')),
+    replied_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'replied'),
     failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = NEW.broadcast_id AND status = 'failed')
   WHERE b.id = NEW.broadcast_id;
 
@@ -569,5 +588,6 @@ FOR EACH ROW
     sent_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('sent','delivered','read','replied')),
     delivered_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('delivered','read','replied')),
     read_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status IN ('read','replied')),
+    replied_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status = 'replied'),
     failed_count = (SELECT COUNT(*) FROM broadcast_recipients WHERE broadcast_id = OLD.broadcast_id AND status = 'failed')
   WHERE b.id = OLD.broadcast_id;

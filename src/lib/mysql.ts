@@ -143,8 +143,88 @@ async function ensureSchemaMigrations(connection: mysql.PoolConnection) {
   );
   await ensureColumn(
     connection,
+    "ALTER TABLE whatsapp_config ADD COLUMN registered_at TIMESTAMP NULL",
+    "whatsapp_config.registered_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE whatsapp_config ADD COLUMN subscribed_apps_at TIMESTAMP NULL",
+    "whatsapp_config.subscribed_apps_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE whatsapp_config ADD COLUMN last_registration_error TEXT NULL",
+    "whatsapp_config.last_registration_error",
+  );
+  await ensureColumn(
+    connection,
     "ALTER TABLE message_templates ADD COLUMN user_id VARCHAR(36) NULL AFTER account_id",
     "message_templates.user_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN header_type VARCHAR(50) NULL",
+    "message_templates.header_type",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN header_content TEXT NULL",
+    "message_templates.header_content",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN header_handle VARCHAR(512) NULL",
+    "message_templates.header_handle",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN header_media_url TEXT NULL",
+    "message_templates.header_media_url",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN header_media_id VARCHAR(255) NULL",
+    "message_templates.header_media_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN body_text TEXT NULL",
+    "message_templates.body_text",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN footer_text TEXT NULL",
+    "message_templates.footer_text",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN buttons JSON NULL",
+    "message_templates.buttons",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN sample_values JSON NULL",
+    "message_templates.sample_values",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN quality_score VARCHAR(20) NULL",
+    "message_templates.quality_score",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN submission_error TEXT NULL",
+    "message_templates.submission_error",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN rejection_reason TEXT NULL",
+    "message_templates.rejection_reason",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE message_templates ADD COLUMN last_submitted_at TIMESTAMP NULL",
+    "message_templates.last_submitted_at",
   );
 
   await ensureColumn(
@@ -171,6 +251,22 @@ async function ensureSchemaMigrations(connection: mysql.PoolConnection) {
     connection,
     "ALTER TABLE broadcasts ADD COLUMN replied_count INT DEFAULT 0 AFTER read_count",
     "broadcasts.replied_count",
+  );
+
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcast_recipients ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    "broadcast_recipients.created_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcast_recipients ADD COLUMN replied_at TIMESTAMP NULL",
+    "broadcast_recipients.replied_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE broadcast_recipients ADD COLUMN whatsapp_message_id VARCHAR(255) NULL",
+    "broadcast_recipients.whatsapp_message_id",
   );
 
   await ensureColumn(

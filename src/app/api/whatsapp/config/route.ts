@@ -398,8 +398,18 @@ export async function POST(request: Request) {
 
       if (insertError) {
         console.error('Error inserting whatsapp_config:', insertError)
+        const detail =
+          typeof insertError === 'object' &&
+          insertError !== null &&
+          'details' in insertError
+            ? String((insertError as { details?: string }).details)
+            : null
         return NextResponse.json(
-          { error: 'Failed to save configuration' },
+          {
+            error: detail
+              ? `Failed to save configuration: ${detail}`
+              : 'Failed to save configuration',
+          },
           { status: 500 }
         )
       }

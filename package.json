@@ -35,6 +35,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:migrate": "node scripts/migrate.js",
+    "db:patch": "node scripts/migrate.js --patches-only",
     "test": "vitest run",
     "test:watch": "vitest"
   },
