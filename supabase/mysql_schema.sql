@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   company VARCHAR(255),
   assigned_to VARCHAR(36),
   avatar_url TEXT,
+  last_contacted_at TIMESTAMP NULL,
+  last_contacted_via VARCHAR(50) NULL,
+  first_inbound_message_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
@@ -123,6 +126,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   last_message_text TEXT,
   last_message_at TIMESTAMP NULL,
   unread_count INT DEFAULT 0,
+  reply_deadline_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
@@ -144,6 +148,8 @@ CREATE TABLE IF NOT EXISTS messages (
   template_name VARCHAR(255),
   message_id VARCHAR(255),
   status VARCHAR(50) DEFAULT 'sent',
+  reply_to_message_id VARCHAR(36) NULL,
+  interactive_reply_id VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 );

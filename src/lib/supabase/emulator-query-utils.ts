@@ -72,6 +72,8 @@ export function compileAndConditions(
   for (const cond of conditions) {
     if (cond.operator === "IS NULL") {
       whereParts.push(`\`${cond.column}\` IS NULL`);
+    } else if (cond.operator === "IS NOT NULL") {
+      whereParts.push(`\`${cond.column}\` IS NOT NULL`);
     } else if (cond.operator === "IN") {
       const values = Array.isArray(cond.value) ? cond.value : [];
       if (values.length > 0) {
@@ -80,6 +82,15 @@ export function compileAndConditions(
         whereParams.push(...values.map(serializeSqlValue));
       } else {
         whereParts.push("1 = 0");
+      }
+    } else if (cond.operator === "NOT IN") {
+      const values = Array.isArray(cond.value) ? cond.value : [];
+      if (values.length > 0) {
+        const placeholders = values.map(() => "?").join(", ");
+        whereParts.push(`\`${cond.column}\` NOT IN (${placeholders})`);
+        whereParams.push(...values.map(serializeSqlValue));
+      } else {
+        whereParts.push("1 = 1");
       }
     } else {
       whereParts.push(`\`${cond.column}\` ${cond.operator} ?`);

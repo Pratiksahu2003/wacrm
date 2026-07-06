@@ -181,6 +181,44 @@ async function applyIncrementalPatches(connection) {
   }
 
   await refreshBroadcastRecipientTriggers(connection);
+
+  // Inbox / WhatsApp webhook columns
+  await addColumnIfMissing(
+    connection,
+    'messages',
+    'reply_to_message_id',
+    'VARCHAR(36) NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'messages',
+    'interactive_reply_id',
+    'VARCHAR(255) NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'conversations',
+    'reply_deadline_at',
+    'TIMESTAMP NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'last_contacted_at',
+    'TIMESTAMP NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'last_contacted_via',
+    'VARCHAR(50) NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'first_inbound_message_at',
+    'TIMESTAMP NULL',
+  );
 }
 
 async function migrate({ patchesOnly = false } = {}) {

@@ -555,11 +555,14 @@ async function processMessage(
   const updates: {
     last_message_text?: string
     last_message_at: string
-    unread_count?: number
+    unread_count: number
+    updated_at: string
     reply_deadline_at?: string
   } = {
-    last_message_text: contentText,
+    last_message_text: contentText || `[${message.type}]`,
     last_message_at: new Date(parseInt(message.timestamp) * 1000).toISOString(),
+    unread_count: (conversation.unread_count || 0) + 1,
+    updated_at: new Date().toISOString(),
   }
 
   if (isFirstInboundMessage) {
@@ -713,11 +716,10 @@ async function findOrCreateConversation(
   accountId: string,
   configOwnerUserId: string,
   contactId: string,
-): Promise<{ id: string } | null> {
-  // Try to find existing conversation
+): Promise<{ id: string; unread_count?: number } | null> {
   const { data: existingConv, error: searchError } = await supabaseAdmin()
     .from('conversations')
-    .select('id')
+    .select('*')
     .eq('account_id', accountId)
     .eq('contact_id', contactId)
     .maybeSingle()
@@ -731,14 +733,13 @@ async function findOrCreateConversation(
     return existingConv
   }
 
-  // Create new conversation
   const { data: newConv, error: createError } = await supabaseAdmin()
     .from('conversations')
     .insert({
       account_id: accountId,
       contact_id: contactId,
     })
-    .select('id')
+    .select('*')
     .single()
 
   if (createError) {

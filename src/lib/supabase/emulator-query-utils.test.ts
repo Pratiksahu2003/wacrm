@@ -53,6 +53,15 @@ describe("compileWhereClause", () => {
     expect(whereSql).toBe("`account_id` = ? AND (`name` LIKE ?)");
     expect(whereParams).toEqual(["acc-1", "%a%"]);
   });
+
+  it("supports IS NOT NULL conditions from .not(col, 'is', null)", () => {
+    const { whereSql, whereParams } = compileWhereClause(
+      [{ column: "meta_app_secret", operator: "IS NOT NULL", value: null }],
+      null,
+    );
+    expect(whereSql).toBe("`meta_app_secret` IS NOT NULL");
+    expect(whereParams).toEqual([]);
+  });
 });
 
 describe("EmulatorQueryBuilder.range", () => {

@@ -418,6 +418,38 @@ async function ensureSchemaMigrations(connection: mysql.PoolConnection) {
     "ALTER TABLE flow_runs ADD COLUMN end_reason VARCHAR(255) NULL AFTER ended_at",
     "flow_runs.end_reason",
   );
+
+  // Inbox / WhatsApp webhook — columns referenced by inbound message inserts
+  await ensureColumn(
+    connection,
+    "ALTER TABLE messages ADD COLUMN reply_to_message_id VARCHAR(36) NULL AFTER status",
+    "messages.reply_to_message_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE messages ADD COLUMN interactive_reply_id VARCHAR(255) NULL AFTER reply_to_message_id",
+    "messages.interactive_reply_id",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE conversations ADD COLUMN reply_deadline_at TIMESTAMP NULL AFTER unread_count",
+    "conversations.reply_deadline_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE contacts ADD COLUMN last_contacted_at TIMESTAMP NULL AFTER avatar_url",
+    "contacts.last_contacted_at",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE contacts ADD COLUMN last_contacted_via VARCHAR(50) NULL AFTER last_contacted_at",
+    "contacts.last_contacted_via",
+  );
+  await ensureColumn(
+    connection,
+    "ALTER TABLE contacts ADD COLUMN first_inbound_message_at TIMESTAMP NULL AFTER last_contacted_via",
+    "contacts.first_inbound_message_at",
+  );
 }
 
 async function ensureEmailVerifiedColumn(connection: mysql.PoolConnection) {

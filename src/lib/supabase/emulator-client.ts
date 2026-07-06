@@ -108,6 +108,21 @@ export class EmulatorQueryBuilder {
     return this;
   }
 
+  /** PostgREST-style negation, e.g. `.not('col', 'is', null)` → IS NOT NULL */
+  not(column: string, operator: string, value: any) {
+    if (operator === 'is' && value === null) {
+      this.conditions.push({ column, operator: 'IS NOT NULL', value: null });
+    } else if (operator === 'eq') {
+      this.conditions.push({ column, operator: '!=', value });
+    } else if (operator === 'in') {
+      const values = Array.isArray(value) ? value : [value];
+      this.conditions.push({ column, operator: 'NOT IN', value: values });
+    } else {
+      this.conditions.push({ column, operator: '!=', value });
+    }
+    return this;
+  }
+
   order(column: string, options?: { ascending?: boolean }) {
     this.orderColumns.push({ column, ascending: options?.ascending !== false });
     return this;
