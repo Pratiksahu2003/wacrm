@@ -368,7 +368,10 @@ export function createEmulatorClient() {
           callback: (payload: any) => {
             const supabasePayload = {
               new: payload.record,
-              old: payload.type === 'UPDATE' ? payload.record : null,
+              // For UPDATE events the server publishes oldRecord separately;
+              // fall back to {} so the shape is always an object (never null)
+              // which matches what real Supabase Realtime sends.
+              old: payload.type === 'UPDATE' ? (payload.oldRecord ?? {}) : {},
               eventType: payload.type,
               schema: 'public',
               table: payload.table,
@@ -379,9 +382,12 @@ export function createEmulatorClient() {
         });
         return this;
       },
-      subscribe() {
+      subscribe(statusCallback?: (status: string) => void) {
         if (typeof window !== 'undefined' && !eventSource) {
           eventSource = new EventSource('/api/realtime');
+          eventSource.onopen = () => {
+            statusCallback?.('SUBSCRIBED');
+          };
           eventSource.onmessage = (e: any) => {
             try {
               const payload = JSON.parse(e.data);
@@ -393,6 +399,9 @@ export function createEmulatorClient() {
             } catch (err) {
               console.error('[Emulator Realtime] error parsing message:', err);
             }
+          };
+          eventSource.onerror = () => {
+            statusCallback?.('CLOSED');
           };
         }
         return this;

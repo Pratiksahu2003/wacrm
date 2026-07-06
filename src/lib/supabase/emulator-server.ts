@@ -388,6 +388,16 @@ export class EmulatorQueryBuilder {
           const values = keys.map(k => serializeSqlValue(this.dataToSet[k]));
           let sql = `UPDATE \`${this.tableName}\` SET ${keys.map(k => `\`${k}\` = ?`).join(', ')}`;
           const params = [...values];
+
+          // Fetch old rows BEFORE updating so we can publish them
+          let oldRows: any[] = [];
+          if (this.conditions.length > 0) {
+            const { whereSql, whereParams } = this.compileConditions();
+            const oldSelectSql = `SELECT * FROM \`${this.tableName}\` WHERE ${whereSql}`;
+            oldRows = await query(oldSelectSql, whereParams);
+            oldRows = oldRows.map(r => parseJsonFields(r));
+          }
+
           if (this.conditions.length > 0) {
             const { whereSql, whereParams } = this.compileConditions();
             sql += ` WHERE ${whereSql}`;
@@ -406,10 +416,11 @@ export class EmulatorQueryBuilder {
           // Publish realtime event to pubsub
           try {
             const { realtimePubSub } = await import('@/lib/realtime-pubsub');
-            for (const row of updatedRows) {
+            for (let i = 0; i < updatedRows.length; i++) {
               realtimePubSub.publish('db_changes', {
                 table: this.tableName,
-                record: row,
+                record: updatedRows[i],
+                oldRecord: oldRows[i] ?? {},
                 type: 'UPDATE'
               });
             }
