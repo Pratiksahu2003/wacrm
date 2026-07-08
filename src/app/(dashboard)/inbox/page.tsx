@@ -200,14 +200,14 @@ export default function InboxPage() {
             const updated = prev.map((c) =>
               c.id === newMsg.conversation_id
                 ? {
-                    ...c,
-                    last_message_text: newMsg.content_text ?? "",
-                    last_message_at: newMsg.created_at,
-                    unread_count:
-                      activeConversation?.id === newMsg.conversation_id
-                        ? 0
-                        : c.unread_count + 1,
-                  }
+                  ...c,
+                  last_message_text: newMsg.content_text ?? "",
+                  last_message_at: newMsg.created_at,
+                  unread_count:
+                    activeConversation?.id === newMsg.conversation_id
+                      ? 0
+                      : c.unread_count + 1,
+                }
                 : c,
             );
             return updated.sort((a, b) => {
@@ -272,10 +272,10 @@ export default function InboxPage() {
             const updated = prev.map((c) =>
               c.id === conv.id
                 ? {
-                    ...c,
-                    ...conv,
-                    unread_count: isActive ? 0 : conv.unread_count,
-                  }
+                  ...c,
+                  ...conv,
+                  unread_count: isActive ? 0 : conv.unread_count,
+                }
                 : c,
             );
             return updated.sort((a, b) => {

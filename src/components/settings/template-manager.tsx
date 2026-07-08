@@ -284,9 +284,8 @@ export function TemplateManager() {
         throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
       }
       if (!res.ok) {
-        const errMsg = typeof data?.error === 'string' ? data.error : String(data?.error || '');
         throw new Error(
-          errMsg || `${isEdit ? 'Edit' : 'Submit'} failed (HTTP ${res.status})`,
+          typeof data?.error === 'string' ? data.error : String(data?.error || `${isEdit ? 'Edit' : 'Submit'} failed (HTTP ${res.status})`),
         );
       }
       // Refresh first, then close — re-opening the dialog
@@ -324,13 +323,13 @@ export function TemplateManager() {
         throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
       }
       if (!res.ok) {
-        throw new Error(data?.error || `Sync failed (HTTP ${res.status})`);
+        throw new Error(typeof data?.error === 'string' ? data.error : String(data?.error || `Sync failed (HTTP ${res.status})`));
       }
       toast.success(
         `Synced ${data.total} template${data.total === 1 ? '' : 's'} from Meta` +
-          (data.inserted || data.updated
-            ? ` (${data.inserted} new, ${data.updated} updated)`
-            : ''),
+        (data.inserted || data.updated
+          ? ` (${data.inserted} new, ${data.updated} updated)`
+          : ''),
       );
       if (Array.isArray(data.errors) && data.errors.length > 0) {
         const preview = data.errors.slice(0, 3).map(
@@ -550,13 +549,12 @@ export function TemplateManager() {
                       )}
                       {template.quality_score && (
                         <span
-                          className={`text-[10px] uppercase font-medium ${
-                            template.quality_score === 'GREEN'
+                          className={`text-[10px] uppercase font-medium ${template.quality_score === 'GREEN'
                               ? 'text-emerald-400'
                               : template.quality_score === 'YELLOW'
                                 ? 'text-yellow-400'
                                 : 'text-red-400'
-                          }`}
+                            }`}
                           title="Meta quality score"
                         >
                           {template.quality_score}
@@ -751,11 +749,11 @@ export function TemplateManager() {
                   {editingId
                     ? 'Language is fixed once a template exists on Meta.'
                     : (
-                        <>
-                          Must match the exact code on Meta — <code>en_US</code>{' '}
-                          and <code>en</code> are distinct.
-                        </>
-                      )}
+                      <>
+                        Must match the exact code on Meta — <code>en_US</code>{' '}
+                        and <code>en</code> are distinct.
+                      </>
+                    )}
                 </p>
               </div>
             </div>
