@@ -30,7 +30,9 @@ const JSON_COLUMNS = [
   'error_breakdown',
   'fallback_policy',
   'nodes',
-  'edges'
+  'edges',
+  'buttons',
+  'sample_values'
 ];
 
 function parseJsonFields(row: any) {
@@ -369,14 +371,17 @@ export class EmulatorQueryBuilder {
 
           for (const row of rowsToInsert) {
             const rowCopy = { ...row };
-            if (!rowCopy.id) {
+            const wasIdGenerated = !rowCopy.id;
+            if (wasIdGenerated) {
               rowCopy.id = crypto.randomUUID();
             }
             const keys = Object.keys(rowCopy);
             const values = keys.map(k => serializeSqlValue(rowCopy[k]));
              let sql = `INSERT INTO \`${this.tableName}\` (${keys.map(k => `\`${k}\``).join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
              if (this.isUpsert) {
-               const updateClause = keys.map(k => `\`${k}\` = VALUES(\`${k}\`)`).join(', ');
+               const updateKeys = wasIdGenerated ? keys.filter(k => k !== 'id') : keys;
+               // If there are no keys to update (e.g. only id was provided), fallback to id = id
+               const updateClause = updateKeys.length > 0 ? updateKeys.map(k => `\`${k}\` = VALUES(\`${k}\`)`).join(', ') : 'id = id';
                sql += ` ON DUPLICATE KEY UPDATE ${updateClause}`;
              }
              await query(sql, values);

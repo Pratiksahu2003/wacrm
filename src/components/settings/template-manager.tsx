@@ -277,7 +277,12 @@ export function TemplateManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      let data: Record<string, unknown> = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
+      }
       if (!res.ok) {
         throw new Error(
           data?.error || `${isEdit ? 'Edit' : 'Submit'} failed (HTTP ${res.status})`,
@@ -311,7 +316,12 @@ export function TemplateManager() {
     setSyncing(true);
     try {
       const res = await fetch('/api/whatsapp/templates/sync', { method: 'POST' });
-      const data = await res.json();
+      let data: Record<string, unknown> = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
+      }
       if (!res.ok) {
         throw new Error(data?.error || `Sync failed (HTTP ${res.status})`);
       }
@@ -359,7 +369,14 @@ export function TemplateManager() {
       const res = await fetch(`/api/whatsapp/templates/${target.id}`, {
         method: 'DELETE',
       });
-      const data = await res.json().catch(() => ({}));
+      let data: Record<string, unknown> = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        if (!res.ok) {
+          throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
+        }
+      }
       if (!res.ok) {
         throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
       }

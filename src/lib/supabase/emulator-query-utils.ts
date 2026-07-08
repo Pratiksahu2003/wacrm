@@ -11,13 +11,9 @@ export function toMySqlDatetime(value: unknown): unknown {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
-/** Normalize values bound as MySQL query parameters. */
 export function serializeSqlValue(val: unknown): unknown {
   if (val === null || val === undefined) {
     return val;
-  }
-  if (Array.isArray(val)) {
-    return val.map(serializeSqlValue);
   }
   if (typeof val === "object") {
     return JSON.stringify(val);

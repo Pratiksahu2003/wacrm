@@ -64,5 +64,5 @@ export function metaApiErrorStatus(message: string): number {
     return 429
   }
 
-  return 502
+  return 400
 }
