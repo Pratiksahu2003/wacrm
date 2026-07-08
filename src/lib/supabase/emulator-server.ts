@@ -750,7 +750,7 @@ export function createEmulatorClient() {
       }
     },
 
-    async updateUser({ password }: any) {
+    async updateUser({ password, email }: any) {
       const session = await this.getSession();
       const userId = session.data?.session?.user?.id;
       if (!userId) return { error: { message: 'Not authenticated' } };
@@ -759,13 +759,25 @@ export function createEmulatorClient() {
         const res = await fetch('/api/auth/update-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ password, email })
         });
         return await res.json();
       } else {
         const { query } = await import('@/lib/mysql');
-        const hash = bcrypt.hashSync(password, 10);
-        await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, userId]);
+        
+        if (password) {
+          const hash = bcrypt.hashSync(password, 10);
+          await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, userId]);
+        }
+        
+        if (email) {
+          await query('UPDATE users SET email = ? WHERE id = ?', [email, userId]);
+          await query('UPDATE profiles SET email = ? WHERE user_id = ?', [email, userId]);
+          if (session.data?.session?.user) {
+            session.data.session.user.email = email;
+          }
+        }
+        
         return { data: { user: session.data?.session?.user }, error: null };
       }
     },

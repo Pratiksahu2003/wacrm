@@ -295,11 +295,11 @@ export function createEmulatorClient() {
       return await res.json();
     },
 
-    async updateUser({ password }: any) {
+    async updateUser({ password, email }: any) {
       const res = await fetch('/api/auth/update-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password, email })
       });
       return await res.json();
     },

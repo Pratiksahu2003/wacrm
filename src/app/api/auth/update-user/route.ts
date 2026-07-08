@@ -11,13 +11,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const { password } = await request.json();
-    if (!password || password.length < 8) {
-      return NextResponse.json({ error: { message: 'Password must be at least 8 characters' } }, { status: 400 });
+    const { password, email } = await request.json();
+
+    if (!password && !email) {
+      return NextResponse.json({ data: { user: sessionUser }, error: null });
     }
 
-    const hash = bcrypt.hashSync(password, 10);
-    await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, sessionUser.id]);
+    if (password) {
+      if (password.length < 8) {
+        return NextResponse.json({ error: { message: 'Password must be at least 8 characters' } }, { status: 400 });
+      }
+      const hash = bcrypt.hashSync(password, 10);
+      await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, sessionUser.id]);
+    }
+
+    if (email) {
+      await query('UPDATE users SET email = ? WHERE id = ?', [email, sessionUser.id]);
+      await query('UPDATE profiles SET email = ? WHERE user_id = ?', [email, sessionUser.id]);
+      sessionUser.email = email;
+    }
 
     return NextResponse.json({ data: { user: sessionUser }, error: null });
   } catch (err: any) {
