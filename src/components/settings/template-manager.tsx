@@ -378,7 +378,7 @@ export function TemplateManager() {
         }
       }
       if (!res.ok) {
-        throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
+        throw new Error(typeof data?.error === 'string' ? data.error : String(data?.error || `Delete failed (HTTP ${res.status})`));
       }
       toast.success('Template deleted');
       setTemplates((prev) => prev.filter((t) => t.id !== target.id));
