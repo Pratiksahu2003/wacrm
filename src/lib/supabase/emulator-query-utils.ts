@@ -13,7 +13,7 @@ export function toMySqlDatetime(value: unknown): unknown {
 
 export function serializeSqlValue(val: unknown): unknown {
   if (val === null || val === undefined) {
-    return val;
+    return null;
   }
   if (typeof val === "object") {
     return JSON.stringify(val);
