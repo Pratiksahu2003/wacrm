@@ -284,8 +284,9 @@ export function TemplateManager() {
         throw new Error(`Server returned an invalid response (HTTP ${res.status})`);
       }
       if (!res.ok) {
+        const errMsg = typeof data?.error === 'string' ? data.error : String(data?.error || '');
         throw new Error(
-          data?.error || `${isEdit ? 'Edit' : 'Submit'} failed (HTTP ${res.status})`,
+          errMsg || `${isEdit ? 'Edit' : 'Submit'} failed (HTTP ${res.status})`,
         );
       }
       // Refresh first, then close — re-opening the dialog
