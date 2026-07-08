@@ -103,7 +103,9 @@ function groupMessagesByDate(messages: Message[]) {
   let currentDate = "";
 
   for (const msg of messages) {
-    const day = format(new Date(msg.created_at), "yyyy-MM-dd");
+    const d = msg.created_at ? new Date(msg.created_at) : new Date();
+    const safeDate = isNaN(d.getTime()) ? new Date() : d;
+    const day = format(safeDate, "yyyy-MM-dd");
     if (day !== currentDate) {
       currentDate = day;
       groups.push({ date: msg.created_at, messages: [msg] });
@@ -236,7 +238,9 @@ export function MessageThread({
 
     if (!lastCustomerMsg) return { expired: true, remaining: "No customer messages" };
 
-    const hoursSince = differenceInHours(new Date(), new Date(lastCustomerMsg.created_at));
+    const d = lastCustomerMsg.created_at ? new Date(lastCustomerMsg.created_at) : new Date();
+    const safeDate = isNaN(d.getTime()) ? new Date() : d;
+    const hoursSince = differenceInHours(new Date(), safeDate);
     const expired = hoursSince >= 24;
 
     if (expired) {

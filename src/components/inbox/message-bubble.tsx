@@ -375,7 +375,9 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const isAgent =
     message.sender_type === "agent" || message.sender_type === "bot";
-  const time = format(new Date(message.created_at), "HH:mm");
+  const d = message.created_at ? new Date(message.created_at) : new Date();
+  const safeDate = isNaN(d.getTime()) ? new Date() : d;
+  const time = format(safeDate, "HH:mm");
   const templateMediaHeader = getTemplateHasMediaHeader(message, template);
 
   return (
