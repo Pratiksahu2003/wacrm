@@ -206,14 +206,14 @@ export default function InboxPage() {
                   unread_count:
                     activeConversation?.id === newMsg.conversation_id
                       ? 0
-                      : c.unread_count + 1,
+                      : (c.unread_count || 0) + 1,
                 }
                 : c,
             );
             return updated.sort((a, b) => {
-              const aTime = new Date(a.last_message_at || a.created_at).getTime();
-              const bTime = new Date(b.last_message_at || b.created_at).getTime();
-              return bTime - aTime;
+              const aTime = new Date(a.last_message_at || a.created_at || 0).getTime();
+              const bTime = new Date(b.last_message_at || b.created_at || 0).getTime();
+              return (isNaN(bTime) ? 0 : bTime) - (isNaN(aTime) ? 0 : aTime);
             });
           });
         } else {
@@ -279,9 +279,9 @@ export default function InboxPage() {
                 : c,
             );
             return updated.sort((a, b) => {
-              const aTime = new Date(a.last_message_at || a.created_at).getTime();
-              const bTime = new Date(b.last_message_at || b.created_at).getTime();
-              return bTime - aTime;
+              const aTime = new Date(a.last_message_at || a.created_at || 0).getTime();
+              const bTime = new Date(b.last_message_at || b.created_at || 0).getTime();
+              return (isNaN(bTime) ? 0 : bTime) - (isNaN(aTime) ? 0 : aTime);
             });
           });
         } else {
