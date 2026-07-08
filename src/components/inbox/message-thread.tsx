@@ -91,11 +91,12 @@ interface MessageThreadProps {
   onRefresh?: () => void;
 }
 
-function formatDateSeparator(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (isToday(date)) return "Today";
-  if (isYesterday(date)) return "Yesterday";
-  return format(date, "MMMM d, yyyy");
+function formatDateSeparator(dateStr: string | undefined): string {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const safeDate = isNaN(d.getTime()) ? new Date() : d;
+  if (isToday(safeDate)) return "Today";
+  if (isYesterday(safeDate)) return "Yesterday";
+  return format(safeDate, "MMMM d, yyyy");
 }
 
 function groupMessagesByDate(messages: Message[]) {
