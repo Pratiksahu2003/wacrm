@@ -119,9 +119,9 @@ function groupMessagesByDate(messages: Message[]) {
 }
 
 const STATUS_OPTIONS: { label: string; value: ConversationStatus; color: string }[] = [
-  { label: "Open", value: "open", color: "text-[#00a884]" },
-  { label: "Pending", value: "pending", color: "text-amber-400" },
-  { label: "Closed", value: "closed", color: "text-[#8696a0]" },
+  { label: "Open", value: "open", color: "text-primary" },
+  { label: "Pending", value: "pending", color: "text-amber-700" },
+  { label: "Closed", value: "closed", color: "text-muted-foreground" },
 ];
 
 /**
@@ -745,13 +745,13 @@ export function MessageThread({
   if (!conversation || !contact) {
     return (
       <div className={cn("flex flex-1 flex-col items-center justify-center", DOODLE_BG_CLASSES)}>
-        <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-[#202c33]">
-          <MessageSquare className="h-12 w-12 text-[#8696a0]" />
+        <div className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-primary/10">
+          <MessageSquare className="h-12 w-12 text-primary" />
         </div>
-        <h3 className="mt-6 text-[17px] font-light text-[#e9edef]">
+        <h3 className="mt-6 text-[17px] font-light text-foreground">
           WhatsApp Business Inbox
         </h3>
-        <p className="mt-2 max-w-xs text-center text-sm text-[#8696a0]">
+        <p className="mt-2 max-w-xs text-center text-sm text-muted-foreground">
           Select a conversation from the list to view and reply to messages
         </p>
       </div>
@@ -779,12 +779,12 @@ export function MessageThread({
               type="button"
               onClick={onBack}
               aria-label="Back to conversations"
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-[#aebac1] hover:bg-[#2a3942] lg:hidden"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted lg:hidden"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#6b7b8a] text-sm font-medium text-white">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-sm font-medium text-primary">
             {contact.avatar_url ? (
               <img
                 src={contact.avatar_url}
@@ -796,18 +796,18 @@ export function MessageThread({
             )}
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-[16px] font-normal text-[#e9edef]">
+            <h2 className="truncate text-[16px] font-normal text-foreground">
               {displayName}
             </h2>
-            <p className="truncate text-[13px] text-[#8696a0]">
+            <p className="truncate text-[13px] text-muted-foreground">
               {contact.phone}
             </p>
           </div>
           <Badge
             variant="outline"
             className={cn(
-              "ml-1 hidden gap-1 border-[#2a3942] bg-transparent text-[10px] sm:inline-flex sm:ml-2",
-              sessionInfo.expired ? "text-red-400" : "text-[#00a884]",
+              "ml-1 hidden gap-1 border-border bg-transparent text-[10px] sm:inline-flex sm:ml-2",
+              sessionInfo.expired ? "text-red-500" : "text-primary",
             )}
           >
             <Clock className="h-3 w-3" />
@@ -824,7 +824,7 @@ export function MessageThread({
               aria-label="Refresh conversation"
               title="Refresh"
               className={cn(
-                "inline-flex h-10 w-10 items-center justify-center rounded-full text-[#aebac1] transition-colors hover:bg-[#2a3942] disabled:opacity-60",
+                "inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60",
               )}
             >
               <RefreshCw
@@ -836,8 +836,8 @@ export function MessageThread({
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
-                currentStatus?.color ?? "text-[#8696a0]",
+                "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-muted",
+                currentStatus?.color ?? "text-muted-foreground",
               )}
             >
               {currentStatus?.label ?? "Status"}
@@ -845,13 +845,13 @@ export function MessageThread({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="border-[#2a3942] bg-[#233138]"
+              className="border-border bg-popover"
             >
               {STATUS_OPTIONS.map((opt) => (
                 <DropdownMenuItem
                   key={opt.value}
                   onClick={() => handleStatusChange(opt.value)}
-                  className={cn("text-sm focus:bg-[#2a3942]", opt.color)}
+                  className={cn("text-sm focus:bg-muted", opt.color)}
                 >
                   {opt.label}
                 </DropdownMenuItem>
@@ -863,8 +863,8 @@ export function MessageThread({
             <DropdownMenu>
               <DropdownMenuTrigger
                 className={cn(
-                  "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-[#2a3942]",
-                  assignedAgentId ? "text-[#00a884]" : "text-[#8696a0]",
+                  "inline-flex h-9 items-center justify-center gap-1 rounded-md px-2 text-xs hover:bg-muted",
+                  assignedAgentId ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <UserPlus className="h-3.5 w-3.5" />
@@ -873,10 +873,10 @@ export function MessageThread({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="border-[#2a3942] bg-[#233138]"
+                className="border-border bg-popover"
               >
                 {profiles.length === 0 ? (
-                  <DropdownMenuItem disabled className="text-sm text-[#8696a0]">
+                  <DropdownMenuItem disabled className="text-sm text-muted-foreground">
                     No teammates available
                   </DropdownMenuItem>
                 ) : (
@@ -887,8 +887,8 @@ export function MessageThread({
                         key={p.id}
                         onClick={() => handleAssignChange(p.user_id)}
                         className={cn(
-                          "text-sm focus:bg-[#2a3942]",
-                          isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                          "text-sm focus:bg-muted",
+                          isSelected ? "text-primary" : "text-foreground",
                         )}
                       >
                         <span className="flex-1">
@@ -902,10 +902,10 @@ export function MessageThread({
                 )}
                 {assignedAgentId && (
                   <>
-                    <DropdownMenuSeparator className="bg-[#2a3942]" />
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => handleAssignChange(null)}
-                      className="text-sm text-[#8696a0] focus:bg-[#2a3942]"
+                      className="text-sm text-muted-foreground focus:bg-muted"
                     >
                       Unassign
                     </DropdownMenuItem>
@@ -916,7 +916,7 @@ export function MessageThread({
           ) : (
             assignedAgentId && (
               <span
-                className="inline-flex h-9 items-center gap-1 px-2 text-xs text-[#00a884]"
+                className="inline-flex h-9 items-center gap-1 px-2 text-xs text-primary"
                 title="Only admins and owners can change assignment"
               >
                 <UserPlus className="h-3.5 w-3.5" />
@@ -931,12 +931,12 @@ export function MessageThread({
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-[63px] py-4 max-sm:px-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm text-[#8696a0]">No messages yet</p>
-            <p className="text-xs text-[#667781]">
+            <p className="text-sm text-muted-foreground">No messages yet</p>
+            <p className="text-xs text-muted-foreground/80">
               Send a template to start the conversation
             </p>
           </div>

@@ -45,7 +45,7 @@ function StatusIcon({ status }: { status: Message["status"] }) {
     case "read":
       return <CheckCheck className="wa-status-read h-[14px] w-[14px]" />;
     case "failed":
-      return <XCircle className="h-[14px] w-[14px] text-red-400" />;
+      return <XCircle className="h-[14px] w-[14px] text-red-500" />;
     default:
       return null;
   }
@@ -53,7 +53,7 @@ function StatusIcon({ status }: { status: Message["status"] }) {
 
 function MediaUnavailable({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2.5 text-xs text-[#8696a0]">
+    <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
       <ImageOff className="h-4 w-4 shrink-0 opacity-60" />
       <span>{label} unavailable</span>
     </div>
@@ -105,13 +105,13 @@ function MediaImage({
   }, [loadImage]);
 
   const frameClass = isHeader
-    ? "flex min-h-[140px] w-full items-center justify-center bg-black/20"
-    : "flex h-40 w-full max-w-[280px] items-center justify-center rounded-md bg-black/20";
+    ? "flex min-h-[140px] w-full items-center justify-center bg-muted"
+    : "flex h-40 w-full max-w-[280px] items-center justify-center rounded-md bg-muted";
 
   if (error) {
     return (
       <div className={frameClass}>
-        <ImageOff className="h-8 w-8 text-[#8696a0]" />
+        <ImageOff className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -119,7 +119,7 @@ function MediaImage({
   if (loading) {
     return (
       <div className={frameClass}>
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -176,7 +176,7 @@ function TemplateMessageContent({
             <video
               src={mediaUrl}
               controls
-              className="max-h-[280px] w-full bg-black/20 object-cover"
+              className="max-h-[280px] w-full bg-muted object-cover"
             />
           )}
           {header?.kind === "document" && (
@@ -184,9 +184,9 @@ function TemplateMessageContent({
               href={mediaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 border-b border-black/10 bg-black/10 px-3 py-2.5 text-sm hover:bg-black/20"
+              className="flex items-center gap-2 border-b border-border bg-muted/60 px-3 py-2.5 text-sm hover:bg-muted"
             >
-              <FileText className="h-5 w-5 shrink-0 text-[#8696a0]" />
+              <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
               <span className="truncate">Document</span>
             </a>
           )}
@@ -199,36 +199,36 @@ function TemplateMessageContent({
         )}
       >
         {!hasMediaHeader && (
-          <span className="inline-flex items-center gap-1 rounded bg-[#00a884]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#06cf9c]">
+          <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             <LayoutTemplate className="h-3 w-3" />
             Template
           </span>
         )}
 
         {headerText && (
-          <p className="text-[15px] font-medium leading-[20px] text-[#e9edef]">
+          <p className="text-[15px] font-medium leading-[20px] text-foreground">
             {headerText}
           </p>
         )}
 
         {message.content_text && (
-          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px] text-[#e9edef]">
+          <p className="whitespace-pre-wrap break-words text-[14.2px] leading-[22px] text-foreground">
             {message.content_text}
           </p>
         )}
 
         {footerText && (
-          <p className="pt-1 text-[12px] leading-[17px] text-[#8696a0]">
+          <p className="pt-1 text-[12px] leading-[17px] text-muted-foreground">
             {footerText}
           </p>
         )}
 
         {template?.buttons && template.buttons.length > 0 && (
-          <div className="mt-2.5 space-y-1.5 border-t border-black/10 pt-2.5">
+          <div className="mt-2.5 space-y-1.5 border-t border-border pt-2.5">
             {template.buttons.map((btn, i) => (
               <div
                 key={`${btn.type}-${i}`}
-                className="rounded-md bg-black/10 px-3 py-2 text-center text-[13px] text-[#53bdeb]"
+                className="rounded-md bg-muted px-3 py-2 text-center text-[13px] text-primary"
               >
                 {btn.text}
               </div>
@@ -311,9 +311,9 @@ function MessageContent({
           href={message.media_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2.5 text-sm hover:bg-black/30"
+          className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm hover:bg-muted/80"
         >
-          <FileText className="h-5 w-5 shrink-0 text-[#8696a0]" />
+          <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
           <span className="truncate">
             {message.content_text || "Document"}
           </span>
@@ -326,7 +326,7 @@ function MessageContent({
     case "location":
       return (
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 shrink-0 text-[#8696a0]" />
+          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span>{message.content_text || "Location shared"}</span>
         </div>
       );
@@ -334,7 +334,7 @@ function MessageContent({
     case "interactive":
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-[#8696a0]">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             <CornerDownLeft className="h-3 w-3" />
             Button reply
           </span>

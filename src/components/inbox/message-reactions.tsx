@@ -69,13 +69,13 @@ export function MessageReactions({
           className={cn(
             "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] leading-none shadow-sm transition-colors",
             g.byCurrentUser
-              ? "border-[#00a884]/50 bg-[#182229] text-[#e9edef] hover:bg-[#2a3942]"
-              : "border-[#2a3942] bg-[#182229] text-[#e9edef] hover:bg-[#2a3942]",
+              ? "border-primary/50 bg-card text-foreground hover:bg-muted"
+              : "border-border bg-card text-foreground hover:bg-muted",
           )}
         >
           <span className="text-[13px] leading-none">{g.emoji}</span>
           {g.count > 1 && (
-            <span className="text-[11px] text-[#8696a0]">{g.count}</span>
+            <span className="text-[11px] text-muted-foreground">{g.count}</span>
           )}
         </button>
       ))}

@@ -115,7 +115,7 @@ export function MemberWhatsAppConfig() {
 
   if (loading) {
     return (
-      <Card className="border-slate-800 bg-slate-900">
+      <Card className="border-border bg-card">
         <CardContent className="flex justify-center py-8">
           <Loader2 className="size-6 animate-spin text-primary" />
         </CardContent>
@@ -124,23 +124,23 @@ export function MemberWhatsAppConfig() {
   }
 
   return (
-    <Card className="border-slate-800 bg-slate-900">
+    <Card className="border-border bg-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
+        <CardTitle className="flex items-center gap-2 text-foreground">
           <UserCircle className="size-5 text-primary" />
           My WhatsApp (optional)
         </CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardDescription className="text-muted-foreground">
           By default you send from the team WhatsApp number above. Save your
           own Meta credentials here if you want to send from your personal
           number instead.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2">
           <div>
-            <p className="text-sm font-medium text-white">Use my WhatsApp</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-medium text-foreground">Use my WhatsApp</p>
+            <p className="text-xs text-muted-foreground">
               When off, outbound messages use the team configuration.
             </p>
           </div>
@@ -153,27 +153,27 @@ export function MemberWhatsAppConfig() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-slate-300">Phone number ID</Label>
+            <Label className="text-foreground/80">Phone number ID</Label>
             <Input
               value={phoneNumberId}
               onChange={(e) => setPhoneNumberId(e.target.value)}
               disabled={!canEdit}
-              className="border-slate-700 bg-slate-800 text-white"
+              className="border-border bg-muted text-foreground"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-slate-300">WABA ID</Label>
+            <Label className="text-foreground/80">WABA ID</Label>
             <Input
               value={wabaId}
               onChange={(e) => setWabaId(e.target.value)}
               disabled={!canEdit}
-              className="border-slate-700 bg-slate-800 text-white"
+              className="border-border bg-muted text-foreground"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-slate-300">Access token</Label>
+          <Label className="text-foreground/80">Access token</Label>
           <Input
             type="password"
             placeholder={hasToken ? MASKED : "Paste Meta access token"}
@@ -183,7 +183,7 @@ export function MemberWhatsAppConfig() {
               setTokenEdited(true);
             }}
             disabled={!canEdit}
-            className="border-slate-700 bg-slate-800 text-white"
+            className="border-border bg-muted text-foreground"
           />
         </div>
 
@@ -202,7 +202,7 @@ export function MemberWhatsAppConfig() {
                 variant="outline"
                 onClick={() => void handleClear()}
                 disabled={saving}
-                className="border-slate-700 text-slate-300"
+                className="border-border text-foreground/80"
               >
                 Remove personal config
               </Button>

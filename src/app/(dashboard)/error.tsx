@@ -16,16 +16,16 @@ export default function DashboardError({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-300">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card text-foreground/80">
         <span className="text-2xl" aria-hidden>
           !
         </span>
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-white">
+        <h2 className="text-lg font-semibold text-foreground">
           Dashboard couldn&apos;t load
         </h2>
-        <p className="mt-2 max-w-md text-sm text-slate-400">
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
           Something went wrong while loading this page. Try reloading, or go back
           and open another section.
         </p>
@@ -34,13 +34,13 @@ export default function DashboardError({
         <button
           type="button"
           onClick={reset}
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-950 hover:bg-slate-200"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Reload
         </button>
         <Link
           href="/inbox"
-          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           Open Inbox
         </Link>

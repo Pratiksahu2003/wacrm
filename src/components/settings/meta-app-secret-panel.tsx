@@ -141,20 +141,20 @@ export function MetaAppSecretPanel() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-white">Meta App Secret</h2>
-        <p className="mt-1 text-sm text-slate-400">
+        <h2 className="text-lg font-semibold text-foreground">Meta App Secret</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Verify inbound webhook signatures from Meta. Each account uses its
           own App Secret from the Meta Developer dashboard.
         </p>
       </div>
 
-      <Card className="bg-slate-900 border-slate-700 ring-0 ring-transparent">
+      <Card className="bg-card border-border ring-0 ring-transparent">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="size-5 text-primary" />
-            <CardTitle className="text-white">App Secret</CardTitle>
+            <CardTitle className="text-foreground">App Secret</CardTitle>
           </div>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-muted-foreground">
             Meta for Developers → App Settings → Basic → App Secret
           </CardDescription>
         </CardHeader>
@@ -181,7 +181,7 @@ export function MetaAppSecretPanel() {
                 {configured ? 'App Secret saved' : 'App Secret not configured'}
               </AlertTitle>
             </div>
-            <AlertDescription className="text-slate-400 text-xs mt-1">
+            <AlertDescription className="text-muted-foreground text-xs mt-1">
               {configured
                 ? 'Inbound webhooks are verified with your stored secret.'
                 : hasWhatsAppConfig
@@ -202,7 +202,7 @@ export function MetaAppSecretPanel() {
           </Alert>
 
           <div className="space-y-2">
-            <Label className="text-slate-300">App Secret</Label>
+            <Label className="text-foreground/80">App Secret</Label>
             <div className="relative">
               <Input
                 type={showSecret ? 'text' : 'password'}
@@ -219,13 +219,13 @@ export function MetaAppSecretPanel() {
                     setEdited(true);
                   }
                 }}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 pr-10 disabled:opacity-50"
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10 disabled:opacity-50"
               />
               <button
                 type="button"
                 disabled={!hasWhatsAppConfig}
                 onClick={() => setShowSecret(!showSecret)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
                 {showSecret ? (
                   <EyeOff className="size-4" />
@@ -256,7 +256,7 @@ export function MetaAppSecretPanel() {
                 variant="outline"
                 onClick={handleClear}
                 disabled={clearing}
-                className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800"
+                className="border-border text-foreground/80 hover:text-foreground hover:bg-muted"
               >
                 {clearing ? (
                   <>

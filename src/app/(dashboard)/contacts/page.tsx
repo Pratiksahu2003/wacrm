@@ -320,8 +320,8 @@ function ContactsPageContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Contacts</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your contact list. {totalCount > 0 && `${totalCount} total contacts.`}
           </p>
         </div>
@@ -331,7 +331,7 @@ function ContactsPageContent() {
             canAct={canEdit}
             gateReason="add or import contacts"
             onClick={() => setImportOpen(true)}
-            className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            className="border-border text-foreground/80 hover:bg-muted"
           >
             <Upload className="size-4" />
             Import
@@ -351,7 +351,7 @@ function ContactsPageContent() {
       {/* Search + assign filter */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => {
@@ -359,17 +359,17 @@ function ContactsPageContent() {
               setPage(0);
             }}
             placeholder="Search by name, phone, or email..."
-            className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+            className="pl-8 bg-card border-border text-foreground placeholder:text-muted-foreground"
           />
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-slate-300 hover:bg-slate-800">
+          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1 rounded-md border border-border bg-card px-3 text-sm text-foreground/80 hover:bg-muted">
             <UserCog className="size-3.5" />
             {ASSIGN_FILTER_OPTIONS.find((o) => o.value === assignFilter)?.label ??
               'All leads'}
             <ChevronDown className="size-3.5 opacity-60" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="border-slate-700 bg-slate-800">
+          <DropdownMenuContent className="border-border bg-muted">
             {ASSIGN_FILTER_OPTIONS.map((opt) => (
               <DropdownMenuItem
                 key={opt.value}
@@ -377,7 +377,7 @@ function ContactsPageContent() {
                   setAssignFilter(opt.value);
                   setPage(0);
                 }}
-                className="text-sm text-slate-200 focus:bg-slate-700"
+                className="text-sm text-foreground focus:bg-muted"
               >
                 {opt.label}
               </DropdownMenuItem>
@@ -388,7 +388,7 @@ function ContactsPageContent() {
 
       {selectedIds.size > 0 && canEdit && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
-          <span className="text-sm text-white">
+          <span className="text-sm text-foreground">
             {selectedIds.size} selected
           </span>
           {canAssign && (
@@ -404,7 +404,7 @@ function ContactsPageContent() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="border-border text-foreground/80"
                 onClick={() => void applyBulkAssign(null)}
               >
                 Unassign
@@ -414,7 +414,7 @@ function ContactsPageContent() {
           <Button
             size="sm"
             variant="ghost"
-            className="text-slate-400"
+            className="text-muted-foreground"
             onClick={() => setSelectedIds(new Set())}
           >
             Clear
@@ -423,10 +423,10 @@ function ContactsPageContent() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-slate-800 overflow-hidden">
+      <div className="rounded-lg border border-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-slate-800 hover:bg-transparent">
+            <TableRow className="border-border hover:bg-transparent">
               {canEdit && (
                 <TableHead className="w-10">
                   <input
@@ -434,36 +434,36 @@ function ContactsPageContent() {
                     checked={allOnPageSelected}
                     onChange={toggleSelectAllOnPage}
                     aria-label="Select all on page"
-                    className="rounded border-slate-600 bg-slate-800"
+                    className="rounded border-border bg-muted"
                   />
                 </TableHead>
               )}
-              <TableHead className="text-slate-400">Name</TableHead>
-              <TableHead className="text-slate-400">Phone</TableHead>
-              <TableHead className="text-slate-400 hidden md:table-cell">Email</TableHead>
-              <TableHead className="text-slate-400 hidden lg:table-cell">Company</TableHead>
-              <TableHead className="text-slate-400 hidden md:table-cell">Tags</TableHead>
-              <TableHead className="text-slate-400 hidden lg:table-cell">Assigned</TableHead>
-              <TableHead className="text-slate-400 hidden lg:table-cell">Created</TableHead>
-              <TableHead className="text-slate-400 w-12" />
+              <TableHead className="text-muted-foreground">Name</TableHead>
+              <TableHead className="text-muted-foreground">Phone</TableHead>
+              <TableHead className="text-muted-foreground hidden md:table-cell">Email</TableHead>
+              <TableHead className="text-muted-foreground hidden lg:table-cell">Company</TableHead>
+              <TableHead className="text-muted-foreground hidden md:table-cell">Tags</TableHead>
+              <TableHead className="text-muted-foreground hidden lg:table-cell">Assigned</TableHead>
+              <TableHead className="text-muted-foreground hidden lg:table-cell">Created</TableHead>
+              <TableHead className="text-muted-foreground w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow className="border-slate-800">
+              <TableRow className="border-border">
                 <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="size-6 animate-spin text-primary" />
-                    <p className="text-sm text-slate-500">Loading contacts...</p>
+                    <p className="text-sm text-muted-foreground">Loading contacts...</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : contacts.length === 0 ? (
-              <TableRow className="border-slate-800">
+              <TableRow className="border-border">
                 <TableCell colSpan={canEdit ? 9 : 8} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
-                    <Users className="size-8 text-slate-600" />
-                    <p className="text-sm text-slate-500">
+                    <Users className="size-8 text-muted-foreground/80" />
+                    <p className="text-sm text-muted-foreground">
                       {search ? 'No contacts match your search.' : 'No contacts yet.'}
                     </p>
                     {!search && (
@@ -471,7 +471,7 @@ function ContactsPageContent() {
                         variant="outline"
                         size="sm"
                         onClick={openAddForm}
-                        className="mt-2 border-slate-700 text-slate-300 hover:bg-slate-800"
+                        className="mt-2 border-border text-foreground/80 hover:bg-muted"
                       >
                         <Plus className="size-3.5" />
                         Add your first contact
@@ -484,7 +484,7 @@ function ContactsPageContent() {
               contacts.map((contact) => (
                 <TableRow
                   key={contact.id}
-                  className="border-slate-800 hover:bg-slate-900/50 cursor-pointer"
+                  className="border-border hover:bg-card/50 cursor-pointer"
                   onClick={() => openDetail(contact.id)}
                 >
                   {canEdit && (
@@ -497,21 +497,21 @@ function ContactsPageContent() {
                         checked={selectedIds.has(contact.id)}
                         onChange={() => toggleSelect(contact.id)}
                         aria-label={`Select ${contact.name || contact.phone}`}
-                        className="rounded border-slate-600 bg-slate-800"
+                        className="rounded border-border bg-muted"
                       />
                     </TableCell>
                   )}
-                  <TableCell className="text-white font-medium">
-                    {contact.name || <span className="text-slate-500 italic">Unnamed</span>}
+                  <TableCell className="text-foreground font-medium">
+                    {contact.name || <span className="text-muted-foreground italic">Unnamed</span>}
                   </TableCell>
-                  <TableCell className="text-slate-300 font-mono text-xs">
+                  <TableCell className="text-foreground/80 font-mono text-xs">
                     {contact.phone}
                   </TableCell>
-                  <TableCell className="text-slate-400 hidden md:table-cell text-sm">
-                    {contact.email || <span className="text-slate-600">-</span>}
+                  <TableCell className="text-muted-foreground hidden md:table-cell text-sm">
+                    {contact.email || <span className="text-muted-foreground/80">-</span>}
                   </TableCell>
-                  <TableCell className="text-slate-400 hidden lg:table-cell text-sm">
-                    {contact.company || <span className="text-slate-600">-</span>}
+                  <TableCell className="text-muted-foreground hidden lg:table-cell text-sm">
+                    {contact.company || <span className="text-muted-foreground/80">-</span>}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex flex-wrap gap-1">
@@ -529,21 +529,21 @@ function ContactsPageContent() {
                           </span>
                         ))
                       ) : (
-                        <span className="text-slate-600 text-xs">-</span>
+                        <span className="text-muted-foreground/80 text-xs">-</span>
                       )}
                       {contact.tags && contact.tags.length > 3 && (
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-muted-foreground">
                           +{contact.tags.length - 3}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-400 hidden lg:table-cell text-sm">
+                  <TableCell className="text-muted-foreground hidden lg:table-cell text-sm">
                     {memberLabel(teamMembers, contact.assigned_to) ?? (
-                      <span className="text-slate-600">—</span>
+                      <span className="text-muted-foreground/80">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-slate-500 text-xs hidden lg:table-cell">
+                  <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
                     {new Date(contact.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -557,7 +557,7 @@ function ContactsPageContent() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="text-slate-400 hover:text-white"
+                            className="text-muted-foreground hover:text-foreground"
                             onClick={(e) => e.stopPropagation()}
                           />
                         }
@@ -566,21 +566,21 @@ function ContactsPageContent() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="bg-slate-900 border-slate-700"
+                        className="bg-card border-border"
                       >
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
                             openEditForm(contact);
                           }}
-                          className="text-slate-300 focus:bg-slate-800 focus:text-white"
+                          className="text-foreground/80 focus:bg-muted focus:text-foreground"
                         >
                           <Pencil className="size-4" />
                           Edit
                         </DropdownMenuItem>
                         {canDelete && (
                           <>
-                        <DropdownMenuSeparator className="bg-slate-700" />
+                        <DropdownMenuSeparator className="bg-muted" />
                         <DropdownMenuItem
                           variant="destructive"
                           onClick={(e) => {
@@ -606,7 +606,7 @@ function ContactsPageContent() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Showing {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalCount)} of{' '}
             {totalCount}
           </p>
@@ -616,11 +616,11 @@ function ContactsPageContent() {
               size="icon-sm"
               disabled={!hasPrev}
               onClick={() => setPage((p) => p - 1)}
-              className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
             >
               <ChevronLeft className="size-4" />
             </Button>
-            <span className="text-xs text-slate-400 px-2">
+            <span className="text-xs text-muted-foreground px-2">
               Page {page + 1} of {totalPages}
             </span>
             <Button
@@ -628,7 +628,7 @@ function ContactsPageContent() {
               size="icon-sm"
               disabled={!hasNext}
               onClick={() => setPage((p) => p + 1)}
-              className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -665,22 +665,22 @@ function ContactsPageContent() {
 
       {/* Delete Confirmation */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-sm">
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Contact</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground">Delete Contact</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to delete{' '}
-              <span className="text-slate-200 font-medium">
+              <span className="text-foreground font-medium">
                 {deleteTarget?.name || deleteTarget?.phone}
               </span>
               ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="bg-slate-900 border-slate-700">
+          <DialogFooter className="bg-card border-border">
             <Button
               variant="outline"
               onClick={() => setDeleteConfirmOpen(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="border-border text-foreground/80 hover:bg-muted"
             >
               Cancel
             </Button>
@@ -697,10 +697,10 @@ function ContactsPageContent() {
       </Dialog>
 
       <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-sm">
+        <DialogContent className="bg-card border-border text-foreground sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-white">Assign leads</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground">Assign leads</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Assign {selectedIds.size} selected contact
               {selectedIds.size === 1 ? '' : 's'} to a teammate.
             </DialogDescription>
@@ -710,11 +710,11 @@ function ContactsPageContent() {
             onChange={setBulkAssignee}
             allowUnassigned
           />
-          <DialogFooter className="bg-slate-900 border-slate-700">
+          <DialogFooter className="bg-card border-border">
             <Button
               variant="outline"
               onClick={() => setBulkAssignOpen(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="border-border text-foreground/80 hover:bg-muted"
             >
               Cancel
             </Button>

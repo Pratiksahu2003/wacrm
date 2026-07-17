@@ -94,14 +94,14 @@ export function MessageComposer({
       )}
 
       {sessionExpired && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-          <p className="text-xs text-amber-400">
+        <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2">
+          <p className="text-xs text-amber-700">
             24-hour session expired. Use a template to re-engage.
           </p>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-amber-400 hover:text-amber-300"
+            className="h-7 text-xs text-amber-700 hover:text-amber-800"
             onClick={onOpenTemplates}
           >
             <LayoutTemplate className="mr-1 h-3 w-3" />
@@ -117,7 +117,7 @@ export function MessageComposer({
           canAct={!readOnly}
           gateReason="send messages"
           title={readOnly ? undefined : "Send template"}
-          className="h-10 w-10 shrink-0 rounded-full p-0 text-[#8696a0] hover:bg-[#2a3942] hover:text-[#aebac1]"
+          className="h-10 w-10 shrink-0 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
           onClick={onOpenTemplates}
         >
           <LayoutTemplate className="h-6 w-6" />
@@ -128,7 +128,7 @@ export function MessageComposer({
             type="button"
             disabled={disabled}
             aria-label="Emoji"
-            className="mb-0.5 shrink-0 text-[#8696a0] hover:text-[#aebac1] disabled:opacity-40"
+            className="mb-0.5 shrink-0 text-muted-foreground hover:text-muted-foreground disabled:opacity-40"
           >
             <SmilePlus className="h-6 w-6" />
           </button>
@@ -151,7 +151,7 @@ export function MessageComposer({
               readOnly ? "Read-only — your role can't send messages" : undefined
             }
             className={cn(
-              "max-h-[100px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-[20px] text-[#e9edef] placeholder-[#8696a0] outline-none",
+              "max-h-[100px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-[20px] text-foreground placeholder:text-muted-foreground outline-none",
               disabled && "cursor-not-allowed opacity-50",
             )}
           />
@@ -166,8 +166,8 @@ export function MessageComposer({
           className={cn(
             "h-[42px] w-[42px] shrink-0 rounded-full p-0 transition-colors disabled:opacity-40",
             hasText
-              ? "wa-send-btn hover:bg-[#06cf9c]"
-              : "bg-[#8696a0]/30 text-[#8696a0]",
+              ? "wa-send-btn hover:bg-primary/90"
+              : "bg-muted text-muted-foreground",
           )}
         >
           <Send className="h-5 w-5" />

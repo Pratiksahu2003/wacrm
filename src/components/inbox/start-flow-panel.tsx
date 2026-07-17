@@ -86,7 +86,7 @@ export function StartFlowPanel({ contact }: StartFlowPanelProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-1 py-2 text-xs text-slate-500">
+      <div className="flex items-center gap-2 px-1 py-2 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />
         Loading flows…
       </div>
@@ -95,7 +95,7 @@ export function StartFlowPanel({ contact }: StartFlowPanelProps) {
 
   if (flows.length === 0) {
     return (
-      <p className="px-1 text-xs text-slate-600">
+      <p className="px-1 text-xs text-muted-foreground/80">
         No active flows. Activate a flow in Flows to start one here.
       </p>
     );
@@ -107,7 +107,7 @@ export function StartFlowPanel({ contact }: StartFlowPanelProps) {
         value={selectedId}
         onValueChange={(v) => setSelectedId(v ?? "")}
       >
-        <SelectTrigger className="h-9 w-full bg-slate-800 text-xs">
+        <SelectTrigger className="h-9 w-full bg-muted text-xs">
           <SelectValue placeholder="Choose a flow" />
         </SelectTrigger>
         <SelectContent>

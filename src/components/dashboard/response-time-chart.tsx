@@ -24,32 +24,32 @@ export function ResponseTimeChart({
   const hasData = data?.buckets.some((b) => b.avgMinutes != null) ?? false
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900">
-      <header className="flex items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
+    <section className="rounded-xl border border-border bg-card shadow-sm">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">
+          <h2 className="text-sm font-semibold text-foreground">
             Average First Response Time
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Minutes to reply to a customer&apos;s first unreplied message, by
             weekday
           </p>
         </div>
         <div className="flex items-center gap-3 text-right text-xs">
           {thresholdMinutes > 0 && (
-            <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 font-medium text-rose-300 tabular-nums">
+            <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 font-medium text-rose-600 tabular-nums">
               target {thresholdMinutes}m
             </span>
           )}
           {data && (data.thisWeekAvg != null || data.lastWeekAvg != null) && (
             <div>
-              <div className="text-slate-400">
+              <div className="text-muted-foreground">
                 This week:{' '}
-                <span className="font-medium text-white tabular-nums">
+                <span className="font-medium text-foreground tabular-nums">
                   {fmt(data.thisWeekAvg)}
                 </span>
               </div>
-              <div className="text-slate-500">
+              <div className="text-muted-foreground">
                 Last week:{' '}
                 <span className="tabular-nums">{fmt(data.lastWeekAvg)}</span>
               </div>
@@ -113,7 +113,7 @@ function ResponseBars({
               x2={VB_W - PADDING.right}
               y1={y}
               y2={y}
-              stroke="rgb(30 41 59)"
+              stroke="#e2e8f0"
               strokeDasharray="3 3"
             />
             <text
@@ -169,13 +169,13 @@ function ResponseBars({
               width={barWidth}
               height={barHeight}
               rx={4}
-              fill="#7c3aed"
+              fill="#14b8a6"
             />
             <text
               x={x + barWidth / 2}
               y={Math.max(PADDING.top + 10, y - 6)}
               textAnchor="middle"
-              className="fill-violet-200 text-[10px] tabular-nums"
+              className="fill-primary text-[10px] tabular-nums"
             >
               {minutes.toFixed(1)}m
             </text>

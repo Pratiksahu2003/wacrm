@@ -43,12 +43,7 @@ export function Logo({ variant = "auth", className }: LogoProps) {
 
   if (variant === "sidebar") {
     return (
-      <div
-        className={cn(
-          "inline-flex w-full items-center rounded-md bg-white px-2 py-1.5",
-          className,
-        )}
-      >
+      <div className={cn("inline-flex w-full items-center px-1 py-1", className)}>
         <LogoImage className="h-7 w-auto max-w-full" />
       </div>
     );

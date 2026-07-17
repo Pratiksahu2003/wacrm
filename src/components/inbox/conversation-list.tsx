@@ -31,9 +31,9 @@ interface ConversationListProps {
 }
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
-  open: "bg-[#00a884]",
+  open: "bg-primary",
   pending: "bg-amber-500",
-  closed: "bg-[#8696a0]",
+  closed: "bg-muted-foreground/50",
 };
 
 const FILTER_OPTIONS: { label: string; value: ConversationStatus | "all" }[] =
@@ -247,34 +247,34 @@ export function ConversationList({
   ]);
 
   return (
-    <div className="wa-panel flex h-full min-h-0 w-full flex-col overflow-hidden border-r border-[#2a3942] lg:w-[400px]">
-      <div className="shrink-0 space-y-2 border-b border-[#2a3942] bg-[#111b21] p-3">
+    <div className="wa-panel flex h-full min-h-0 w-full flex-col overflow-hidden border-r border-border lg:w-[400px]">
+      <div className="shrink-0 space-y-2 border-b border-border bg-background p-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8696a0]" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={handleSearchChange}
             placeholder="Search or start new chat"
-            className="rounded-lg border-none bg-[#202c33] pl-9 text-sm text-[#e9edef] placeholder-[#8696a0] focus-visible:ring-1 focus-visible:ring-[#00a884]/50"
+            className="rounded-lg border-none bg-muted pl-9 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
           />
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-[#8696a0] hover:bg-[#202c33] hover:text-[#e9edef]">
+          <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
             {activeFilter?.label ?? "All"}
             <ChevronDown className="h-3 w-3" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="border-[#2a3942] bg-[#233138]"
+            className="border-border bg-popover"
           >
             {FILTER_OPTIONS.map((opt) => (
               <DropdownMenuItem
                 key={opt.value}
                 onClick={() => setFilter(opt.value)}
                 className={cn(
-                  "text-sm focus:bg-[#2a3942]",
-                  filter === opt.value ? "text-[#00a884]" : "text-[#e9edef]",
+                  "text-sm focus:bg-muted",
+                  filter === opt.value ? "text-primary" : "text-foreground",
                 )}
               >
                 {opt.label}
@@ -284,14 +284,14 @@ export function ConversationList({
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-[#8696a0] hover:bg-[#202c33] hover:text-[#e9edef]">
+          <DropdownMenuTrigger className="inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
             <UserCog className="h-3 w-3" />
             <span className="max-w-[140px] truncate">{assignFilterLabel}</span>
             <ChevronDown className="h-3 w-3 shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="max-h-[min(320px,60vh)] overflow-y-auto border-[#2a3942] bg-[#233138]"
+            className="max-h-[min(320px,60vh)] overflow-y-auto border-border bg-popover"
           >
             {ASSIGN_FILTER_OPTIONS.map((opt) => {
               const isSelected = !memberUserId && assignFilter === opt.value;
@@ -300,8 +300,8 @@ export function ConversationList({
                   key={opt.value}
                   onClick={() => handleAssignPreset(opt.value)}
                   className={cn(
-                    "text-sm focus:bg-[#2a3942]",
-                    isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                    "text-sm focus:bg-muted",
+                    isSelected ? "text-primary" : "text-foreground",
                   )}
                 >
                   <span className="flex-1">{opt.label}</span>
@@ -311,7 +311,7 @@ export function ConversationList({
             })}
             {teamMembers.length > 0 && (
               <>
-                <DropdownMenuSeparator className="bg-[#2a3942]" />
+                <DropdownMenuSeparator />
                 {teamMembers.map((member) => {
                   const isSelected = memberUserId === member.user_id;
                   const label =
@@ -321,8 +321,8 @@ export function ConversationList({
                       key={member.user_id}
                       onClick={() => handleAssignMember(member.user_id)}
                       className={cn(
-                        "text-sm focus:bg-[#2a3942]",
-                        isSelected ? "text-[#00a884]" : "text-[#e9edef]",
+                        "text-sm focus:bg-muted",
+                        isSelected ? "text-primary" : "text-foreground",
                       )}
                     >
                       <span className="flex-1">
@@ -342,17 +342,17 @@ export function ConversationList({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00a884] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : !profileLoading && !accountId ? (
           <div className="px-4 py-12 text-center">
-            <p className="text-sm text-[#8696a0]">
+            <p className="text-sm text-muted-foreground">
               Your profile is not linked to an account
             </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
-            <p className="text-sm text-[#8696a0]">No conversations found</p>
+            <p className="text-sm text-muted-foreground">No conversations found</p>
           </div>
         ) : (
           <div className="flex flex-col">
@@ -409,7 +409,7 @@ function ConversationItem({
         isActive && "wa-list-active",
       )}
     >
-      <div className="flex h-[49px] w-[49px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#6b7b8a] text-lg font-normal text-white">
+      <div className="flex h-[49px] w-[49px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-lg font-normal text-primary">
         {contact?.avatar_url ? (
           <img
             src={contact.avatar_url}
@@ -421,11 +421,11 @@ function ConversationItem({
         )}
       </div>
 
-      <div className="min-w-0 flex-1 border-b border-[#2a3942] pb-3 pt-0.5">
+      <div className="min-w-0 flex-1 border-b border-border pb-3 pt-0.5">
         <div className="flex items-baseline justify-between gap-2">
           <span
             className={cn(
-              "truncate text-[17px] text-[#e9edef]",
+              "truncate text-[17px] text-foreground",
               hasUnread && "font-medium",
             )}
           >
@@ -434,14 +434,14 @@ function ConversationItem({
           <span
             className={cn(
               "shrink-0 text-xs",
-              hasUnread ? "text-[#00a884]" : "text-[#8696a0]",
+              hasUnread ? "text-primary" : "text-muted-foreground",
             )}
           >
             {timeLabel}
           </span>
         </div>
         {assigneeLabel && (
-          <p className="mt-0.5 truncate text-[12px] text-[#00a884]/80">
+          <p className="mt-0.5 truncate text-[12px] text-primary/80">
             {assigneeLabel}
           </p>
         )}
@@ -449,7 +449,7 @@ function ConversationItem({
           <p
             className={cn(
               "truncate text-[14px]",
-              hasUnread ? "font-medium text-[#e9edef]" : "text-[#8696a0]",
+              hasUnread ? "font-medium text-foreground" : "text-muted-foreground",
             )}
           >
             {conversation.last_message_text || "No messages yet"}
