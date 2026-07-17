@@ -34,16 +34,25 @@ export const docHeading = "text-xl font-bold text-slate-900";
 
 export const docMuted = "text-slate-600";
 
+export const docNavAside =
+  "lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto";
+
 export const docNavPanel =
-  "rounded-xl border border-slate-200 bg-slate-50/80 p-4 lg:sticky lg:top-24";
+  "rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm";
+
+export const docNavSectionTitle =
+  "mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500";
 
 export const docNavLink =
-  "block rounded-md px-2 py-1.5 text-sm text-slate-600 transition-colors hover:bg-white hover:text-slate-900";
+  "block rounded-md px-2.5 py-2 text-sm leading-snug text-slate-600 transition-colors hover:bg-white hover:text-slate-900";
+
+export const docNavTocLink =
+  "block rounded-md px-2.5 py-1.5 text-sm leading-snug text-slate-600 transition-colors hover:bg-white hover:text-teal-700";
 
 export const docNavLinkActive = "bg-teal-50 font-medium text-teal-700";
 
 export const docLinkButton =
-  "border-slate-300 bg-white text-slate-700 hover:bg-slate-50";
+  "border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 active:text-slate-900";
 
 export const docSeparator = "bg-slate-200";
 

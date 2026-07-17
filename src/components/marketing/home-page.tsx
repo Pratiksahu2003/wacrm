@@ -228,7 +228,7 @@ export function HomePageContent() {
                   variant="outline"
                   size="lg"
                   render={<Link href="/docs/getting-started" />}
-                  className="h-12 border-slate-300 px-8 text-base text-slate-700 hover:bg-slate-50"
+                  className={`h-12 px-8 text-base ${vm.btnOutline}`}
                 >
                   <BookOpen className="size-4" />
                   Setup guide
@@ -290,7 +290,7 @@ export function HomePageContent() {
                       rel="noopener noreferrer"
                     />
                   }
-                  className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className={vm.btnOutline}
                 >
                   Visit www.vedmint.com
                   <ExternalLink className="size-3.5" />
@@ -299,7 +299,7 @@ export function HomePageContent() {
                   variant="outline"
                   size="sm"
                   render={<Link href="/discover" />}
-                  className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className={vm.btnOutline}
                 >
                   Full feature reference
                   <ArrowRight className="size-3.5" />
@@ -441,7 +441,7 @@ export function HomePageContent() {
             <Button
               variant="outline"
               render={<Link href="/discover#dashboard-features" />}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className={vm.btnOutline}
             >
               Explore all modules & documentation
               <ArrowRight className="size-4" />
@@ -613,7 +613,7 @@ export function HomePageContent() {
                   variant="outline"
                   size="lg"
                   render={<Link href="/discover" />}
-                  className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                  className={vm.btnOutline}
                 >
                   Full discover page
                 </Button>
@@ -668,7 +668,7 @@ export function HomePageContent() {
                   variant="outline"
                   size="lg"
                   render={<Link href="/login" />}
-                  className="h-12 w-full border-white/40 px-8 text-base text-white hover:bg-white/10 sm:w-auto"
+                  className={`h-12 w-full px-8 text-base sm:w-auto ${vm.btnOutlineOnDark}`}
                 >
                   Sign in
                 </Button>

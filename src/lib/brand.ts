@@ -15,6 +15,9 @@ export const LOGO_HEIGHT = 304;
 /** Browser tab icon served from `public/favicon.ico`. */
 export const FAVICON_PATH = "/favicon.ico";
 
+/** Auth split-panel background — team collaboration (public/auth-brand.jpg). */
+export const AUTH_BRAND_IMAGE_PATH = "/auth-brand.jpg";
+
 /** Absolute logo URL for emails and Open Graph metadata. */
 export function logoUrl(origin: string = OFFICIAL_APP_URL): string {
   return `${origin.replace(/\/+$/, "")}${LOGO_PATH}`;

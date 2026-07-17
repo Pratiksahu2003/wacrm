@@ -7,6 +7,7 @@ import {
   OFFICIAL_APP_URL,
   PRODUCT_NAME,
 } from "@/lib/brand";
+import { vm } from "@/components/marketing/marketing-theme";
 
 const NAV_LINKS = [
   { href: "/#about", label: "About" },
@@ -31,7 +32,7 @@ export function MarketingShell({
   return (
     <div
       className={cn(
-        "relative min-h-screen",
+        "marketing-light relative min-h-screen",
         isLight ? "bg-white text-slate-900" : "bg-slate-950 text-slate-100",
       )}
     >
@@ -52,11 +53,8 @@ export function MarketingShell({
             : "border-b border-slate-800/80 bg-slate-950/90",
         )}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link
-            href="/"
-            className="block min-w-0 w-[10.5rem] shrink-0 sm:w-[12rem]"
-          >
+        <div className="mx-auto flex min-h-[4.75rem] max-w-6xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+          <Link href="/" className="inline-flex shrink-0 items-center">
             <Logo variant="header" />
           </Link>
 
@@ -82,19 +80,14 @@ export function MarketingShell({
               variant="outline"
               size="sm"
               render={<Link href="/login" />}
-              className={cn(
-                "hidden sm:inline-flex",
-                isLight
-                  ? "border-slate-300 text-slate-700 hover:bg-slate-50"
-                  : "border-slate-700 text-slate-200 hover:bg-slate-800",
-              )}
+              className={cn("hidden sm:inline-flex", vm.btnOutline)}
             >
               Log in
             </Button>
             <Button
               size="sm"
               render={<Link href="/signup" />}
-              className="bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500"
+              className={vm.btnPrimary}
             >
               Get started
             </Button>
@@ -137,7 +130,7 @@ export function MarketingShell({
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2 lg:col-span-1">
-              <Link href="/" className="block w-[11rem]">
+              <Link href="/" className="inline-flex items-center">
                 <Logo variant="header" />
               </Link>
               <p

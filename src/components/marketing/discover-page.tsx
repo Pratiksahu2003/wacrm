@@ -11,6 +11,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/marketing-shell";
+import { vm } from "@/components/marketing/marketing-theme";
 import { FeatureIcon } from "@/components/marketing/feature-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export function DiscoverPageContent() {
             <Button
               variant="outline"
               render={<Link href="/docs/getting-started" />}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className={vm.btnOutline}
             >
               <BookOpen className="size-4" />
               Documentation
@@ -135,7 +136,7 @@ export function DiscoverPageContent() {
                       variant="outline"
                       size="sm"
                       render={<Link href={feature.href} />}
-                      className="shrink-0 border-slate-300 text-slate-700 hover:bg-slate-50"
+                      className={`shrink-0 ${vm.btnOutline}`}
                     >
                       Open
                       <ArrowRight className="size-3.5" />
@@ -303,7 +304,7 @@ export function DiscoverPageContent() {
                                     rel="noopener noreferrer"
                                   />
                                 }
-                                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                                className={vm.btnOutline}
                               >
                                 {link.label}
                                 <ExternalLink className="size-3.5" />
@@ -314,7 +315,7 @@ export function DiscoverPageContent() {
                                 variant="outline"
                                 size="sm"
                                 render={<Link href={link.href} />}
-                                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                                className={vm.btnOutline}
                               >
                                 {link.label}
                                 <ArrowRight className="size-3.5" />
@@ -454,7 +455,7 @@ export function DiscoverPageContent() {
             <Button
               variant="outline"
               render={<Link href="/login" />}
-              className="border-slate-600 text-white hover:bg-white/10"
+              className={vm.btnOutlineOnDark}
             >
               Sign in
             </Button>

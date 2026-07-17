@@ -9,7 +9,11 @@ export const vm = {
   accentDot: "bg-teal-500",
   badge: "border-teal-200 bg-teal-50 text-teal-700",
   btnPrimary:
-    "bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500",
+    "bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500 hover:text-white active:from-slate-900 active:to-teal-600 active:text-white",
+  btnOutline:
+    "border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 active:text-slate-900 focus-visible:ring-teal-500/25 aria-expanded:bg-slate-50 aria-expanded:text-slate-900 [&_svg]:text-slate-500 hover:[&_svg]:text-slate-700",
+  btnOutlineOnDark:
+    "border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white active:bg-white/15 active:text-white [&_svg]:text-white/90",
   btnSolid: "bg-teal-600 text-white hover:bg-teal-500",
   btnSolidText: "text-teal-700 hover:bg-teal-50",
   gradientText: "bg-gradient-to-r from-slate-800 to-teal-600 bg-clip-text text-transparent",

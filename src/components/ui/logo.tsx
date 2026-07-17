@@ -1,68 +1,93 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { COMPANY_NAME, LOGO_HEIGHT, LOGO_PATH, LOGO_WIDTH } from "@/lib/brand"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { COMPANY_NAME, LOGO_HEIGHT, LOGO_PATH, LOGO_WIDTH } from "@/lib/brand";
 
 interface LogoProps {
-  variant?: "auth" | "sidebar" | "header" | "marketing";
+  variant?: "auth" | "sidebar" | "header" | "marketing" | "brand";
   className?: string;
 }
 
-/** Shared wordmark — fills container width so no empty white bars on the sides. */
-function Wordmark({
+function LogoImage({
   className,
-  pad = "px-1.5 py-1",
 }: {
   className?: string;
-  pad?: string;
 }) {
   return (
-    <div
+    <img
+      src={LOGO_PATH}
+      alt={COMPANY_NAME}
+      width={LOGO_WIDTH}
+      height={LOGO_HEIGHT}
       className={cn(
-        "w-full min-w-0 overflow-hidden rounded-md bg-white leading-none",
-        pad,
-        className
+        "block max-w-full select-none object-contain object-left",
+        className,
       )}
-    >
-      <img
-        src={LOGO_PATH}
-        alt={COMPANY_NAME}
-        width={LOGO_WIDTH}
-        height={LOGO_HEIGHT}
-        className="block h-auto w-full select-none"
-        draggable={false}
-      />
-    </div>
+      draggable={false}
+    />
   );
 }
 
+/** Compact nav wordmark — height-led sizing keeps the wide PNG proportional. */
 export function Logo({ variant = "auth", className }: LogoProps) {
-  if (variant === "sidebar") {
-    return <Wordmark className={className} pad="px-1.5 py-1" />;
-  }
-
   if (variant === "header") {
-    return <Wordmark className={className} pad="px-1.5 py-0.5" />;
-  }
-
-  if (variant === "marketing") {
     return (
-      <Wordmark
+      <LogoImage
         className={cn(
-          "mx-auto max-w-[15rem] rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-transform duration-300 hover:scale-[1.02] sm:max-w-[18rem]",
-          className
+          "h-10 w-auto sm:h-11 md:h-12",
+          "drop-shadow-[0_1px_3px_rgba(15,23,42,0.08)]",
+          className,
         )}
-        pad="px-1 py-1"
       />
     );
   }
 
+  if (variant === "sidebar") {
+    return (
+      <div
+        className={cn(
+          "inline-flex w-full items-center rounded-md bg-white px-2 py-1.5",
+          className,
+        )}
+      >
+        <LogoImage className="h-7 w-auto max-w-full" />
+      </div>
+    );
+  }
+
+  if (variant === "brand") {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center rounded-xl border border-white/10 bg-white/95 px-3.5 py-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-sm",
+          className,
+        )}
+      >
+        <LogoImage className="h-10 w-auto sm:h-12" />
+      </div>
+    );
+  }
+
+  if (variant === "marketing") {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-transform duration-300 hover:scale-[1.02]",
+          className,
+        )}
+      >
+        <LogoImage className="h-10 w-auto sm:h-11" />
+      </div>
+    );
+  }
+
   return (
-    <Wordmark
+    <div
       className={cn(
-        "mx-auto max-w-[17.5rem] rounded-xl border border-slate-100 px-3 py-2 shadow-[0_8px_30px_rgba(255,255,255,0.05)] transition-transform duration-300 hover:scale-[1.02]",
-        className
+        "inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm",
+        className,
       )}
-      pad="px-2 py-1.5"
-    />
+    >
+      <LogoImage className="h-9 w-auto sm:h-10" />
+    </div>
   );
 }

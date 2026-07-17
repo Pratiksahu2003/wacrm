@@ -3,18 +3,16 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { vm } from "@/components/marketing/marketing-theme";
 import { COPYRIGHT_NOTICE, PRODUCT_NAME } from "@/lib/brand";
 
 export function PublicDocsShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-white text-slate-900">
+    <div className="marketing-light relative min-h-screen bg-white text-slate-900">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(20,184,166,0.06),transparent)]" />
       <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link
-            href="/"
-            className="block min-w-0 w-[11.5rem] shrink-0 sm:w-[13rem]"
-          >
+        <div className="mx-auto flex min-h-[4.75rem] max-w-6xl items-center gap-4 px-4 py-2.5 sm:px-6">
+          <Link href="/" className="inline-flex shrink-0 items-center">
             <Logo variant="header" />
           </Link>
           <div className="flex items-center gap-2">
@@ -30,14 +28,14 @@ export function PublicDocsShell({ children }: { children: React.ReactNode }) {
               variant="outline"
               size="sm"
               render={<Link href="/login" />}
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className={vm.btnOutline}
             >
               Log in
             </Button>
             <Button
               size="sm"
               render={<Link href="/signup" />}
-              className="bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500"
+              className={vm.btnPrimary}
             >
               Sign up
             </Button>

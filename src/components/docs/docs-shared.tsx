@@ -10,9 +10,12 @@ import {
   docHeading,
   docLinkButton,
   docMuted,
+  docNavAside,
   docNavLink,
   docNavLinkActive,
   docNavPanel,
+  docNavSectionTitle,
+  docNavTocLink,
   docTitle,
 } from "@/components/public/public-theme";
 
@@ -104,52 +107,44 @@ export function DocsShell({
         <p className={`mt-1 max-w-2xl text-sm ${docMuted}`}>{description}</p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
-        <nav className="space-y-6">
-          <div className={docNavPanel}>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Documentation
-            </p>
-            <ul className="space-y-1">
-              {DOC_PAGES.map((page) => {
-                const active = pathname === page.href;
-                return (
-                  <li key={page.href}>
-                    <Link
-                      href={page.href}
-                      className={cn(
-                        docNavLink,
-                        active && docNavLinkActive,
-                      )}
-                    >
-                      {page.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {toc?.length ? (
-            <div className={cn("hidden lg:block", docNavPanel)}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                On this page
-              </p>
-              <ul className="space-y-1.5">
-                {toc.map((section) => (
-                  <li key={section.id}>
-                    <a
-                      href={`#${section.id}`}
-                      className="block text-sm text-slate-600 transition-colors hover:text-teal-600"
-                    >
-                      {section.title}
-                    </a>
-                  </li>
-                ))}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)] lg:gap-10">
+        <aside className={docNavAside}>
+          <div className="space-y-4">
+            <div className={docNavPanel}>
+              <p className={docNavSectionTitle}>Documentation</p>
+              <ul className="space-y-0.5">
+                {DOC_PAGES.map((page) => {
+                  const active = pathname === page.href;
+                  return (
+                    <li key={page.href}>
+                      <Link
+                        href={page.href}
+                        className={cn(docNavLink, active && docNavLinkActive)}
+                      >
+                        {page.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
-          ) : null}
-        </nav>
+
+            {toc?.length ? (
+              <div className={cn(docNavPanel, "hidden lg:block")}>
+                <p className={docNavSectionTitle}>On this page</p>
+                <ul className="space-y-0.5">
+                  {toc.map((section) => (
+                    <li key={section.id}>
+                      <a href={`#${section.id}`} className={docNavTocLink}>
+                        {section.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </aside>
 
         <div className="min-w-0 space-y-10">{children}</div>
       </div>
