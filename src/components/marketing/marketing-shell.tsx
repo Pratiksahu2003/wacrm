@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   COPYRIGHT_NOTICE,
   OFFICIAL_APP_URL,
@@ -10,18 +11,47 @@ import {
 const NAV_LINKS = [
   { href: "/#about", label: "About" },
   { href: "/#features", label: "Features" },
+  { href: "/#how-it-works", label: "How it works" },
   { href: "/#ecosystem", label: "Ecosystem" },
   { href: "/discover", label: "Discover All" },
   { href: "/docs/getting-started", label: "Docs" },
 ] as const;
 
-export function MarketingShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.15),transparent)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(139,92,246,0.06),transparent_50%)]" />
+type MarketingTheme = "light" | "dark";
 
-      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+export function MarketingShell({
+  children,
+  theme = "dark",
+}: {
+  children: React.ReactNode;
+  theme?: MarketingTheme;
+}) {
+  const isLight = theme === "light";
+
+  return (
+    <div
+      className={cn(
+        "relative min-h-screen",
+        isLight ? "bg-white text-slate-900" : "bg-slate-950 text-slate-100",
+      )}
+    >
+      {!isLight ? (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.15),transparent)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(139,92,246,0.06),transparent_50%)]" />
+        </>
+      ) : (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(99,102,241,0.07),transparent)]" />
+      )}
+
+      <header
+        className={cn(
+          "sticky top-0 z-50 backdrop-blur-md",
+          isLight
+            ? "border-b border-slate-200/80 bg-white/90"
+            : "border-b border-slate-800/80 bg-slate-950/90",
+        )}
+      >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href="/"
@@ -35,7 +65,12 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-white"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm transition-colors",
+                  isLight
+                    ? "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-white",
+                )}
               >
                 {link.label}
               </Link>
@@ -47,7 +82,12 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               variant="outline"
               size="sm"
               render={<Link href="/login" />}
-              className="hidden border-slate-700 text-slate-200 hover:bg-slate-800 sm:inline-flex"
+              className={cn(
+                "hidden sm:inline-flex",
+                isLight
+                  ? "border-slate-300 text-slate-700 hover:bg-slate-50"
+                  : "border-slate-700 text-slate-200 hover:bg-slate-800",
+              )}
             >
               Log in
             </Button>
@@ -61,12 +101,22 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto border-t border-slate-800/60 px-4 py-2 md:hidden">
+        <nav
+          className={cn(
+            "flex gap-1 overflow-x-auto px-4 py-2 md:hidden",
+            isLight ? "border-t border-slate-200/80" : "border-t border-slate-800/60",
+          )}
+        >
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="shrink-0 rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-700 hover:text-white"
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                isLight
+                  ? "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                  : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white",
+              )}
             >
               {link.label}
             </Link>
@@ -76,53 +126,59 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
 
       <main className="relative z-10">{children}</main>
 
-      <footer className="relative z-10 border-t border-slate-800 bg-slate-950/80">
+      <footer
+        className={cn(
+          "relative z-10 border-t",
+          isLight
+            ? "border-slate-200 bg-slate-50"
+            : "border-slate-800 bg-slate-950/80",
+        )}
+      >
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2 lg:col-span-1">
               <Link href="/" className="block w-[11rem]">
                 <Logo variant="header" />
               </Link>
-              <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-500">
+              <p
+                className={cn(
+                  "mt-4 max-w-xs text-sm leading-relaxed",
+                  isLight ? "text-slate-600" : "text-slate-500",
+                )}
+              >
                 {PRODUCT_NAME} — WhatsApp Business CRM by VedMint Consultancy
                 Services.
               </p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <p
+                className={cn(
+                  "text-xs font-semibold uppercase tracking-wider",
+                  isLight ? "text-slate-500" : "text-slate-500",
+                )}
+              >
                 Product
               </p>
               <ul className="mt-4 space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/discover"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    Discover all features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/docs/getting-started"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="text-slate-400 hover:text-primary">
-                    Sign in
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/signup"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    Create account
-                  </Link>
-                </li>
+                {[
+                  { href: "/discover", label: "Discover all features" },
+                  { href: "/docs/getting-started", label: "Documentation" },
+                  { href: "/login", label: "Sign in" },
+                  { href: "/signup", label: "Create account" },
+                ].map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "transition-colors hover:text-primary",
+                        isLight ? "text-slate-600" : "text-slate-400",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -131,36 +187,28 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 VedMint
               </p>
               <ul className="mt-4 space-y-2 text-sm">
-                <li>
-                  <a
-                    href="https://www.vedmint.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    www.vedmint.com
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://stay.vedmint.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    stay.vedmint.com
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://discover.vedmint.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-primary"
-                  >
-                    discover.vedmint.com
-                  </a>
-                </li>
+                {[
+                  { href: "https://www.vedmint.com", label: "www.vedmint.com" },
+                  { href: "https://stay.vedmint.com", label: "stay.vedmint.com" },
+                  {
+                    href: "https://discover.vedmint.com",
+                    label: "discover.vedmint.com",
+                  },
+                ].map((item) => (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "transition-colors hover:text-primary",
+                        isLight ? "text-slate-600" : "text-slate-400",
+                      )}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -177,7 +225,10 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                 <li>
                   <a
                     href="mailto:support@vedmint.com"
-                    className="text-slate-400 hover:text-primary"
+                    className={cn(
+                      "transition-colors hover:text-primary",
+                      isLight ? "text-slate-600" : "text-slate-400",
+                    )}
                   >
                     support@vedmint.com
                   </a>
@@ -186,7 +237,14 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <p className="mt-10 border-t border-slate-800 pt-8 text-center text-xs text-slate-600">
+          <p
+            className={cn(
+              "mt-10 border-t pt-8 text-center text-xs",
+              isLight
+                ? "border-slate-200 text-slate-500"
+                : "border-slate-800 text-slate-600",
+            )}
+          >
             {COPYRIGHT_NOTICE}
           </p>
         </div>

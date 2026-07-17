@@ -7,9 +7,10 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import {
   COMPANY_NAME,
-  LOGO_PATH,
+  FAVICON_PATH,
   META_DESCRIPTION,
   OFFICIAL_APP_URL,
+  faviconUrl,
   logoUrl,
 } from "@/lib/brand";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
@@ -31,8 +32,9 @@ export const metadata: Metadata = {
   creator: COMPANY_NAME,
   publisher: COMPANY_NAME,
   icons: {
-    icon: LOGO_PATH,
-    apple: LOGO_PATH,
+    icon: [{ url: FAVICON_PATH, type: "image/x-icon" }],
+    shortcut: FAVICON_PATH,
+    apple: faviconUrl(),
   },
   openGraph: {
     images: [{ url: logoUrl(), width: 820, height: 304, alt: COMPANY_NAME }],

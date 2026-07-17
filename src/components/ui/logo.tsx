@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 import { COMPANY_NAME, LOGO_HEIGHT, LOGO_PATH, LOGO_WIDTH } from "@/lib/brand"
 
 interface LogoProps {
-  variant?: "auth" | "sidebar" | "header";
+  variant?: "auth" | "sidebar" | "header" | "marketing";
   className?: string;
 }
 
@@ -42,6 +42,18 @@ export function Logo({ variant = "auth", className }: LogoProps) {
 
   if (variant === "header") {
     return <Wordmark className={className} pad="px-1.5 py-0.5" />;
+  }
+
+  if (variant === "marketing") {
+    return (
+      <Wordmark
+        className={cn(
+          "mx-auto max-w-[15rem] rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-transform duration-300 hover:scale-[1.02] sm:max-w-[18rem]",
+          className
+        )}
+        pad="px-1 py-1"
+      />
+    );
   }
 
   return (

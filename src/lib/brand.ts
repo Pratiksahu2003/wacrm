@@ -12,9 +12,17 @@ export const LOGO_PATH = "/logo.png";
 export const LOGO_WIDTH = 820;
 export const LOGO_HEIGHT = 304;
 
+/** Browser tab icon served from `public/favicon.ico`. */
+export const FAVICON_PATH = "/favicon.ico";
+
 /** Absolute logo URL for emails and Open Graph metadata. */
 export function logoUrl(origin: string = OFFICIAL_APP_URL): string {
   return `${origin.replace(/\/+$/, "")}${LOGO_PATH}`;
+}
+
+/** Absolute favicon URL for metadata and external references. */
+export function faviconUrl(origin: string = OFFICIAL_APP_URL): string {
+  return `${origin.replace(/\/+$/, "")}${FAVICON_PATH}`;
 }
 
 export const SUPPORT_EMAIL = "support@vedmint.com";
