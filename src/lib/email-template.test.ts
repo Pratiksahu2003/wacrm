@@ -6,7 +6,7 @@ import {
 } from "@/lib/email-template";
 
 describe("buildTransactionalEmailHtml", () => {
-  it("renders heading, card, CTA, and security block without logo", () => {
+  it("renders logo, heading, card, CTA, and security block", () => {
     const html = buildTransactionalEmailHtml({
       heading: "Reset your password",
       intro: "Test intro",
@@ -22,8 +22,8 @@ describe("buildTransactionalEmailHtml", () => {
     expect(html).toContain("Password reset");
     expect(html).toContain("Reset my password");
     expect(html).toContain("https://example.com/reset?token=abc");
-    expect(html).not.toContain("<img");
-    expect(html).not.toContain("logo");
+    expect(html).toContain("<img");
+    expect(html).toContain("/logo.png");
   });
 
   it("escapes HTML in dynamic content", () => {

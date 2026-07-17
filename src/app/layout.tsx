@@ -5,7 +5,13 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
-import { COMPANY_NAME, META_DESCRIPTION, OFFICIAL_APP_URL } from "@/lib/brand";
+import {
+  COMPANY_NAME,
+  LOGO_PATH,
+  META_DESCRIPTION,
+  OFFICIAL_APP_URL,
+  logoUrl,
+} from "@/lib/brand";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
 
 const inter = Inter({
@@ -25,8 +31,11 @@ export const metadata: Metadata = {
   creator: COMPANY_NAME,
   publisher: COMPANY_NAME,
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.png",
+    icon: LOGO_PATH,
+    apple: LOGO_PATH,
+  },
+  openGraph: {
+    images: [{ url: logoUrl(), width: 820, height: 304, alt: COMPANY_NAME }],
   },
   formatDetection: {
     email: false,

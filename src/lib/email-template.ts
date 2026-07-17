@@ -1,3 +1,5 @@
+import { OFFICIAL_APP_URL, logoUrl } from "@/lib/brand";
+
 export type EmailDetailRow = {
   label: string;
   value: string;
@@ -45,7 +47,7 @@ function renderDetailRows(details: EmailDetailRow[]): string {
     .join("");
 }
 
-/** Airbnb-style transactional email — no logo, no company address block. */
+/** Transactional email with VedMint wordmark header. */
 export function buildTransactionalEmailHtml(
   options: TransactionalEmailOptions,
 ): string {
@@ -100,6 +102,13 @@ export function buildTransactionalEmailHtml(
     <tr>
       <td align="center" style="padding:40px 16px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+          <tr>
+            <td style="padding:0 0 28px;text-align:center;">
+              <a href="${escapeHtml(OFFICIAL_APP_URL)}" style="text-decoration:none;">
+                <img src="${escapeHtml(logoUrl())}" alt="VedMint" width="220" style="display:inline-block;max-width:220px;height:auto;border:0;" />
+              </a>
+            </td>
+          </tr>
           <tr>
             <td style="padding:0 0 24px;">
               <h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;font-weight:700;color:${TEXT_PRIMARY};">${escapeHtml(heading)}</h1>

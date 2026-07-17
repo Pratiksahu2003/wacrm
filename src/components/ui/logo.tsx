@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { COMPANY_NAME } from "@/lib/brand"
+import { COMPANY_NAME, LOGO_HEIGHT, LOGO_PATH, LOGO_WIDTH } from "@/lib/brand"
 
 interface LogoProps {
   variant?: "auth" | "sidebar" | "header";
@@ -24,10 +24,10 @@ function Wordmark({
       )}
     >
       <img
-        src="/logo.png"
+        src={LOGO_PATH}
         alt={COMPANY_NAME}
-        width={603}
-        height={177}
+        width={LOGO_WIDTH}
+        height={LOGO_HEIGHT}
         className="block h-auto w-full select-none"
         draggable={false}
       />

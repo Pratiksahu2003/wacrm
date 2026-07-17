@@ -28,6 +28,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { AuthTrustNotice } from '@/components/auth/auth-trust-notice';
+import { Logo } from '@/components/ui/logo';
 import { COMPANY_NAME } from '@/lib/brand';
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export const metadata: Metadata = {
 export default function JoinLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12">
+      <Logo variant="auth" className="mb-6" />
       <AuthTrustNotice />
       {children}
     </div>
