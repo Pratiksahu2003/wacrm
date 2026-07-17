@@ -35,10 +35,10 @@ export function TroubleshootingPage() {
           {TROUBLESHOOTING_ITEMS.map((item) => (
             <Card
               key={item.issue}
-              className="border-slate-800 bg-slate-900/50 ring-slate-800"
+              className="border-slate-200 bg-white shadow-sm ring-slate-200"
             >
               <CardHeader className="pb-2">
-                <CardTitle className="text-base text-white">{item.issue}</CardTitle>
+                <CardTitle className="text-base text-slate-900">{item.issue}</CardTitle>
                 <CardDescription>{item.fix}</CardDescription>
               </CardHeader>
               <CardContent>

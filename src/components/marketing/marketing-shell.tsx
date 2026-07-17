@@ -21,7 +21,7 @@ type MarketingTheme = "light" | "dark";
 
 export function MarketingShell({
   children,
-  theme = "dark",
+  theme = "light",
 }: {
   children: React.ReactNode;
   theme?: MarketingTheme;
@@ -41,7 +41,7 @@ export function MarketingShell({
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(139,92,246,0.06),transparent_50%)]" />
         </>
       ) : (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(99,102,241,0.07),transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-10%,rgba(20,184,166,0.08),transparent)]" />
       )}
 
       <header
@@ -94,7 +94,7 @@ export function MarketingShell({
             <Button
               size="sm"
               render={<Link href="/signup" />}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500"
+              className="bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500"
             >
               Get started
             </Button>
@@ -171,7 +171,7 @@ export function MarketingShell({
                     <Link
                       href={item.href}
                       className={cn(
-                        "transition-colors hover:text-primary",
+                        "transition-colors hover:text-teal-600",
                         isLight ? "text-slate-600" : "text-slate-400",
                       )}
                     >
@@ -201,7 +201,7 @@ export function MarketingShell({
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
-                        "transition-colors hover:text-primary",
+                        "transition-colors hover:text-teal-600",
                         isLight ? "text-slate-600" : "text-slate-400",
                       )}
                     >

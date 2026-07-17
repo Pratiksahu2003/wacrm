@@ -46,8 +46,8 @@ export function GettingStartedPage() {
           title="Overview"
           description={`${COMPANY_NAME} WhatsApp Business CRM — shared inbox, contacts, pipelines, broadcasts, automations, and interactive flows.`}
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
-          <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <div className="mb-2 flex items-center gap-2">
               <BookOpen className="size-4 text-primary" />
               <Badge variant="secondary">In-app docs</Badge>
@@ -79,16 +79,16 @@ export function GettingStartedPage() {
           {IMPLEMENTATION_STEPS.map((step, index) => (
             <Card
               key={step.title}
-              className="border-slate-800 bg-slate-900/50 ring-slate-800"
+              className="border-slate-200 bg-white shadow-sm ring-slate-200"
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start gap-3">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-700">
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <CardTitle className="text-white">{step.title}</CardTitle>
-                    <CardDescription className="mt-1 text-slate-400">
+                    <CardTitle className="text-slate-900">{step.title}</CardTitle>
+                    <CardDescription className="mt-1 text-slate-600">
                       {step.body}
                     </CardDescription>
                     {step.links?.length ? (
@@ -117,8 +117,8 @@ export function GettingStartedPage() {
           title="Auth & Team"
           description="Account creation, email verification, and team invitations."
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
-          <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <ol className="list-decimal space-y-3 pl-5">
               <li>
                 Sign up with name, email, and password, then verify your email
@@ -154,11 +154,11 @@ export function GettingStartedPage() {
             <Card
               key={feature.id}
               id={feature.id}
-              className="scroll-mt-24 border-slate-800 bg-slate-900/50 ring-slate-800"
+              className="scroll-mt-24 border-slate-200 bg-white shadow-sm ring-slate-200"
             >
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle className="text-white">{feature.title}</CardTitle>
+                  <CardTitle className="text-slate-900">{feature.title}</CardTitle>
                   {feature.badge ? (
                     <Badge variant="outline">{feature.badge}</Badge>
                   ) : null}
@@ -174,7 +174,7 @@ export function GettingStartedPage() {
                     {feature.capabilities.map((cap) => (
                       <li
                         key={cap}
-                        className="flex items-start gap-2 text-sm text-slate-300"
+                        className="flex items-start gap-2 text-sm text-slate-700"
                       >
                         <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
                         {cap}
@@ -182,12 +182,12 @@ export function GettingStartedPage() {
                     ))}
                   </ul>
                 </div>
-                <Separator className="bg-slate-800" />
+                <Separator className="bg-slate-200" />
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     How to use
                   </p>
-                  <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-300">
+                  <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-700">
                     {feature.howToUse.map((step) => (
                       <li key={step}>{step}</li>
                     ))}
@@ -213,13 +213,13 @@ export function GettingStartedPage() {
           {SETTINGS_TABS.map((tab) => (
             <Card
               key={tab.tab}
-              className="border-slate-800 bg-slate-900/50 ring-slate-800"
+              className="border-slate-200 bg-white shadow-sm ring-slate-200"
             >
               <CardHeader className="pb-2">
-                <CardTitle className="text-base text-white">{tab.label}</CardTitle>
+                <CardTitle className="text-base text-slate-900">{tab.label}</CardTitle>
                 <CardDescription>{tab.description}</CardDescription>
               </CardHeader>
-              <CardFooter className="flex items-center justify-between border-t border-slate-800 bg-transparent px-4 py-3">
+              <CardFooter className="flex items-center justify-between border-t border-slate-200 bg-transparent px-4 py-3">
                 <span className="text-xs text-slate-500">{tab.who}</span>
                 <DocLinkButton href={tab.href} label="Open" />
               </CardFooter>
@@ -238,12 +238,12 @@ export function GettingStartedPage() {
           {CRON_JOBS.map((job) => (
             <Card
               key={job.endpoint}
-              className="border-slate-800 bg-slate-900/50 ring-slate-800"
+              className="border-slate-200 bg-white shadow-sm ring-slate-200"
             >
               <CardContent className="space-y-1 pt-4 text-sm">
-                <p className="font-medium text-white">{job.endpoint}</p>
-                <p className="text-slate-400">Frequency: {job.schedule}</p>
-                <p className="text-slate-300">{job.purpose}</p>
+                <p className="font-medium text-slate-900">{job.endpoint}</p>
+                <p className="text-slate-600">Frequency: {job.schedule}</p>
+                <p className="text-slate-700">{job.purpose}</p>
               </CardContent>
             </Card>
           ))}
@@ -256,11 +256,11 @@ export function GettingStartedPage() {
           title="Roles & Permissions"
           description="What each account role can do."
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="overflow-x-auto pt-4">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-500">
+                <tr className="border-b border-slate-200 text-slate-500">
                   <th className="pb-2 pr-4 font-medium">Role</th>
                   <th className="pb-2 font-medium">Capabilities</th>
                 </tr>
@@ -269,12 +269,12 @@ export function GettingStartedPage() {
                 {ROLE_MATRIX.map((row) => (
                   <tr
                     key={row.role}
-                    className="border-b border-slate-800/60 last:border-0"
+                    className="border-b border-slate-200 last:border-0"
                   >
-                    <td className="py-2.5 pr-4 font-medium text-white">
+                    <td className="py-2.5 pr-4 font-medium text-slate-900">
                       {row.role}
                     </td>
-                    <td className="py-2.5 text-slate-400">{row.capabilities}</td>
+                    <td className="py-2.5 text-slate-600">{row.capabilities}</td>
                   </tr>
                 ))}
               </tbody>

@@ -25,6 +25,11 @@ export function faviconUrl(origin: string = OFFICIAL_APP_URL): string {
   return `${origin.replace(/\/+$/, "")}${FAVICON_PATH}`;
 }
 
+/** VedMint wordmark palette — navy ("Ved") + mint ("Mint"). */
+export const VEDMINT_NAVY = "#1e293b";
+export const VEDMINT_MINT = "#14b8a6";
+export const VEDMINT_MINT_DARK = "#0d9488";
+
 export const SUPPORT_EMAIL = "support@vedmint.com";
 
 export const META_DESCRIPTION =

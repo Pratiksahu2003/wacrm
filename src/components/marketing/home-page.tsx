@@ -16,9 +16,9 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
 import { MarketingShell } from "@/components/marketing/marketing-shell";
 import { FeatureIcon } from "@/components/marketing/feature-icons";
+import { vm } from "@/components/marketing/marketing-theme";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,21 +69,21 @@ const USE_CASES = [
     title: "Sales teams",
     description:
       "Capture leads from WhatsApp, assign conversations, move deals through pipelines, and automate follow-ups without leaving the inbox.",
-    color: "bg-violet-50 text-violet-600",
+    color: "bg-teal-50 text-teal-700",
   },
   {
     icon: Headphones,
     title: "Customer support",
     description:
       "Handle support tickets in a shared inbox with assignment filters, status tracking, templates, and team collaboration on every thread.",
-    color: "bg-blue-50 text-blue-600",
+    color: "bg-slate-100 text-slate-800",
   },
   {
     icon: Radio,
     title: "Marketing & outreach",
     description:
       "Send approved Meta template broadcasts to segmented audiences, track delivery and read rates, and nurture with automated drip sequences.",
-    color: "bg-emerald-50 text-emerald-600",
+    color: "bg-teal-50 text-teal-600",
   },
 ] as const;
 
@@ -119,11 +119,13 @@ const WHY_CHOOSE = [
 function HeroPreview() {
   return (
     <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-violet-100/80 via-indigo-50/50 to-transparent blur-2xl" />
+      <div
+        className={`absolute -inset-4 rounded-3xl bg-gradient-to-br ${vm.gradientGlow} blur-2xl`}
+      />
       <div className="relative space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-5">
         <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <div className="flex size-9 items-center justify-center rounded-full bg-teal-50 text-teal-600">
               <MessageSquare className="size-4" />
             </div>
             <div>
@@ -131,9 +133,7 @@ function HeroPreview() {
               <p className="text-xs text-slate-500">12 open conversations</p>
             </div>
           </div>
-          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-            Live
-          </Badge>
+          <Badge className="border-teal-200 bg-teal-50 text-teal-700">Live</Badge>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -149,14 +149,14 @@ function HeroPreview() {
             >
               <p className="text-xs text-slate-500">{stat.label}</p>
               <p className="mt-1 text-lg font-bold text-slate-900">{stat.value}</p>
-              <p className="text-[11px] text-violet-600">{stat.sub}</p>
+              <p className={`text-[11px] ${vm.accent}`}>{stat.sub}</p>
             </div>
           ))}
         </div>
 
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
           <div className="mb-2 flex items-center gap-2">
-            <Bot className="size-4 text-violet-600" />
+            <Bot className={`size-4 ${vm.accent}`} />
             <p className="text-xs font-semibold text-slate-700">Recent activity</p>
           </div>
           <div className="space-y-2">
@@ -169,7 +169,7 @@ function HeroPreview() {
                 key={line}
                 className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-xs text-slate-600"
               >
-                <span className="size-1.5 shrink-0 rounded-full bg-violet-500" />
+                <span className={`size-1.5 shrink-0 rounded-full ${vm.accentDot}`} />
                 {line}
               </div>
             ))}
@@ -184,26 +184,18 @@ export function HomePageContent() {
   return (
     <MarketingShell theme="light">
       {/* Hero */}
-      <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50/80 to-white">
+      <section className="border-b border-slate-100 bg-gradient-to-b from-teal-50/40 to-white">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
-              <Logo variant="marketing" className="mb-8 lg:mx-0" />
-
-              <Badge
-                variant="secondary"
-                className="mb-5 border-violet-200 bg-violet-50 text-violet-700"
-              >
+              <Badge variant="secondary" className={`mb-5 ${vm.badge}`}>
                 <Sparkles className="mr-1.5 size-3.5" />
                 Official {PRODUCT_NAME} — {OFFICIAL_APP_URL.replace("https://", "")}
               </Badge>
 
               <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
                 The WhatsApp CRM your{" "}
-                <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                  whole team
-                </span>{" "}
-                can run on
+                <span className={vm.gradientText}>whole team</span> can run on
               </h1>
 
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
@@ -217,7 +209,7 @@ export function HomePageContent() {
                     key={item}
                     className="flex items-start gap-2.5 text-sm text-slate-700"
                   >
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-violet-600" />
+                    <CheckCircle2 className={`mt-0.5 size-4 shrink-0 ${vm.accent}`} />
                     {item}
                   </li>
                 ))}
@@ -227,7 +219,7 @@ export function HomePageContent() {
                 <Button
                   size="lg"
                   render={<Link href="/signup" />}
-                  className="h-12 bg-gradient-to-r from-violet-600 to-indigo-600 px-8 text-base text-white hover:from-violet-500 hover:to-indigo-500"
+                  className={`h-12 px-8 text-base ${vm.btnPrimary}`}
                 >
                   Start free — create account
                   <ArrowRight className="size-4" />
@@ -245,7 +237,7 @@ export function HomePageContent() {
 
               <p className="mt-5 text-sm text-slate-500">
                 Already using {PRODUCT_NAME}?{" "}
-                <Link href="/login" className="font-medium text-violet-600 hover:underline">
+                <Link href="/login" className={vm.link}>
                   Sign in to your dashboard
                 </Link>
               </p>
@@ -272,9 +264,7 @@ export function HomePageContent() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="grid items-start gap-12 lg:grid-cols-2">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                About {PRODUCT_NAME}
-              </p>
+              <p className={vm.sectionLabel}>About {PRODUCT_NAME}</p>
               <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
                 Built by {COMPANY_NAME}
               </h2>
@@ -324,7 +314,9 @@ export function HomePageContent() {
                   className="border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <CardHeader className="pb-2">
-                    <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                    <div
+                      className={`mb-2 flex size-10 items-center justify-center rounded-xl ${vm.iconBox}`}
+                    >
                       <item.icon className="size-5" />
                     </div>
                     <CardTitle className="text-base text-slate-900">
@@ -347,9 +339,7 @@ export function HomePageContent() {
       <section className="border-y border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Use cases
-            </p>
+            <p className={vm.sectionLabel}>Use cases</p>
             <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
               One platform, every team
             </h2>
@@ -388,9 +378,7 @@ export function HomePageContent() {
       <section id="features" className="scroll-mt-24 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Features
-            </p>
+            <p className={vm.sectionLabel}>Features</p>
             <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
               {DASHBOARD_FEATURES.length} powerful modules
             </h2>
@@ -404,11 +392,13 @@ export function HomePageContent() {
             {HIGHLIGHT_FEATURES.map((feature) => (
               <Card
                 key={feature.id}
-                className="group border-slate-200 bg-white shadow-sm transition-all hover:border-violet-200 hover:shadow-md"
+                className={`group border-slate-200 bg-white shadow-sm transition-all ${vm.accentBorderHover} hover:shadow-md`}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition group-hover:bg-violet-100">
+                    <div
+                      className={`flex size-11 items-center justify-center rounded-xl ${vm.iconBox} transition ${vm.iconBoxHover}`}
+                    >
                       <FeatureIcon id={feature.id} className="size-5" />
                     </div>
                     {feature.badge ? (
@@ -428,14 +418,16 @@ export function HomePageContent() {
                   <ul className="space-y-2 text-sm text-slate-600">
                     {feature.capabilities.slice(0, 4).map((cap) => (
                       <li key={cap} className="flex items-start gap-2">
-                        <span className="mt-2 size-1 shrink-0 rounded-full bg-violet-500" />
+                        <span
+                          className={`mt-2 size-1 shrink-0 rounded-full ${vm.accentDot}`}
+                        />
                         {cap}
                       </li>
                     ))}
                   </ul>
                   <Link
                     href={feature.href}
-                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-700"
+                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
                   >
                     Open {feature.title}
                     <ArrowRight className="size-3.5" />
@@ -459,13 +451,14 @@ export function HomePageContent() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="scroll-mt-24 border-t border-slate-100 bg-slate-50">
+      <section
+        id="how-it-works"
+        className="scroll-mt-24 border-t border-slate-100 bg-slate-50"
+      >
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-start">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                How it works
-              </p>
+              <p className={vm.sectionLabel}>How it works</p>
               <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
                 Go live in four steps
               </h2>
@@ -476,7 +469,7 @@ export function HomePageContent() {
               <Button
                 size="lg"
                 render={<Link href="/docs/whatsapp-setup" />}
-                className="mt-6 bg-violet-600 text-white hover:bg-violet-500"
+                className={`mt-6 ${vm.btnSolid}`}
               >
                 WhatsApp setup guide
                 <ArrowRight className="size-4" />
@@ -489,7 +482,9 @@ export function HomePageContent() {
                   key={step.title}
                   className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-sm font-bold text-white">
+                  <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${vm.stepBadge}`}
+                  >
                     {index + 1}
                   </span>
                   <div>
@@ -502,10 +497,7 @@ export function HomePageContent() {
               ))}
               <p className="text-center text-sm text-slate-500">
                 + {IMPLEMENTATION_STEPS.length - 4} more steps in our{" "}
-                <Link
-                  href="/docs/getting-started"
-                  className="font-medium text-violet-600 hover:underline"
-                >
+                <Link href="/docs/getting-started" className={vm.link}>
                   getting started guide
                 </Link>
               </p>
@@ -518,9 +510,7 @@ export function HomePageContent() {
       <section className="bg-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Team & permissions
-            </p>
+            <p className={vm.sectionLabel}>Team & permissions</p>
             <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
               Role-based access for every teammate
             </h2>
@@ -551,9 +541,7 @@ export function HomePageContent() {
       <section id="ecosystem" className="scroll-mt-24 border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Ecosystem
-            </p>
+            <p className={vm.sectionLabel}>Ecosystem</p>
             <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
               Discover VedMint
             </h2>
@@ -570,10 +558,12 @@ export function HomePageContent() {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-violet-200 hover:shadow-md"
+                className={`group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all ${vm.accentBorderHover} hover:shadow-md`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 group-hover:bg-violet-100">
+                  <div
+                    className={`flex size-11 items-center justify-center rounded-xl ${vm.iconBox} ${vm.iconBoxHover}`}
+                  >
                     <Globe className="size-5" />
                   </div>
                   <div className="min-w-0">
@@ -582,9 +572,9 @@ export function HomePageContent() {
                       {site.url.replace("https://", "")}
                     </p>
                   </div>
-                  <ExternalLink className="ml-auto size-4 shrink-0 text-slate-400 group-hover:text-violet-600" />
+                  <ExternalLink className="ml-auto size-4 shrink-0 text-slate-400 group-hover:text-teal-600" />
                 </div>
-                <p className="mt-2 text-xs font-medium text-violet-600">
+                <p className={`mt-2 text-xs font-medium ${vm.accent}`}>
                   {site.tagline}
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-slate-600">
@@ -601,9 +591,7 @@ export function HomePageContent() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                Documentation
-              </p>
+              <p className={vm.sectionLabel}>Documentation</p>
               <h2 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
                 Everything documented
               </h2>
@@ -616,7 +604,7 @@ export function HomePageContent() {
                 <Button
                   size="lg"
                   render={<Link href="/docs/getting-started" />}
-                  className="bg-violet-600 text-white hover:bg-violet-500"
+                  className={vm.btnSolid}
                 >
                   <BookOpen className="size-4" />
                   Getting started
@@ -637,7 +625,7 @@ export function HomePageContent() {
                 <Link
                   key={page.href}
                   href={page.href}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-violet-200 hover:shadow-md"
+                  className={`flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all ${vm.accentBorderHover} hover:shadow-md`}
                 >
                   <div>
                     <p className="font-medium text-slate-900">{page.label}</p>
@@ -656,14 +644,15 @@ export function HomePageContent() {
       {/* CTA */}
       <section className="border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-violet-700 px-6 py-14 text-center shadow-[0_20px_60px_rgba(91,33,182,0.25)] sm:px-12">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_55%)]" />
+          <div
+            className={`relative overflow-hidden rounded-3xl px-6 py-14 text-center shadow-[0_20px_60px_rgba(13,148,136,0.2)] sm:px-12 ${vm.gradientHero}`}
+          >
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.25),transparent_55%)]" />
             <div className="relative mx-auto max-w-2xl">
-              <Logo variant="marketing" className="mb-6 bg-white/95" />
               <h2 className="text-2xl font-bold text-white sm:text-3xl">
                 Ready to run WhatsApp like a pro?
               </h2>
-              <p className="mx-auto mt-3 text-violet-100">
+              <p className={`mx-auto mt-3 ${vm.ctaSubtext}`}>
                 Create your free account, connect Meta WhatsApp, invite your
                 team, and start managing every conversation from one place.
               </p>
@@ -671,7 +660,7 @@ export function HomePageContent() {
                 <Button
                   size="lg"
                   render={<Link href="/signup" />}
-                  className="h-12 w-full bg-white px-8 text-base text-violet-700 hover:bg-violet-50 sm:w-auto"
+                  className={`h-12 w-full bg-white px-8 text-base sm:w-auto ${vm.btnSolidText}`}
                 >
                   Create free account
                 </Button>

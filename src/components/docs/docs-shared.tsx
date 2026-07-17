@@ -6,6 +6,15 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DOC_PAGES } from "@/lib/docs/content";
+import {
+  docHeading,
+  docLinkButton,
+  docMuted,
+  docNavLink,
+  docNavLinkActive,
+  docNavPanel,
+  docTitle,
+} from "@/components/public/public-theme";
 
 export function SectionHeading({
   id,
@@ -18,10 +27,8 @@ export function SectionHeading({
 }) {
   return (
     <div id={id} className="scroll-mt-24">
-      <h2 className="text-xl font-bold text-white">{title}</h2>
-      {description ? (
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
-      ) : null}
+      <h2 className={docHeading}>{title}</h2>
+      {description ? <p className={`mt-1 text-sm ${docMuted}`}>{description}</p> : null}
     </div>
   );
 }
@@ -35,9 +42,6 @@ export function DocLinkButton({
   label: string;
   external?: boolean;
 }) {
-  const className =
-    "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800";
-
   if (external) {
     return (
       <Button
@@ -46,7 +50,7 @@ export function DocLinkButton({
         render={
           <a href={href} target="_blank" rel="noopener noreferrer" />
         }
-        className={className}
+        className={docLinkButton}
       >
         {label}
         <ExternalLink className="size-3.5" />
@@ -60,7 +64,7 @@ export function DocLinkButton({
         variant="outline"
         size="sm"
         render={<a href={href} />}
-        className={className}
+        className={docLinkButton}
       >
         {label}
       </Button>
@@ -72,7 +76,7 @@ export function DocLinkButton({
       variant="outline"
       size="sm"
       render={<Link href={href} />}
-      className={className}
+      className={docLinkButton}
     >
       {label}
       <ArrowRight className="size-3.5" />
@@ -96,13 +100,13 @@ export function DocsShell({
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">{title}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-400">{description}</p>
+        <h1 className={`text-2xl font-bold ${docTitle}`}>{title}</h1>
+        <p className={`mt-1 max-w-2xl text-sm ${docMuted}`}>{description}</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
         <nav className="space-y-6">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:sticky lg:top-6">
+          <div className={docNavPanel}>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Documentation
             </p>
@@ -114,10 +118,8 @@ export function DocsShell({
                     <Link
                       href={page.href}
                       className={cn(
-                        "block rounded-md px-2 py-1.5 text-sm transition-colors",
-                        active
-                          ? "bg-primary/15 font-medium text-primary"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-white",
+                        docNavLink,
+                        active && docNavLinkActive,
                       )}
                     >
                       {page.label}
@@ -129,7 +131,7 @@ export function DocsShell({
           </div>
 
           {toc?.length ? (
-            <div className="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:block lg:sticky lg:top-6">
+            <div className={cn("hidden lg:block", docNavPanel)}>
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 On this page
               </p>
@@ -138,7 +140,7 @@ export function DocsShell({
                   <li key={section.id}>
                     <a
                       href={`#${section.id}`}
-                      className="block text-sm text-slate-400 transition-colors hover:text-primary"
+                      className="block text-sm text-slate-600 transition-colors hover:text-teal-600"
                     >
                       {section.title}
                     </a>

@@ -35,14 +35,8 @@ import {
   UsersRound,
 } from 'lucide-react';
 
+import { AuthFormCard } from '@/components/auth/auth-form-card';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +46,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { createClient } from '@/lib/supabase/client';
+
+const joinPrimaryButton =
+  "h-11 w-full rounded-xl border-0 bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-[0_8px_24px_rgba(13,148,136,0.35)] hover:from-teal-500 hover:to-teal-400";
+
+const joinOutlineButton =
+  "h-11 w-full rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
 
 interface PeekOk {
   ok: true;
@@ -227,12 +227,10 @@ export default function JoinPage() {
   // ----- Loading state (peek pending OR auth not yet resolved) -----
   if (peek === null || authedUserId === undefined) {
     return (
-      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardContent className="flex flex-col items-center gap-3 py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <p className="text-sm text-slate-400">Verifying invitation…</p>
-        </CardContent>
-      </Card>
+      <AuthFormCard className="flex flex-col items-center gap-3 py-10 text-center">
+        <Loader2 className="size-6 animate-spin text-teal-600" />
+        <p className="text-sm text-slate-600">Verifying invitation…</p>
+      </AuthFormCard>
     );
   }
 
@@ -240,17 +238,13 @@ export default function JoinPage() {
   if (!peek.ok) {
     const copy = FAIL_COPY[peek.reason];
     return (
-      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
-            <MailX className="h-6 w-6 text-red-400" />
-          </div>
-          <CardTitle className="text-xl text-white">{copy.title}</CardTitle>
-          <CardDescription className="text-slate-400">
-            {copy.body}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
+      <AuthFormCard className="text-center">
+        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-red-50 ring-1 ring-red-100">
+          <MailX className="size-7 text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">{copy.title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{copy.body}</p>
+        <div className="mt-6 flex flex-col gap-2">
           {/* For server_error the failure is transient — the network
               flapped or the peek endpoint hiccupped. Try-again is
               the right primary action; the "create account" /
@@ -260,17 +254,11 @@ export default function JoinPage() {
               signup/sign-in escape hatches. */}
           {peek.reason === 'server_error' ? (
             <>
-              <Button
-                onClick={loadPeekAndAuth}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
+              <Button onClick={loadPeekAndAuth} className={joinPrimaryButton}>
                 Try again
               </Button>
               <Link href="/signup">
-                <Button
-                  variant="outline"
-                  className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                >
+                <Button variant="outline" className={joinOutlineButton}>
                   Create a new account instead
                 </Button>
               </Link>
@@ -278,39 +266,36 @@ export default function JoinPage() {
           ) : (
             <>
               <Link href="/signup">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button className={joinPrimaryButton}>
                   Create a new account instead
                 </Button>
               </Link>
               <Link href="/login">
-                <Button
-                  variant="outline"
-                  className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                >
+                <Button variant="outline" className={joinOutlineButton}>
                   Sign in
                 </Button>
               </Link>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AuthFormCard>
     );
   }
 
   // ----- Peek OK -----
   const inviteHeader = (
-    <CardHeader className="items-center text-center">
-      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-        <UsersRound className="h-6 w-6 text-primary" />
+    <div className="text-center">
+      <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-teal-50 ring-1 ring-teal-100">
+        <UsersRound className="size-7 text-teal-600" />
       </div>
-      <CardTitle className="text-xl text-white">
+      <h2 className="text-xl font-bold text-slate-900">
         You&apos;re invited to{' '}
-        <span className="text-primary">{peek.account_name}</span>
-      </CardTitle>
-      <CardDescription className="text-slate-400">
+        <span className="text-teal-700">{peek.account_name}</span>
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600">
         You&apos;ll join as{' '}
-        <span className="inline-flex items-center gap-1 text-white">
-          <ShieldCheck className="size-3.5 text-primary" />
+        <span className="inline-flex items-center gap-1 text-slate-900">
+          <ShieldCheck className="size-3.5 text-teal-600" />
           {ROLE_LABEL[peek.role]}
         </span>
         . Link valid until{' '}
@@ -320,21 +305,21 @@ export default function JoinPage() {
           day: 'numeric',
         })}
         .
-      </CardDescription>
-    </CardHeader>
+      </p>
+    </div>
   );
 
   // ----- Authed: show Accept button -----
   if (authedUserId) {
     return (
       <>
-        <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+        <AuthFormCard>
           {inviteHeader}
-          <CardContent className="flex flex-col gap-3">
+          <div className="mt-6 flex flex-col gap-3">
             <Button
               onClick={handleAccept}
               disabled={accepting}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              className={joinPrimaryButton}
             >
               {accepting ? (
                 <>
@@ -350,11 +335,11 @@ export default function JoinPage() {
             </Button>
             <p className="text-center text-xs text-slate-500">
               Accepting moves your login into{' '}
-              <span className="text-slate-400">{peek.account_name}</span>. Your
+              <span className="text-slate-600">{peek.account_name}</span>. Your
               empty personal account from signup will be cleaned up.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </AuthFormCard>
 
         {/* Conflict modal — opens when the redeem endpoint returns 409
             (caller already in a shared account or has domain data).
@@ -369,13 +354,13 @@ export default function JoinPage() {
             }
           }}
         >
-          <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-md">
+          <DialogContent className="bg-white border-slate-200 sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-white">
+              <DialogTitle className="flex items-center gap-2 text-slate-900">
                 <AlertTriangle className="size-4 text-amber-400" />
                 Can&apos;t join {peek.account_name} with this account
               </DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogDescription className="text-slate-600">
                 {conflictMessage}
               </DialogDescription>
             </DialogHeader>
@@ -399,14 +384,14 @@ export default function JoinPage() {
                 </p>
               )}
             </div>
-            <DialogFooter className="bg-slate-900 border-slate-700">
+            <DialogFooter className="bg-white border-slate-200">
               <Button
                 variant="outline"
                 onClick={() => {
                   setConflictMessage(null);
                   setConflictKind(null);
                 }}
-                className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
               >
                 {conflictKind === "team" ? "Close" : "Stay signed in"}
               </Button>
@@ -444,23 +429,18 @@ export default function JoinPage() {
 
   // ----- Not authed: prompt to sign up or sign in -----
   return (
-    <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+    <AuthFormCard>
       {inviteHeader}
-      <CardContent className="flex flex-col gap-2">
+      <div className="mt-6 flex flex-col gap-2">
         <Link href={`/signup?invite=${encodeURIComponent(token!)}`}>
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            Create account &amp; join
-          </Button>
+          <Button className={joinPrimaryButton}>Create account &amp; join</Button>
         </Link>
         <Link href={`/login?invite=${encodeURIComponent(token!)}`}>
-          <Button
-            variant="outline"
-            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-          >
+          <Button variant="outline" className={joinOutlineButton}>
             I already have an account
           </Button>
         </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </AuthFormCard>
   );
 }

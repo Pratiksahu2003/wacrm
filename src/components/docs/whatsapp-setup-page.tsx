@@ -38,8 +38,8 @@ export function WhatsAppSetupPage() {
           title="Create a Meta Business App"
           description={`Set up your app in Meta for Developers before entering credentials in ${COMPANY_NAME}.`}
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
-          <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <ol className="list-decimal space-y-2 pl-5">
               <li>
                 Go to Meta for Developers → My Apps → Create App → choose{" "}
@@ -71,11 +71,11 @@ export function WhatsAppSetupPage() {
           description="Settings → WhatsApp Config — all fields and what they do."
         />
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
+          <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
             <CardHeader>
-              <CardTitle className="text-white">Required fields</CardTitle>
+              <CardTitle className="text-slate-900">Required fields</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-300">
+            <CardContent className="space-y-2 text-sm text-slate-700">
               {[
                 "Phone Number ID (required)",
                 "WhatsApp Business Account ID / WABA ID (recommended)",
@@ -98,11 +98,11 @@ export function WhatsAppSetupPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
+          <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
             <CardHeader>
-              <CardTitle className="text-white">What happens on Save</CardTitle>
+              <CardTitle className="text-slate-900">What happens on Save</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-slate-300">
+            <CardContent className="space-y-2 text-sm text-slate-700">
               {[
                 "Verifies token with Meta API",
                 "Encrypts and stores credentials securely",
@@ -125,12 +125,12 @@ export function WhatsAppSetupPage() {
           title="Configure Meta webhooks"
           description="Paste this callback URL in Meta → WhatsApp → Configuration → Webhook."
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="space-y-3 pt-4 text-sm">
-            <div className="rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-xs text-emerald-300 break-all">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-teal-800 break-all">
               {webhookUrl}
             </div>
-            <ul className="space-y-2 text-slate-300">
+            <ul className="space-y-2 text-slate-700">
               {META_WEBHOOK_FIELDS.map((field) => (
                 <li key={field} className="flex items-start gap-2">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
@@ -163,8 +163,8 @@ export function WhatsAppSetupPage() {
           title="Message templates"
           description="Templates must be Meta-approved before broadcasts and template automations can use them."
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
-          <CardContent className="space-y-3 pt-4 text-sm text-slate-300">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <ol className="list-decimal space-y-2 pl-5">
               <li>Create templates in Settings → Templates (Marketing or Utility).</li>
               <li>Submit to Meta for review — approval typically takes ~24 hours.</li>
@@ -182,8 +182,8 @@ export function WhatsAppSetupPage() {
           title="Verify the connection"
           description="Confirm everything is working before going live."
         />
-        <Card className="border-slate-800 bg-slate-900/50 ring-slate-800">
-          <CardContent className="space-y-2 pt-4 text-sm text-slate-300">
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
             {[
               "Click Test API Connection in WhatsApp Config",
               "Click Verify with Meta and check all diagnostics pass",

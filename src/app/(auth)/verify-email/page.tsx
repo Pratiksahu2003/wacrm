@@ -2,19 +2,14 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft, CheckCircle, Mail } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Logo } from "@/components/ui/logo";
-import { AuthTrustNotice } from "@/components/auth/auth-trust-notice";
-import { COPYRIGHT_NOTICE } from "@/lib/brand";
-import { CheckCircle, Mail, ArrowLeft } from "lucide-react";
+import { AuthDomainNotice } from "@/components/auth/auth-domain-notice";
+import { AuthFormCard } from "@/components/auth/auth-form-card";
+import { AuthFormHeader } from "@/components/auth/auth-form-header";
+import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
+import { PublicAuthShell } from "@/components/auth/public-auth-shell";
+import { authErrorBox, authLink } from "@/components/public/public-theme";
 
 export default function VerifyEmailPage() {
   return (
@@ -72,80 +67,81 @@ function VerifyEmailPageInner() {
 
       setResent(true);
       setLoading(false);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(message);
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen items-center justify-center bg-slate-950 px-4 overflow-hidden py-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] bg-[radial-gradient(circle,rgba(59,130,246,0.05)_0%,transparent_60%)] rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] bg-[radial-gradient(circle,rgba(168,85,247,0.05)_0%,transparent_60%)] rounded-full blur-[120px] pointer-events-none" />
+    <PublicAuthShell>
+      <AuthFormHeader
+        badge="Email verification"
+        title={resent ? "Verification email sent" : "Verify your email"}
+        description={
+          resent ? (
+            <>
+              We sent another link
+              {email ? (
+                <>
+                  {" "}
+                  to <span className="font-medium text-slate-900">{email}</span>
+                </>
+              ) : null}
+              . Check your inbox and spam folder.
+            </>
+          ) : (
+            <>
+              We sent a verification link
+              {email ? (
+                <>
+                  {" "}
+                  to <span className="font-medium text-slate-900">{email}</span>
+                </>
+              ) : (
+                " to your email"
+              )}
+              . Click the link to activate your account.
+            </>
+          )
+        }
+      />
 
-      <AuthTrustNotice />
-
-      <Card className="relative w-full max-w-md border-slate-800/80 bg-slate-900/50 backdrop-blur-xl shadow-2xl transition-all duration-300">
-        <CardHeader className="items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-500/20">
+      <AuthFormCard>
+        <div className="mb-5 flex justify-center lg:justify-start">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-teal-50 ring-1 ring-teal-100">
             {resent ? (
-              <CheckCircle className="h-6 w-6 text-violet-400" />
+              <CheckCircle className="size-7 text-teal-600" aria-hidden />
             ) : (
-              <Mail className="h-6 w-6 text-violet-400" />
+              <Mail className="size-7 text-teal-600" aria-hidden />
             )}
           </div>
-          <Logo variant="auth" className="mb-4 mx-auto" />
-          <CardTitle className="text-2xl font-bold tracking-tight text-white">
-            {resent ? "Verification email sent" : "Verify your email"}
-          </CardTitle>
-          <CardDescription className="text-slate-400 mt-2">
-            {resent ? (
-              <>We sent another verification link{email ? <> to <span className="text-white font-medium">{email}</span></> : ""}. Check your inbox and spam folder.</>
-            ) : (
-              <>
-                We sent a verification link
-                {email ? (
-                  <>
-                    {" "}
-                    to <span className="text-white font-medium">{email}</span>
-                  </>
-                ) : (
-                  " to your email"
-                )}
-                . Click the link to activate your account and access the dashboard.
-              </>
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
+        </div>
 
-          <Button
-            type="button"
-            disabled={loading || !email}
-            onClick={handleResend}
-            className="h-11 w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all border-0"
-          >
-            {loading ? "Sending..." : "Resend verification email"}
-          </Button>
+        {error ? <div className={`mb-4 ${authErrorBox}`}>{error}</div> : null}
 
-          <Link
-            href="/login"
-            className="flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-slate-300 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to sign in
-          </Link>
-        </CardContent>
-      </Card>
-      <p className="mt-6 text-center text-xs text-slate-600 select-none">
-        {COPYRIGHT_NOTICE}
-      </p>
-    </div>
+        <AuthSubmitButton
+          type="button"
+          loading={loading}
+          loadingText="Sending…"
+          disabled={!email}
+          onClick={handleResend}
+        >
+          Resend verification email
+        </AuthSubmitButton>
+      </AuthFormCard>
+
+      <Link
+        href="/login"
+        className="mt-6 inline-flex items-center justify-center gap-2 text-sm text-slate-600 transition-colors hover:text-teal-700 lg:justify-start"
+      >
+        <ArrowLeft className="size-4" />
+        Back to sign in
+      </Link>
+
+      <AuthDomainNotice />
+    </PublicAuthShell>
   );
 }

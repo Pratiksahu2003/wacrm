@@ -34,27 +34,27 @@ import {
 
 export function DiscoverPageContent() {
   return (
-    <MarketingShell>
+    <MarketingShell theme="light">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         {/* Header */}
         <div className="max-w-3xl">
           <Badge
             variant="secondary"
-            className="mb-4 border-primary/30 bg-primary/10 text-primary"
+            className="mb-4 border-teal-200 bg-teal-50 text-teal-700"
           >
             Complete reference
           </Badge>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Discover {PRODUCT_NAME}
           </h1>
-          <p className="mt-4 text-lg leading-relaxed text-slate-400">
+          <p className="mt-4 text-lg leading-relaxed text-slate-600">
             Everything in one place — dashboard modules, documentation, settings
             tabs, roles, setup steps, and links across the VedMint ecosystem.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Button
               render={<Link href="/signup" />}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500"
+              className="bg-gradient-to-r from-slate-800 to-teal-600 text-white hover:from-slate-700 hover:to-teal-500"
             >
               Get started
               <ArrowRight className="size-4" />
@@ -62,7 +62,7 @@ export function DiscoverPageContent() {
             <Button
               variant="outline"
               render={<Link href="/docs/getting-started" />}
-              className="border-slate-700 text-slate-200 hover:bg-slate-800"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50"
             >
               <BookOpen className="size-4" />
               Documentation
@@ -83,26 +83,26 @@ export function DiscoverPageContent() {
             <a
               key={item.href}
               href={item.href}
-              className="rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-700 hover:text-white"
+              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
             >
               {item.label}
             </a>
           ))}
         </nav>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Dashboard features — full detail */}
         <section id="dashboard-features" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <LayoutDashboard className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-slate-900">
                 Dashboard modules
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-600">
                 Every feature in {PRODUCT_NAME} with direct links
               </p>
             </div>
@@ -112,16 +112,16 @@ export function DiscoverPageContent() {
             {DASHBOARD_FEATURES.map((feature) => (
               <Card
                 key={feature.id}
-                className="border-slate-800 bg-slate-900/50 ring-slate-800"
+                className="border-slate-200 bg-white shadow-sm ring-slate-200"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                         <FeatureIcon id={feature.id} className="size-4" />
                       </div>
                       <div>
-                        <CardTitle className="text-white">
+                        <CardTitle className="text-slate-900">
                           {feature.title}
                         </CardTitle>
                         {feature.badge ? (
@@ -135,13 +135,13 @@ export function DiscoverPageContent() {
                       variant="outline"
                       size="sm"
                       render={<Link href={feature.href} />}
-                      className="shrink-0 border-slate-700 text-slate-200 hover:bg-slate-800"
+                      className="shrink-0 border-slate-300 text-slate-700 hover:bg-slate-50"
                     >
                       Open
                       <ArrowRight className="size-3.5" />
                     </Button>
                   </div>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-600">
                     {feature.summary}
                   </CardDescription>
                 </CardHeader>
@@ -150,7 +150,7 @@ export function DiscoverPageContent() {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Capabilities
                     </p>
-                    <ul className="space-y-1 text-sm text-slate-300">
+                    <ul className="space-y-1 text-sm text-slate-700">
                       {feature.capabilities.map((cap) => (
                         <li key={cap} className="flex items-start gap-2">
                           <span className="mt-2 size-1 shrink-0 rounded-full bg-primary/60" />
@@ -163,14 +163,14 @@ export function DiscoverPageContent() {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       How to use
                     </p>
-                    <ul className="space-y-1 text-sm text-slate-400">
+                    <ul className="space-y-1 text-sm text-slate-600">
                       {feature.howToUse.map((step) => (
                         <li key={step}>{step}</li>
                       ))}
                     </ul>
                   </div>
                   {feature.roleNote ? (
-                    <p className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2 text-xs text-slate-500">
+                    <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
                       {feature.roleNote}
                     </p>
                   ) : null}
@@ -180,17 +180,17 @@ export function DiscoverPageContent() {
           </div>
         </section>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Documentation */}
         <section id="documentation" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <BookOpen className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Documentation</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-2xl font-bold text-slate-900">Documentation</h2>
+              <p className="text-sm text-slate-600">
                 Guides for setup, WhatsApp, and troubleshooting
               </p>
             </div>
@@ -201,9 +201,9 @@ export function DiscoverPageContent() {
               <Link
                 key={page.href}
                 href={page.href}
-                className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition-colors hover:border-primary/30 hover:bg-slate-900/80"
+                className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 transition-colors hover:border-teal-200 hover:bg-teal-50"
               >
-                <p className="font-semibold text-white">{page.label}</p>
+                <p className="font-semibold text-slate-900">{page.label}</p>
                 <p className="mt-1 text-sm text-slate-500">{page.description}</p>
                 <span className="mt-3 inline-flex items-center gap-1 text-xs text-primary">
                   Read guide
@@ -214,17 +214,17 @@ export function DiscoverPageContent() {
           </div>
         </section>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Settings tabs */}
         <section id="settings" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <Settings2 className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Settings</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
+              <p className="text-sm text-slate-600">
                 Account configuration tabs with direct links
               </p>
             </div>
@@ -235,10 +235,10 @@ export function DiscoverPageContent() {
               <Link
                 key={tab.tab}
                 href={tab.href}
-                className="flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors hover:border-primary/30 hover:bg-slate-900/80"
+                className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white shadow-sm p-4 transition-colors hover:border-teal-200 hover:bg-teal-50"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-white">{tab.label}</p>
+                  <p className="font-medium text-slate-900">{tab.label}</p>
                   <p className="mt-1 text-sm text-slate-500">
                     {tab.description}
                   </p>
@@ -252,19 +252,19 @@ export function DiscoverPageContent() {
           </div>
         </section>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Setup steps */}
         <section id="setup" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <Rocket className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-slate-900">
                 Implementation plan
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-600">
                 Follow these steps to connect Meta WhatsApp and go live
               </p>
             </div>
@@ -274,18 +274,18 @@ export function DiscoverPageContent() {
             {IMPLEMENTATION_STEPS.map((step, index) => (
               <Card
                 key={step.title}
-                className="border-slate-800 bg-slate-900/50 ring-slate-800"
+                className="border-slate-200 bg-white shadow-sm ring-slate-200"
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start gap-3">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-700">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <CardTitle className="text-base text-white">
+                      <CardTitle className="text-base text-slate-900">
                         {step.title}
                       </CardTitle>
-                      <CardDescription className="mt-1 text-slate-400">
+                      <CardDescription className="mt-1 text-slate-600">
                         {step.body}
                       </CardDescription>
                       {step.links?.length ? (
@@ -303,7 +303,7 @@ export function DiscoverPageContent() {
                                     rel="noopener noreferrer"
                                   />
                                 }
-                                className="border-slate-700 text-slate-200 hover:bg-slate-800"
+                                className="border-slate-300 text-slate-700 hover:bg-slate-50"
                               >
                                 {link.label}
                                 <ExternalLink className="size-3.5" />
@@ -314,7 +314,7 @@ export function DiscoverPageContent() {
                                 variant="outline"
                                 size="sm"
                                 render={<Link href={link.href} />}
-                                className="border-slate-700 text-slate-200 hover:bg-slate-800"
+                                className="border-slate-300 text-slate-700 hover:bg-slate-50"
                               >
                                 {link.label}
                                 <ArrowRight className="size-3.5" />
@@ -331,7 +331,7 @@ export function DiscoverPageContent() {
           </div>
 
           <div id="cron-jobs" className="scroll-mt-28">
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
               <Wrench className="size-5 text-primary" />
               Background tasks
             </h3>
@@ -339,10 +339,10 @@ export function DiscoverPageContent() {
               {CRON_JOBS.map((job) => (
                 <Card
                   key={job.endpoint}
-                  className="border-slate-800 bg-slate-900/50 ring-slate-800"
+                  className="border-slate-200 bg-white shadow-sm ring-slate-200"
                 >
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-white">
+                    <CardTitle className="text-sm text-slate-900">
                       {job.endpoint}
                     </CardTitle>
                     <Badge variant="secondary" className="w-fit text-xs">
@@ -350,7 +350,7 @@ export function DiscoverPageContent() {
                     </Badge>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-slate-400">{job.purpose}</p>
+                    <p className="text-sm text-slate-600">{job.purpose}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -358,19 +358,19 @@ export function DiscoverPageContent() {
           </div>
         </section>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Roles */}
         <section id="roles" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <Shield className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-slate-900">
                 Roles & permissions
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-600">
                 What each team role can do in {COMPANY_NAME}
               </p>
             </div>
@@ -380,32 +380,32 @@ export function DiscoverPageContent() {
             {ROLE_MATRIX.map((row) => (
               <Card
                 key={row.role}
-                className="border-slate-800 bg-slate-900/50 ring-slate-800"
+                className="border-slate-200 bg-white shadow-sm ring-slate-200"
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-white">{row.role}</CardTitle>
+                  <CardTitle className="text-slate-900">{row.role}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-400">{row.capabilities}</p>
+                  <p className="text-sm text-slate-600">{row.capabilities}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </section>
 
-        <Separator className="my-10 bg-slate-800" />
+        <Separator className="my-10 bg-slate-200" />
 
         {/* Ecosystem */}
         <section id="ecosystem" className="scroll-mt-28 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <Globe className="size-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-slate-900">
                 VedMint ecosystem
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-600">
                 Explore all VedMint products and properties
               </p>
             </div>
@@ -418,11 +418,11 @@ export function DiscoverPageContent() {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-primary/40 hover:bg-slate-900/80"
+                className="group rounded-xl border border-slate-200 bg-white shadow-sm p-6 transition-all hover:border-teal-200 hover:bg-teal-50"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-white">{site.name}</p>
-                  <ExternalLink className="size-4 text-slate-600 group-hover:text-primary" />
+                  <p className="font-semibold text-slate-900">{site.name}</p>
+                  <ExternalLink className="size-4 text-slate-600 group-hover:text-teal-600" />
                 </div>
                 <p className="mt-1 font-mono text-xs text-slate-500">
                   {site.url.replace("https://", "")}
@@ -430,18 +430,18 @@ export function DiscoverPageContent() {
                 <p className="mt-1 text-xs font-medium text-primary/80">
                   {site.tagline}
                 </p>
-                <p className="mt-3 text-sm text-slate-400">{site.description}</p>
+                <p className="mt-3 text-sm text-slate-600">{site.description}</p>
               </a>
             ))}
           </div>
         </section>
 
         {/* Bottom CTA */}
-        <div className="mt-12 rounded-2xl border border-primary/20 bg-gradient-to-br from-violet-950/60 to-indigo-950/60 p-8 text-center">
+        <div className="mt-12 rounded-2xl border border-primary/20 bg-gradient-to-br from-slate-800 via-slate-900 to-teal-700 p-8 text-center">
           <h2 className="text-xl font-bold text-white">
             Start using {PRODUCT_NAME} today
           </h2>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-teal-100">
             Create your account and connect WhatsApp in minutes.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
