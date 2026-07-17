@@ -550,7 +550,7 @@ export function TemplateManager() {
                       {template.quality_score && (
                         <span
                           className={`text-[10px] uppercase font-medium ${template.quality_score === 'GREEN'
-                              ? 'text-emerald-400'
+                              ? 'text-emerald-600'
                               : template.quality_score === 'YELLOW'
                                 ? 'text-yellow-400'
                                 : 'text-red-400'
@@ -578,7 +578,7 @@ export function TemplateManager() {
                       </div>
                     )}
                     {statusKey === 'APPROVED' && !canSendMediaHeader(template) && (
-                      <div className="flex items-start gap-1.5 text-xs text-amber-300 bg-amber-950/20 border border-amber-900/40 rounded px-2 py-1.5">
+                      <div className="flex items-start gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
                         <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
                         <span>
                           This template has a media header but no sendable media
@@ -671,7 +671,7 @@ export function TemplateManager() {
           </DialogHeader>
 
           {form.category === 'Authentication' && (
-            <div className="flex items-start gap-2 rounded border border-amber-700/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
+            <div className="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <AlertCircle className="size-4 mt-0.5 shrink-0" />
               <p>
                 AUTHENTICATION templates have a fixed body + OTP button shape

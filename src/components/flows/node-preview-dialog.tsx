@@ -32,14 +32,14 @@ export function NodePreviewDialog({
       <DialogContent
         showCloseButton
         className={cn(
-          "fixed inset-0 top-0 left-0 z-50 flex h-dvh w-dvw max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-slate-950 p-0 sm:max-w-none",
+          "fixed inset-0 top-0 left-0 z-50 flex h-dvh w-dvw max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 sm:max-w-none",
         )}
       >
-        <DialogHeader className="shrink-0 border-b border-slate-800 px-6 py-4 text-left">
-          <DialogTitle className="text-lg text-white">
+        <DialogHeader className="shrink-0 border-b border-border px-6 py-4 text-left">
+          <DialogTitle className="text-lg text-foreground">
             Customer preview — {meta.label}
           </DialogTitle>
-          <p className="font-mono text-xs text-slate-500">{node.node_key}</p>
+          <p className="font-mono text-xs text-muted-foreground">{node.node_key}</p>
         </DialogHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <NodePreview node={node} fullscreen />

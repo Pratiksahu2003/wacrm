@@ -69,7 +69,7 @@ export const NODE_META: Record<
   NodeType,
   { label: string; icon: typeof Workflow; color: string }
 > = {
-  start: { label: "Start", icon: PlayCircle, color: "text-emerald-400" },
+  start: { label: "Start", icon: PlayCircle, color: "text-primary" },
   send_message: {
     label: "Send message",
     icon: MessageCircle,
@@ -110,7 +110,7 @@ export const NODE_META: Record<
     icon: UserPlus,
     color: "text-amber-400",
   },
-  end: { label: "End", icon: Flag, color: "text-slate-400" },
+  end: { label: "End", icon: Flag, color: "text-muted-foreground" },
 };
 
 /** Stored in each node's `config` — user-facing label, not sent to WhatsApp. */

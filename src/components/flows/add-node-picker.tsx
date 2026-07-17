@@ -49,16 +49,16 @@ function AddNodeGrid({ onPick }: { onPick: (type: NodeType) => void }) {
             key={type}
             type="button"
             onClick={() => onPick(type)}
-            className="flex gap-3 rounded-lg border border-slate-800 bg-slate-950 p-3 text-left transition-colors hover:border-primary/50 hover:bg-slate-800/80"
+            className="flex gap-3 rounded-lg border border-border bg-background p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/80"
           >
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-800"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted"
             >
               <Icon className={cn("h-4 w-4", meta.color)} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white">{meta.label}</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+              <p className="text-sm font-medium text-foreground">{meta.label}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                 {NODE_TIPS[type]}
               </p>
             </div>
@@ -85,19 +85,19 @@ function InlineAddNodeOverlay({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-foreground/20"
         aria-label="Close"
         onClick={onClose}
       />
       <div
-        className="relative flex max-h-[min(85vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl"
+        className="relative flex max-h-[min(85vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <h2 id="add-node-title" className="text-base font-semibold text-white">
+            <h2 id="add-node-title" className="text-base font-semibold text-foreground">
               Add a node
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-muted-foreground">
               Pick a step type. You can rename it after adding.
             </p>
           </div>
@@ -106,7 +106,7 @@ function InlineAddNodeOverlay({
             variant="ghost"
             size="icon-sm"
             onClick={onClose}
-            className="shrink-0 text-slate-400"
+            className="shrink-0 text-muted-foreground"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -158,7 +158,7 @@ export function AddNodePicker({
           variant="outline"
           size="sm"
           onClick={() => setOpen(true)}
-          className={cn("border-slate-700 bg-slate-900", triggerClassName)}
+          className={cn("border-border bg-card", triggerClassName)}
           aria-label="Add node"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -179,11 +179,11 @@ export function AddNodePicker({
       {!useInlineOverlay && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent
-            className="flex max-h-[min(85vh,720px)] flex-col gap-0 overflow-hidden border-slate-800 bg-slate-900 p-0 text-slate-100 sm:max-w-2xl"
+            className="flex max-h-[min(85vh,720px)] flex-col gap-0 overflow-hidden border-border bg-card p-0 text-foreground sm:max-w-2xl"
           >
-            <DialogHeader className="border-b border-slate-800 px-5 py-4">
+            <DialogHeader className="border-b border-border px-5 py-4">
               <DialogTitle>Add a node</DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogDescription className="text-muted-foreground">
                 Pick a step type. You can rename it after adding.
               </DialogDescription>
             </DialogHeader>

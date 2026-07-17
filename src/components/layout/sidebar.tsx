@@ -180,20 +180,25 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         )}
         aria-label="Primary"
       >
-        {/* Logo row. On mobile we put a close button here; on desktop the
-            close button is hidden since the sidebar is always-visible. */}
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-2.5 py-2.5">
-          <Link href="/dashboard" className="block min-w-0 flex-1">
+        {/* Logo row — symmetric 3-column grid keeps wordmark visually centered. */}
+        <div className="grid shrink-0 grid-cols-[2.25rem_1fr_2.25rem] items-center border-b border-sidebar-border px-2 py-3.5">
+          <div aria-hidden="true" />
+          <Link
+            href="/dashboard"
+            className="col-start-2 flex justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 rounded-md"
+          >
             <Logo variant="sidebar" />
           </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close menu"
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="col-start-3 flex items-center justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close menu"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Main navigation */}

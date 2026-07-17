@@ -41,7 +41,7 @@ const SPEC_DEFAULT_STAGES = [
   { name: "Qualified", color: "#eab308", position: 1 }, // yellow
   { name: "Proposal Sent", color: "#f97316", position: 2 }, // orange
   { name: "Negotiation", color: "#8b5cf6", position: 3 }, // purple
-  { name: "Won", color: "#22c55e", position: 4 }, // green
+  { name: "Won", color: "#14b8a6", position: 4 },
 ];
 
 export default function PipelinesPage() {
@@ -326,7 +326,7 @@ export default function PipelinesPage() {
           {/* Pipeline selector dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors data-[popup-open]:bg-muted"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5 data-[popup-open]:bg-primary/5"
             >
               <GitBranch className="h-4 w-4 text-primary" />
               <span className="font-semibold">
@@ -377,7 +377,7 @@ export default function PipelinesPage() {
             canAct={canEditSettings}
             gateReason="create pipelines"
             onClick={() => setNewPipelineOpen(true)}
-            className="border-border bg-card text-foreground hover:bg-muted"
+            className="border-border bg-white text-foreground shadow-sm"
           >
             <Plus className="mr-1 h-4 w-4" />
             Add Pipeline
@@ -430,7 +430,7 @@ export default function PipelinesPage() {
 
       {/* New Pipeline Dialog */}
       <Dialog open={newPipelineOpen} onOpenChange={setNewPipelineOpen}>
-        <DialogContent className="sm:max-w-sm bg-card border-border">
+        <DialogContent className="border-border bg-white sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-foreground">New Pipeline</DialogTitle>
           </DialogHeader>
@@ -449,7 +449,7 @@ export default function PipelinesPage() {
               Default stages (New Lead → Won) will be created automatically.
             </p>
           </div>
-          <DialogFooter className="bg-card/50 border-border">
+          <DialogFooter className="border-border bg-white">
             <Button
               variant="outline"
               onClick={() => setNewPipelineOpen(false)}

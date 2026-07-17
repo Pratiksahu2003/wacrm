@@ -77,13 +77,13 @@ export function FlowFirstRunWizard({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(true) : dismiss())}>
-      <DialogContent className="sm:max-w-lg bg-slate-900 text-slate-100">
+      <DialogContent className="sm:max-w-lg bg-card text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Workflow className="h-5 w-5 text-primary" />
             How flows work
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             A quick guide — you can reopen this anytime from the help button.
           </DialogDescription>
         </DialogHeader>
@@ -94,23 +94,23 @@ export function FlowFirstRunWizard({ open, onOpenChange }: Props) {
             return (
               <div
                 key={step.title}
-                className="flex gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                className="flex gap-3 rounded-lg border border-border bg-background/60 p-3"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-foreground">
                     {index + 1}. {step.title}
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-400">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {step.description}
                   </p>
                   <ul className="mt-2 space-y-1">
                     {step.bullets.map((b) => (
                       <li
                         key={b}
-                        className="flex items-start gap-1.5 text-xs text-slate-300"
+                        className="flex items-start gap-1.5 text-xs text-foreground/80"
                       >
                         <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500/80" />
                         {b}

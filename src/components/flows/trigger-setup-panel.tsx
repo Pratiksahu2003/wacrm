@@ -53,14 +53,14 @@ export function TriggerSetupPanel({
   return (
     <section
       className={cn(
-        "rounded-lg border border-slate-800 bg-slate-900",
+        "rounded-lg border border-border bg-card",
         compact ? "p-3" : "p-4",
         className,
       )}
     >
       <div className={cn("mb-3", compact && "mb-2")}>
-        <h2 className="text-sm font-semibold text-white">When should this run?</h2>
-        <p className="mt-0.5 text-xs text-slate-400">
+        <h2 className="text-sm font-semibold text-foreground">When should this run?</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {TRIGGER_HINTS[state.trigger_type]}
         </p>
       </div>
@@ -71,7 +71,7 @@ export function TriggerSetupPanel({
         )}
       >
         <div>
-          <label className="mb-1 block text-xs text-slate-400">Trigger</label>
+          <label className="mb-1 block text-xs text-muted-foreground">Trigger</label>
           <Select
             value={state.trigger_type}
             onValueChange={(v) =>
@@ -88,7 +88,7 @@ export function TriggerSetupPanel({
               }))
             }
           >
-            <SelectTrigger className="bg-slate-800">
+            <SelectTrigger className="bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -102,7 +102,7 @@ export function TriggerSetupPanel({
         </div>
         {state.trigger_type === "keyword" && (
           <div>
-            <label className="mb-1 block text-xs text-slate-400">
+            <label className="mb-1 block text-xs text-muted-foreground">
               Keywords (comma-separated)
             </label>
             <Input
@@ -125,7 +125,7 @@ export function TriggerSetupPanel({
                 }))
               }
               placeholder="help, hi, support"
-              className="bg-slate-800"
+              className="bg-muted"
             />
           </div>
         )}

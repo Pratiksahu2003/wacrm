@@ -64,10 +64,10 @@ export function FlowSetupGuide() {
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-white">
+          <h2 className="text-sm font-semibold text-foreground">
             Setup checklist
           </h2>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Follow these steps — most people finish in a few minutes.
           </p>
         </div>
@@ -91,16 +91,16 @@ export function FlowSetupGuide() {
               key={step.id}
               className={cn(
                 "flex items-start gap-3 rounded-md px-2 py-1.5 text-sm",
-                isCurrent && "bg-slate-900/80",
+                isCurrent && "bg-primary/10",
               )}
             >
               {step.done ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
               ) : (
                 <Circle
                   className={cn(
                     "mt-0.5 h-4 w-4 shrink-0",
-                    isCurrent ? "text-primary" : "text-slate-600",
+                    isCurrent ? "text-primary" : "text-muted-foreground/80",
                   )}
                 />
               )}
@@ -108,13 +108,13 @@ export function FlowSetupGuide() {
                 <span
                   className={cn(
                     "font-medium",
-                    step.done ? "text-slate-300" : "text-white",
+                    step.done ? "text-foreground/80" : "text-foreground",
                   )}
                 >
                   {index + 1}. {step.label}
                 </span>
                 {isCurrent && (
-                  <p className="mt-0.5 text-xs text-slate-400">{step.hint}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{step.hint}</p>
                 )}
               </div>
             </li>
@@ -123,21 +123,21 @@ export function FlowSetupGuide() {
       </ol>
 
       {currentStep === "trigger" && (
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-muted-foreground">
           Set keywords or trigger type in the <strong>When should this run?</strong>
           section below.
         </p>
       )}
 
       {currentStep === "build" && !hasNodes && (
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-muted-foreground">
           Start with the starter layout, or add a <strong>Start</strong> node
           then wire buttons to handoff nodes on the canvas.
         </p>
       )}
 
       {currentStep === "activate" && canActivate && !isActive && (
-        <div className="mt-4 flex items-center gap-2 border-t border-slate-800 pt-4">
+        <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
           <Button
             size="sm"
             onClick={() => void setStatus("active")}
@@ -150,14 +150,14 @@ export function FlowSetupGuide() {
             )}
             Activate flow
           </Button>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted-foreground">
             Saves your work and turns the flow on.
           </span>
         </div>
       )}
 
       {currentStep === "activate" && !canActivate && graphErrors.length > 0 && (
-        <p className="mt-3 text-xs text-amber-300">
+        <p className="mt-3 text-xs text-amber-700">
           Fix the {graphErrors.length} issue
           {graphErrors.length === 1 ? "" : "s"} in the panel below before
           activating.

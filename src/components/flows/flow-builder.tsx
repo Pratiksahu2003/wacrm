@@ -156,7 +156,7 @@ export function FlowBuilder() {
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">
+          <h2 className="text-sm font-semibold text-foreground">
             Nodes ({state.nodes.length})
           </h2>
           <AddNodePicker onAdd={addNode} />
@@ -208,30 +208,30 @@ function FallbackPolicyPanel({
   const p = state.fallback_policy;
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+    <section className="rounded-lg border border-border bg-card p-3">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between text-left"
       >
         <div>
-          <h2 className="text-sm font-semibold text-white">
+          <h2 className="text-sm font-semibold text-foreground">
             Advanced: fallback policy
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Unexpected replies and abandoned conversations — optional.
           </p>
         </div>
         {open ? (
-          <ChevronUp className="h-4 w-4 shrink-0 text-slate-500" />
+          <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
       </button>
       {open && (
-        <div className="mt-3 grid grid-cols-1 gap-3 border-t border-slate-800 pt-3 md:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-3 border-t border-border pt-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-slate-400">
+          <label className="mb-1 block text-xs text-muted-foreground">
             On unknown reply
           </label>
           <Select
@@ -246,7 +246,7 @@ function FallbackPolicyPanel({
               }))
             }
           >
-            <SelectTrigger className="bg-slate-800">
+            <SelectTrigger className="bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -259,7 +259,7 @@ function FallbackPolicyPanel({
         {p.on_unknown_reply === "reprompt" && (
           <>
             <div>
-              <label className="mb-1 block text-xs text-slate-400">
+              <label className="mb-1 block text-xs text-muted-foreground">
                 Max reprompts
               </label>
               <Input
@@ -279,11 +279,11 @@ function FallbackPolicyPanel({
                     },
                   }))
                 }
-                className="bg-slate-800"
+                className="bg-muted"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-slate-400">
+              <label className="mb-1 block text-xs text-muted-foreground">
                 After max reprompts
               </label>
               <Select
@@ -298,7 +298,7 @@ function FallbackPolicyPanel({
                   }))
                 }
               >
-                <SelectTrigger className="bg-slate-800">
+                <SelectTrigger className="bg-muted">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,7 +310,7 @@ function FallbackPolicyPanel({
           </>
         )}
         <div>
-          <label className="mb-1 block text-xs text-slate-400">
+          <label className="mb-1 block text-xs text-muted-foreground">
             Abandon timeout (hours)
           </label>
           <Input
@@ -330,7 +330,7 @@ function FallbackPolicyPanel({
                 },
               }))
             }
-            className="bg-slate-800"
+            className="bg-muted"
           />
         </div>
         </div>
@@ -342,7 +342,7 @@ function FallbackPolicyPanel({
 function EmptyNodesState() {
   const { addStarterScaffold } = useFlowEditor();
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
+    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
       <p>
         No nodes yet. Add the starter layout for a ready-made welcome menu,
         or add nodes one by one.
@@ -372,9 +372,9 @@ function EntryPicker({
 }) {
   if (state.nodes.length === 0) return null;
   return (
-    <section className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
+    <section className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
       <CornerDownRight className="h-4 w-4 shrink-0 text-primary" />
-      <span className="text-xs text-slate-400">Entry node:</span>
+      <span className="text-xs text-muted-foreground">Entry node:</span>
       <NodeKeySelect
         value={state.entry_node_id}
         nodes={state.nodes}
@@ -431,14 +431,14 @@ function NodeCard({
     <div
       ref={cardRef}
       className={cn(
-        "rounded-lg border bg-slate-900 transition-shadow duration-500",
+        "rounded-lg border bg-card transition-shadow duration-500",
         hasError
           ? "border-red-500/70 bg-red-500/20 ring-1 ring-red-500/45"
           : isEntry
             ? "border-primary/50"
-            : "border-slate-800",
+            : "border-border",
         isFlashed &&
-          "ring-2 ring-primary ring-offset-2 ring-offset-slate-950",
+          "ring-2 ring-primary ring-offset-2 ring-offset-background",
       )}
     >
       <button
@@ -449,15 +449,15 @@ function NodeCard({
         <meta.icon className={cn("h-4 w-4 shrink-0", meta.color)} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-white">
+            <span className="truncate text-sm font-medium text-foreground">
               {displayName}
             </span>
             {displayName !== meta.label && (
-              <span className="truncate text-[10px] text-slate-500">
+              <span className="truncate text-[10px] text-muted-foreground">
                 {meta.label}
               </span>
             )}
-            <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-500">
+            <code className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {node.node_key}
             </code>
             {isEntry && (
@@ -470,7 +470,7 @@ function NodeCard({
             )}
           </div>
           {!expanded && preview && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {preview}
             </p>
           )}
@@ -483,7 +483,7 @@ function NodeCard({
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="shrink-0 text-slate-400 hover:text-primary"
+            className="shrink-0 text-muted-foreground hover:text-primary"
             title="Fullscreen customer preview"
             onClick={(e) => {
               e.stopPropagation();
@@ -494,20 +494,20 @@ function NodeCard({
           </Button>
         )}
         {expanded ? (
-          <ChevronUp className="h-4 w-4 text-slate-500" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-slate-500" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
       {expanded && (
-        <div className="border-t border-slate-800 px-4 py-4">
+        <div className="border-t border-border px-4 py-4">
           {showPreview && (
             <div className="mb-4 flex justify-end">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-slate-700 text-slate-300"
+                className="border-border text-foreground/80"
                 onClick={() => setPreviewOpen(true)}
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -521,7 +521,7 @@ function NodeCard({
             onUpdate={onUpdate}
             onUpdateConfig={onUpdateConfig}
           />
-          <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
+          <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
             <div className="flex items-center gap-2">
               {!isEntry && (
                 <Button variant="ghost" size="sm" onClick={onSetEntry}>
@@ -590,11 +590,11 @@ function NodeConfigWithAdvanced({
         showAdvanced={showAdvanced}
         onUpdateConfig={onUpdateConfig}
       />
-      <div className="border-t border-slate-800 pt-3">
+      <div className="border-t border-border pt-3">
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80"
         >
           {showAdvanced ? (
             <ChevronUp className="h-3 w-3" />
@@ -606,7 +606,7 @@ function NodeConfigWithAdvanced({
         {showAdvanced && (
           <div className="mt-3 flex flex-col gap-3">
             <div>
-              <label className="mb-1 block text-xs text-slate-400">
+              <label className="mb-1 block text-xs text-muted-foreground">
                 Technical id (for analytics — changing this updates all
                 connections)
               </label>
@@ -615,11 +615,11 @@ function NodeConfigWithAdvanced({
                 onChange={(e) =>
                   onUpdate({ node_key: slugify(e.target.value, node.node_key) })
                 }
-                className="bg-slate-800 font-mono text-xs"
+                className="bg-muted font-mono text-xs"
               />
             </div>
             {hasReplyIds && (
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[10px] text-muted-foreground">
                 Reply IDs for each option are shown inline above. They&apos;re
                 returned by WhatsApp when a customer taps; you usually don&apos;t
                 need to touch them.

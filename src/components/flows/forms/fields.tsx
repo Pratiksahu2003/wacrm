@@ -46,7 +46,7 @@ export function FlowSelectContent({
   return (
     <SelectContent
       container={portalRoot}
-      className={cn("border-slate-700 bg-slate-900", className)}
+      className={cn("border-border bg-card", className)}
       {...props}
     >
       {children}
@@ -66,14 +66,14 @@ export function NodeNameField({
   const meta = NODE_META[nodeType];
   return (
     <div>
-      <label className="mb-1 block text-xs text-slate-400">Node name</label>
+      <label className="mb-1 block text-xs text-muted-foreground">Node name</label>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={`e.g. ${meta.label}`}
-        className="bg-slate-800"
+        className="bg-muted"
       />
-      <p className="mt-1 text-[10px] text-slate-500">
+      <p className="mt-1 text-[10px] text-muted-foreground">
         Your label for this step — shown on the canvas and when wiring
         connections.
       </p>
@@ -94,19 +94,19 @@ export function TextRow({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-slate-400">{label}</label>
+      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
       {rows > 1 ? (
         <Textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={rows}
-          className="bg-slate-800"
+          className="bg-muted"
         />
       ) : (
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-slate-800"
+          className="bg-muted"
         />
       )}
     </div>
@@ -128,7 +128,7 @@ export function NextNodeRow({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-slate-400">{label}</label>
+      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
       <NodeKeySelect
         value={value || null}
         nodes={allNodes}
@@ -161,7 +161,7 @@ export function NodeKeySelect({
       value={value ?? "__none__"}
       onValueChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <SelectTrigger className={cn("w-full min-w-0 bg-slate-800", className)}>
+      <SelectTrigger className={cn("w-full min-w-0 bg-muted", className)}>
         <SelectValue placeholder={placeholder ?? "—"} />
       </SelectTrigger>
       <FlowSelectContent className="z-[250] max-h-60">

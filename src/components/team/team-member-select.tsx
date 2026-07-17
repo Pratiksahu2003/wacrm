@@ -56,7 +56,7 @@ export function TeamMemberSelect({
     return (
       <div
         className={cn(
-          "flex h-9 items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-slate-500",
+          "flex h-9 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-sm text-muted-foreground",
           className,
         )}
       >
@@ -73,7 +73,7 @@ export function TeamMemberSelect({
       disabled={disabled || members.length === 0}
       onChange={(e) => onChange(e.target.value || null)}
       className={cn(
-        "h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50",
+        "h-9 w-full rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
     >

@@ -10,12 +10,12 @@ export function NodeTypeTip({ nodeType }: { nodeType: NodeType }) {
 
   return (
     <div
-      className="flex gap-2 rounded-md border border-slate-700/80 bg-slate-800/50 px-3 py-2 text-xs text-slate-300"
+      className="flex gap-2 rounded-md border border-border/80 bg-muted/50 px-3 py-2 text-xs text-foreground/80"
       role="note"
     >
       <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
       <div>
-        <span className="font-medium text-slate-200">{meta.label}:</span>{" "}
+        <span className="font-medium text-foreground">{meta.label}:</span>{" "}
         {tip}
       </div>
     </div>

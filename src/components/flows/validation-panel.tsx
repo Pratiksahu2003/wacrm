@@ -36,7 +36,7 @@ export function ValidationPanel() {
     // sticky-positioned over scrolled-behind node cards (a translucent
     // bg-emerald-500/10 would bleed through ugly).
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-600/50 bg-slate-950 p-3 text-sm font-medium text-emerald-300">
+      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
         <CircleCheck className="h-4 w-4 shrink-0" />
         No issues. Ready to activate.
       </div>
@@ -47,11 +47,11 @@ export function ValidationPanel() {
   return (
     <div
       className={cn(
-        "rounded-lg border bg-slate-950 p-3",
+        "rounded-lg border bg-background p-3",
         errors.length > 0 ? "border-red-500/40" : "border-amber-500/40",
       )}
     >
-      <div className="mb-2 flex items-center gap-2 text-xs text-slate-400">
+      <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
         {errors.length > 0 ? (
           <CircleAlert className="h-4 w-4 text-red-400" />
         ) : (
@@ -93,16 +93,16 @@ export function IssueLine({
   nodeLabel?: string;
 }) {
   const tone =
-    issue.severity === "error" ? "text-red-300" : "text-amber-300";
+    issue.severity === "error" ? "text-red-600" : "text-amber-700";
   const iconTone =
-    issue.severity === "error" ? "text-red-400" : "text-amber-400";
+    issue.severity === "error" ? "text-red-500" : "text-amber-600";
   const chip = nodeLabel ?? issue.node_key;
   const body = (
     <>
       <CircleAlert className={cn("mt-0.5 h-3 w-3 shrink-0", iconTone)} />
       <span className="min-w-0 flex-1">
         {chip && (
-          <code className="mr-1 rounded bg-slate-800 px-1 py-0.5 text-[10px] text-slate-400">
+          <code className="mr-1 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
             {chip}
           </code>
         )}
@@ -120,7 +120,7 @@ export function IssueLine({
         type="button"
         onClick={() => onJump(issue.node_key!)}
         className={cn(
-          "flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-slate-800/60",
+          "flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-muted/60",
           tone,
         )}
         aria-label={`Jump to node ${chip ?? issue.node_key}`}

@@ -296,7 +296,7 @@ export function ProfileForm() {
               required
             />
             {emailChangePending && (
-              <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
+              <p className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <Mail className="mt-0.5 size-3.5 shrink-0" />
                 <span>
                   Check the inbox for <strong>{profile?.email}</strong> and{' '}

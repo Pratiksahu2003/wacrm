@@ -131,13 +131,13 @@ function FlowNodeCard({ data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        "relative min-w-[220px] max-w-[260px] rounded-lg border bg-slate-900/95 px-3 py-2 text-left shadow-lg backdrop-blur transition-colors",
+        "relative min-w-[220px] max-w-[260px] rounded-lg border bg-card/95 px-3 py-2 text-left shadow-lg backdrop-blur transition-colors",
         hasError && !isFlashed && "border-red-500/70 bg-red-500/20 ring-1 ring-red-500/45",
         selected
           ? hasError
             ? "border-red-400 ring-1 ring-red-400/50"
             : "border-primary ring-1 ring-primary/40"
-          : !hasError && "border-slate-700 hover:border-slate-600",
+          : !hasError && "border-border hover:border-border",
         isFlashed && "!border-amber-400 ring-2 ring-amber-400/60",
       )}
     >
@@ -145,13 +145,13 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         <Handle
           type="target"
           position={Position.Left}
-          className="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
+          className="!h-2.5 !w-2.5 !border-border !bg-muted"
         />
       )}
 
       <div className="flex items-center gap-2">
         <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.color)} />
-        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-200">
+        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground">
           {displayName}
         </span>
         <div className="flex shrink-0 items-center gap-1">
@@ -166,23 +166,23 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         </div>
       </div>
       {displayName !== meta.label && (
-        <div className="truncate text-[10px] text-slate-500">{meta.label}</div>
+        <div className="truncate text-[10px] text-muted-foreground">{meta.label}</div>
       )}
-      <div className="truncate font-mono text-[10px] text-slate-500">
+      <div className="truncate font-mono text-[10px] text-muted-foreground">
         {node.node_key}
       </div>
       {summary && (
-        <div className="mt-1 line-clamp-2 text-xs text-slate-400">
+        <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           {summary}
         </div>
       )}
 
       {isMultiSlot && (
-        <div className="mt-2 flex flex-col gap-1 border-t border-slate-800 pt-2">
+        <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
           {slots.map((slot) => (
             <div
               key={slot.id}
-              className="relative flex items-center justify-between gap-2 rounded px-1 py-0.5 text-[11px] text-slate-300"
+              className="relative flex items-center justify-between gap-2 rounded px-1 py-0.5 text-[11px] text-foreground/80"
             >
               <span className="truncate" title={slot.label}>
                 {slot.label}
@@ -195,7 +195,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
                 // sits flush with the right edge of the card instead
                 // of floating at vertical center. The negative offset
                 // matches the card's px-3 + the handle's own radius.
-                className="!relative !right-auto !top-auto !h-2.5 !w-2.5 !translate-x-[12px] !transform-none !border-slate-600 !bg-slate-700"
+                className="!relative !right-auto !top-auto !h-2.5 !w-2.5 !translate-x-[12px] !transform-none !border-border !bg-muted"
               />
             </div>
           ))}
@@ -207,7 +207,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
           type="source"
           id={slots[0].id}
           position={Position.Right}
-          className="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
+          className="!h-2.5 !w-2.5 !border-border !bg-muted"
         />
       )}
     </div>
@@ -345,11 +345,11 @@ function FlowCanvasInner() {
       target: e.target,
       sourceHandle: e.sourceHandle,
       label: e.label,
-      labelStyle: { fill: "#cbd5e1", fontSize: 11 },
-      labelBgStyle: { fill: "#0f172a" },
+      labelStyle: { fill: "#64748b", fontSize: 11 },
+      labelBgStyle: { fill: "#ffffff" },
       labelBgPadding: [4, 2] as [number, number],
       labelBgBorderRadius: 4,
-      style: { stroke: "#475569", strokeWidth: 1.5 },
+      style: { stroke: "#94a3b8", strokeWidth: 1.5 },
     }));
 
     return rfEdges;
@@ -617,7 +617,7 @@ function FlowCanvasViewport({
     <div
       ref={setContainerRef}
       className={cn(
-        "w-full overflow-hidden border border-slate-800 bg-slate-950",
+        "w-full overflow-hidden border border-border bg-background",
         isMaximized
           ? "fixed inset-0 z-[100] h-screen w-screen rounded-none border-0"
           : "min-h-[min(560px,calc(100vh-16rem))] h-[min(560px,calc(100vh-16rem))] rounded-lg",
@@ -643,17 +643,17 @@ function FlowCanvasViewport({
         minZoom={0.2}
         maxZoom={1.5}
       >
-        <Background gap={24} size={1} color="#1e293b" />
+        <Background gap={24} size={1} color="#e2e8f0" />
         <Controls
-          className="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
+          className="!border-border !bg-card [&_button]:!border-border [&_button]:!bg-card [&_button:hover]:!bg-muted"
           showInteractive={false}
         />
         <MiniMap
           pannable
           zoomable
-          nodeColor="#334155"
-          maskColor="rgba(15, 23, 42, 0.7)"
-          className="!border !border-slate-700 !bg-slate-900"
+          nodeColor="#14b8a6"
+          maskColor="rgba(255, 255, 255, 0.75)"
+          className="!border !border-border !bg-card"
         />
         <CanvasFitViewOnResize active={isMaximized} />
         <Panel position="top-right" className="!m-2">
@@ -662,7 +662,7 @@ function FlowCanvasViewport({
             variant="outline"
             size="sm"
             onClick={() => void toggleMaximized()}
-            className="border-slate-700 bg-slate-900 text-slate-200 shadow-lg hover:bg-slate-800"
+            className="border-border bg-card text-foreground shadow-lg hover:bg-muted"
             aria-pressed={isMaximized}
             title={isMaximized ? "Exit fullscreen (Esc)" : "Open canvas fullscreen"}
           >
@@ -737,9 +737,9 @@ function NodeEditSheet({
 
   const panelBody = (
     <>
-      <div className="flex items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
+      <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
         <div>
-          <div className="flex items-center gap-2 text-slate-100">
+          <div className="flex items-center gap-2 text-foreground">
             <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
             <span className="text-base font-semibold">{displayName}</span>
             {isEntry && (
@@ -748,7 +748,7 @@ function NodeEditSheet({
               </span>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             {displayName !== meta.label ? (
               <span>{meta.label} · </span>
             ) : null}
@@ -760,7 +760,7 @@ function NodeEditSheet({
           variant="ghost"
           size="icon-sm"
           onClick={onClose}
-          className="shrink-0 text-slate-400"
+          className="shrink-0 text-muted-foreground"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -776,7 +776,7 @@ function NodeEditSheet({
         />
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
+      <div className="flex flex-col gap-2 border-t border-border px-5 py-3 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2">
           {!isEntry ? (
             <Button variant="ghost" size="sm" onClick={onSetEntry}>
@@ -787,7 +787,7 @@ function NodeEditSheet({
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-700 text-slate-300"
+              className="border-border text-foreground/80"
               onClick={() => setPreviewOpen(true)}
             >
               <Eye className="h-3.5 w-3.5" />
@@ -818,12 +818,12 @@ function NodeEditSheet({
           >
             <button
               type="button"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-foreground/20"
               aria-label="Close"
               onClick={onClose}
             />
             <div
-              className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-slate-800 bg-slate-950 shadow-2xl"
+              className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-border bg-background shadow-2xl"
             >
               <FlowPortalProvider root={portalRoot}>
                 {panelBody}
@@ -841,10 +841,10 @@ function NodeEditSheet({
         <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
           <SheetContent
             side="right"
-            className="flex w-full flex-col gap-0 border-l border-slate-800 bg-slate-950 p-0 sm:max-w-md"
+            className="flex w-full flex-col gap-0 border-l border-border bg-background p-0 sm:max-w-md"
           >
-            <SheetHeader className="border-b border-slate-800 px-5 py-4">
-              <SheetTitle className="flex items-center gap-2 text-slate-100">
+            <SheetHeader className="border-b border-border px-5 py-4">
+              <SheetTitle className="flex items-center gap-2 text-foreground">
                 <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
                 <span>{displayName}</span>
                 {isEntry && (
@@ -853,7 +853,7 @@ function NodeEditSheet({
                   </span>
                 )}
               </SheetTitle>
-              <SheetDescription className="text-[11px] text-slate-400">
+              <SheetDescription className="text-[11px] text-muted-foreground">
                 {displayName !== meta.label ? (
                   <span>{meta.label} · </span>
                 ) : null}
@@ -870,7 +870,7 @@ function NodeEditSheet({
               />
             </div>
 
-            <SheetFooter className="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
+            <SheetFooter className="border-t border-border px-5 py-3 sm:flex-row sm:justify-between">
               <div className="flex items-center gap-2">
                 {!isEntry ? (
                   <Button variant="ghost" size="sm" onClick={onSetEntry}>
@@ -881,7 +881,7 @@ function NodeEditSheet({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-slate-700 text-slate-300"
+                    className="border-border text-foreground/80"
                     onClick={() => setPreviewOpen(true)}
                   >
                     <Eye className="h-3.5 w-3.5" />
@@ -914,7 +914,7 @@ function NodeEditSheet({
 function CanvasEmptyState() {
   const { addStarterScaffold } = useFlowEditor();
   return (
-    <div className="flex h-[60vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-slate-700 bg-slate-950 px-6 text-center text-sm text-slate-500">
+    <div className="flex h-[60vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border bg-background px-6 text-center text-sm text-muted-foreground">
       <p className="max-w-sm">
         Start with the starter layout — a wired welcome menu you can edit —
         or add nodes manually.
@@ -972,7 +972,7 @@ function CanvasAddNodeButton({
           Add node
         </>
       }
-      triggerClassName="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-colors hover:bg-slate-800"
+      triggerClassName="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-lg transition-colors hover:bg-muted"
     />
   );
 }

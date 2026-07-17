@@ -43,8 +43,18 @@ export function Logo({ variant = "auth", className }: LogoProps) {
 
   if (variant === "sidebar") {
     return (
-      <div className={cn("inline-flex w-full items-center px-1 py-1", className)}>
-        <LogoImage className="h-7 w-auto max-w-full" />
+      <div
+        className={cn(
+          "flex w-full items-center justify-center",
+          className,
+        )}
+      >
+        <LogoImage
+          className={cn(
+            "mx-auto h-11 w-auto max-w-full object-contain object-center sm:h-12",
+            "drop-shadow-[0_1px_2px_rgba(15,23,42,0.06)]",
+          )}
+        />
       </div>
     );
   }
