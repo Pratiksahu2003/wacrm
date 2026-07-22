@@ -160,9 +160,24 @@ export default function InboxPage() {
         .from("whatsapp_config")
         .select("status")
         .eq("account_id", accountId)
+        .eq("is_default", 1)
+        .limit(1)
         .maybeSingle();
 
-      setWhatsappConnected(data?.status === "connected");
+      if (data?.status === "connected") {
+        setWhatsappConnected(true);
+        return;
+      }
+
+      const { data: anyConnected } = await supabase
+        .from("whatsapp_config")
+        .select("status")
+        .eq("account_id", accountId)
+        .eq("status", "connected")
+        .limit(1)
+        .maybeSingle();
+
+      setWhatsappConnected(anyConnected?.status === "connected");
     };
 
     checkConnection();

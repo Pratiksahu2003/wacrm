@@ -22,11 +22,10 @@ async function getAccountCountryCode(
     return cached.cc;
   }
 
-  const { data: config } = await supabase
-    .from('whatsapp_config')
-    .select('phone_number_id, access_token')
-    .eq('account_id', accountId)
-    .maybeSingle();
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  );
+  const { data: config } = await fetchAccountWhatsAppConfig(supabase, accountId);
 
   let cc: string | undefined;
   if (config?.phone_number_id && config.access_token) {

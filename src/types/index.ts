@@ -35,6 +35,8 @@ export interface Profile {
    * `@/lib/auth/roles` rather than comparing this string directly.
    */
   account_role?: AccountRole;
+  /** Assigned WhatsApp number (`whatsapp_config.id`) for outbound send. */
+  whatsapp_config_id?: string | null;
   created_at: string;
 }
 
@@ -65,6 +67,8 @@ export interface AccountMember {
   avatar_url: string | null;
   role: AccountRole;
   joined_at: string;
+  /** Assigned WhatsApp number id for outbound sends. */
+  whatsapp_config_id?: string | null;
 }
 
 /**
@@ -97,6 +101,10 @@ export interface Contact {
   avatar_url?: string;
   /** Lead owner — auth user id of the assigned teammate. */
   assigned_to?: string | null;
+  /** Marketing opt-out / DND — excluded from broadcasts when set. */
+  opted_out?: boolean | number | null;
+  opted_out_at?: string | null;
+  opt_out_source?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -205,12 +213,17 @@ export interface MessageReaction {
 export interface WhatsAppConfig {
   id: string;
   user_id: string;
+  account_id?: string;
   phone_number_id: string;
   waba_id?: string;
   access_token: string;
   verify_token?: string;
   /** Encrypted Meta App Secret — server/webhook only; never sent to the client. */
   meta_app_secret?: string;
+  /** Friendly label in Settings (e.g. "Sales line"). */
+  display_name?: string | null;
+  /** Account default number for broadcasts / automations / unassigned members. */
+  is_default?: boolean | number | null;
   status: 'connected' | 'disconnected';
   connected_at?: string;
   /**
@@ -223,19 +236,8 @@ export interface WhatsAppConfig {
   subscribed_apps_at?: string;
   /** Last error from /register; cleared on success. */
   last_registration_error?: string;
-}
-
-/** Optional per-member WhatsApp credentials (see member_whatsapp_config). */
-export interface MemberWhatsAppConfig {
-  user_id: string;
-  account_id: string;
-  use_personal: boolean;
-  phone_number_id?: string | null;
-  waba_id?: string | null;
-  access_token?: string | null;
-  verify_token?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Raw Meta status enum. We persist this verbatim from Meta (sync + webhook)

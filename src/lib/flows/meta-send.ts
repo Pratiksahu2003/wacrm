@@ -78,11 +78,13 @@ export async function engineSendText(
     contact.phone,
   )
 
-  const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', args.accountId)
-    .single()
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  )
+  const { data: config, error: configErr } = await fetchAccountWhatsAppConfig(
+    db,
+    args.accountId,
+  )
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }
@@ -188,11 +190,13 @@ export async function engineSendMedia(
     contact.phone,
   )
 
-  const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', args.accountId)
-    .single()
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  )
+  const { data: config, error: configErr } = await fetchAccountWhatsAppConfig(
+    db,
+    args.accountId,
+  )
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }
@@ -341,11 +345,13 @@ async function sendInteractiveViaMeta(
     contact.phone,
   )
 
-  const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', input.accountId)
-    .single()
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  )
+  const { data: config, error: configErr } = await fetchAccountWhatsAppConfig(
+    db,
+    input.accountId,
+  )
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }

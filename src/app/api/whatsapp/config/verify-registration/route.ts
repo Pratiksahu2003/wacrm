@@ -30,7 +30,7 @@ export const runtime = 'nodejs'
  * rather than a generic error toast. The combined `live` flag is
  * what the UI badges on.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -57,11 +57,15 @@ export async function GET() {
     })
   }
 
-  const { data: config } = await supabase
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', accountId)
-    .maybeSingle()
+  const preferredId = new URL(request.url).searchParams.get('id')
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  )
+  const { data: config } = await fetchAccountWhatsAppConfig(
+    supabase,
+    accountId,
+    preferredId,
+  )
 
   if (!config) {
     return NextResponse.json({

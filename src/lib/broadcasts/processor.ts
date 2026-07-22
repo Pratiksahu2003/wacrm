@@ -106,6 +106,33 @@ export async function processBroadcast(broadcastId: string): Promise<void> {
       const batch = (pending ?? []) as PendingRecipientRow[];
       if (batch.length === 0) break;
 
+      // Defense-in-depth: skip contacts that opted out after queueing.
+      for (const recipient of batch) {
+        const contact = asContact(recipient.contact);
+        const optedOut =
+          Boolean(contact?.opted_out) || Number(contact?.opted_out) === 1;
+        if (optedOut) {
+          await admin
+            .from('broadcast_recipients')
+            .update({
+              status: 'failed',
+              error_message: 'Skipped: contact opted out (DND)',
+            })
+            .eq('id', recipient.id);
+        }
+      }
+
+      const eligibleBatch = batch.filter((r) => {
+        const contact = asContact(r.contact);
+        return !(
+          Boolean(contact?.opted_out) || Number(contact?.opted_out) === 1
+        );
+      });
+      if (eligibleBatch.length === 0) {
+        await sleep(SEND_BATCH_DELAY_MS);
+        continue;
+      }
+
       if (!customValueIndex) {
         const { data: allPending } = await admin
           .from('broadcast_recipients')
@@ -122,7 +149,7 @@ export async function processBroadcast(broadcastId: string): Promise<void> {
         customValueIndex = await fetchCustomValueIndex(contactIds);
       }
 
-      const apiRecipients = batch
+      const apiRecipients = eligibleBatch
         .map((r) => ({ row: r, contact: asContact(r.contact) }))
         .filter((r) => r.contact?.phone)
         .map((r) => ({
@@ -153,7 +180,7 @@ export async function processBroadcast(broadcastId: string): Promise<void> {
           resultsByPhone = new Map(results.map((r) => [r.phone, r]));
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Send batch failed';
-          for (const recipient of batch) {
+          for (const recipient of eligibleBatch) {
             await admin
               .from('broadcast_recipients')
               .update({ status: 'failed', error_message: message })
@@ -164,7 +191,7 @@ export async function processBroadcast(broadcastId: string): Promise<void> {
         }
       }
 
-      for (const recipient of batch) {
+      for (const recipient of eligibleBatch) {
         const contact = asContact(recipient.contact);
         const phone = contact?.phone;
         const result = phone ? resultsByPhone.get(phone) : undefined;

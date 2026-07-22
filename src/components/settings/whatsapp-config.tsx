@@ -52,10 +52,14 @@ export function WhatsAppConfig() {
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
+  const [configs, setConfigs] = useState<WhatsAppConfigType[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
 
+  const [displayName, setDisplayName] = useState('');
+  const [isDefault, setIsDefault] = useState(true);
   const [phoneNumberId, setPhoneNumberId] = useState('');
   const [wabaId, setWabaId] = useState('');
   const [accessToken, setAccessToken] = useState('');
@@ -91,42 +95,50 @@ export function WhatsAppConfig() {
   const fetchConfig = useCallback(async (acctId: string) => {
     setLoading(true);
     try {
-      // Load form values from Supabase (shows what's in DB).
-      // Switched from `user_id` (which would only match the row's
-      // original author) to `account_id` so every member of the
-      // account sees the same saved configuration. UNIQUE(account_id)
-      // on the table guarantees the .maybeSingle() return type
-      // remains accurate.
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('whatsapp_config')
         .select(
-          'id, user_id, account_id, phone_number_id, waba_id, access_token, verify_token, status, connected_at, registered_at, subscribed_apps_at, last_registration_error, created_at, updated_at',
+          'id, user_id, account_id, phone_number_id, waba_id, access_token, verify_token, status, connected_at, registered_at, subscribed_apps_at, last_registration_error, display_name, is_default, created_at, updated_at',
         )
         .eq('account_id', acctId)
-        .maybeSingle();
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Failed to load config row:', error);
+        console.error('Failed to load config rows:', error);
       }
 
+      const list = (rows as WhatsAppConfigType[]) || [];
+      setConfigs(list);
+      const preferred =
+        list.find((r) => Number(r.is_default) === 1) || list[0] || null;
+      const data =
+        (selectedConfigId && list.find((r) => r.id === selectedConfigId)) ||
+        preferred;
+
       if (data) {
+        setSelectedConfigId(data.id);
         setConfig(data);
+        setDisplayName(data.display_name || '');
         setPhoneNumberId(data.phone_number_id || '');
         setWabaId(data.waba_id || '');
         setAccessToken(MASKED_TOKEN);
         setVerifyToken('');
         setPin('');
         setTokenEdited(false);
+        setIsDefault(Boolean(data.is_default));
       } else {
+        setSelectedConfigId(null);
         setConfig(null);
+        setDisplayName('');
         setPhoneNumberId('');
         setWabaId('');
         setAccessToken('');
         setVerifyToken('');
         setPin('');
         setTokenEdited(false);
+        setIsDefault(true);
       }
-      // Clear any stale probe result when reloading the row.
       setRegistrationProbe(null);
 
       try {
@@ -141,10 +153,12 @@ export function WhatsAppConfig() {
         console.error('App secret status check failed:', err);
       }
 
-      // Then verify health via the API (decrypts token + pings Meta)
       if (data) {
         try {
-          const res = await fetch('/api/whatsapp/config', { method: 'GET' });
+          const res = await fetch(
+            `/api/whatsapp/config${data.id ? `?id=${encodeURIComponent(data.id)}` : ''}`,
+            { method: 'GET' },
+          );
           const payload = await res.json();
 
           if (payload.connected) {
@@ -205,9 +219,12 @@ export function WhatsAppConfig() {
       // and writing direct to Supabase stores the token in plaintext,
       // which then fails decryption on every subsequent health check.
       const payload: Record<string, unknown> = {
+        id: selectedConfigId || config?.id || undefined,
         phone_number_id: phoneNumberId.trim(),
         waba_id: wabaId.trim() || null,
         verify_token: verifyToken.trim() || null,
+        display_name: displayName.trim() || null,
+        is_default: isDefault,
         // Optional — only sent when the user filled it in. The server
         // requires it on first save or when changing numbers; for a
         // simple token rotation, leaving it blank skips re-register.
@@ -275,7 +292,11 @@ export function WhatsAppConfig() {
   async function handleTestConnection() {
     try {
       setTesting(true);
-      const res = await fetch('/api/whatsapp/config', { method: 'GET' });
+      const id = selectedConfigId || config?.id;
+      const res = await fetch(
+        `/api/whatsapp/config${id ? `?id=${encodeURIComponent(id)}` : ''}`,
+        { method: 'GET' },
+      );
       const payload = await res.json();
 
       if (payload.connected) {
@@ -306,9 +327,13 @@ export function WhatsAppConfig() {
     setVerifyingRegistration(true);
     setRegistrationProbe(null);
     try {
-      const res = await fetch('/api/whatsapp/config/verify-registration', {
-        method: 'GET',
-      });
+      const id = selectedConfigId || config?.id;
+      const res = await fetch(
+        `/api/whatsapp/config/verify-registration${
+          id ? `?id=${encodeURIComponent(id)}` : ''
+        }`,
+        { method: 'GET' },
+      );
       const data = (await res.json()) as RegistrationProbe;
       setRegistrationProbe(data);
       if (data.live) {
@@ -335,7 +360,11 @@ export function WhatsAppConfig() {
 
     try {
       setResetting(true);
-      const res = await fetch('/api/whatsapp/config', { method: 'DELETE' });
+      const id = selectedConfigId || config?.id;
+      const res = await fetch(
+        `/api/whatsapp/config${id ? `?id=${encodeURIComponent(id)}` : ''}`,
+        { method: 'DELETE' },
+      );
       const data = await res.json();
 
       if (!res.ok) {
@@ -344,7 +373,9 @@ export function WhatsAppConfig() {
       }
 
       toast.success('Configuration cleared. You can now re-enter your credentials.');
+      setSelectedConfigId(null);
       setConfig(null);
+      setDisplayName('');
       setPhoneNumberId('');
       setWabaId('');
       setAccessToken('');
@@ -353,6 +384,7 @@ export function WhatsAppConfig() {
       setConnectionStatus('disconnected');
       setResetReason(null);
       setStatusMessage('');
+      if (accountId) await fetchConfig(accountId);
     } catch (err) {
       console.error('Reset error:', err);
       toast.error('Failed to reset configuration');
@@ -382,11 +414,11 @@ export function WhatsAppConfig() {
       <div className="space-y-6">
         {!canEditTeam && (
           <Alert className="bg-card border-border">
-            <AlertTitle className="text-foreground">Team WhatsApp (shared)</AlertTitle>
+            <AlertTitle className="text-foreground">Account WhatsApp numbers</AlertTitle>
             <AlertDescription className="text-muted-foreground">
-              This is your account&apos;s shared WhatsApp number. All teammates
-              send from it unless they enable personal credentials below. Only
-              owners/admins can change team settings.
+              These are the WhatsApp numbers for your account. You send from the
+              number assigned to you in Team settings (or the account default).
+              Only owners/admins can change credentials.
             </AlertDescription>
           </Alert>
         )}
@@ -427,61 +459,71 @@ export function WhatsAppConfig() {
         )}
 
         {/* Connection Status */}
-        <Alert className="bg-card border-border">
+        <Alert
+          className={
+            connectionStatus === 'connected'
+              ? 'border-emerald-500/40 bg-emerald-500/10'
+              : connectionStatus === 'disconnected'
+                ? 'border-red-500/40 bg-red-500/10'
+                : 'bg-card border-border'
+          }
+        >
           <div className="flex items-center gap-2">
             {connectionStatus === 'connected' ? (
-              <CheckCircle2 className="size-4 text-primary" />
+              <CheckCircle2 className="size-4 text-emerald-700" />
             ) : (
-              <XCircle className="size-4 text-red-500" />
+              <XCircle className="size-4 text-red-600" />
             )}
             <AlertTitle className="text-foreground mb-0">
               {connectionStatus === 'connected' ? 'Credentials valid' : 'Not Connected'}
             </AlertTitle>
           </div>
-          <AlertDescription className="text-muted-foreground">
+          <AlertDescription className="text-foreground/80">
             {connectionStatus === 'connected'
-              ? 'Your access token authenticates with Meta. See Registration status below for whether webhooks are actually wired.'
+              ? 'Your access token authenticates with Meta. See registration status below for whether webhooks are wired.'
               : statusMessage ||
                 'Configure your Meta API credentials below to connect your WhatsApp Business account.'}
           </AlertDescription>
         </Alert>
 
-        {/* Registration Status — the "is it actually live?" check.
-            Credentials being valid is necessary but not sufficient;
-            without a successful /register call the number won't
-            receive inbound events. Surface this dimension separately
-            so users don't trust a misleading green banner. */}
+        {/* Registration Status — historical /register success is not the
+            same as a live API session. When credentials are invalid,
+            do not claim Meta is delivering events. */}
         {config && (
           <Alert
             className={
-              isRegistered
-                ? 'bg-emerald-950/30 border-emerald-700/50'
-                : 'bg-amber-950/30 border-amber-700/50'
+              connectionStatus !== 'connected'
+                ? 'border-border bg-muted/50'
+                : isRegistered
+                  ? 'border-emerald-500/40 bg-emerald-500/10'
+                  : 'border-amber-500/40 bg-amber-500/10'
             }
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                {isRegistered ? (
-                  <CheckCircle2 className="size-4 text-emerald-400" />
+                {connectionStatus !== 'connected' ? (
+                  <AlertTriangle className="size-4 text-amber-600" />
+                ) : isRegistered ? (
+                  <CheckCircle2 className="size-4 text-emerald-700" />
                 ) : (
-                  <AlertTriangle className="size-4 text-amber-400" />
+                  <AlertTriangle className="size-4 text-amber-600" />
                 )}
-                <AlertTitle
-                  className={
-                    'mb-0 ' + (isRegistered ? 'text-emerald-200' : 'text-amber-200')
-                  }
-                >
-                  {isRegistered
-                    ? 'Registered — Meta will deliver events to VedMint CRM'
-                    : 'Not registered — Meta will not deliver events'}
+                <AlertTitle className="mb-0 text-foreground">
+                  {connectionStatus !== 'connected'
+                    ? isRegistered
+                      ? 'Registration paused — fix credentials first'
+                      : 'Not registered — Meta will not deliver events'
+                    : isRegistered
+                      ? 'Registered — Meta will deliver events to VedMint CRM'
+                      : 'Not registered — Meta will not deliver events'}
                 </AlertTitle>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleVerifyRegistration}
-                disabled={verifyingRegistration}
-                className="border-border bg-transparent text-foreground hover:bg-muted h-7"
+                disabled={verifyingRegistration || connectionStatus !== 'connected'}
+                className="border-border bg-background text-foreground hover:bg-muted h-7"
               >
                 {verifyingRegistration ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -491,8 +533,26 @@ export function WhatsAppConfig() {
                 Verify with Meta
               </Button>
             </div>
-            <AlertDescription className="text-muted-foreground mt-2 text-xs leading-relaxed">
-              {isRegistered ? (
+            <AlertDescription className="text-foreground/75 mt-2 text-xs leading-relaxed">
+              {connectionStatus !== 'connected' ? (
+                <>
+                  {isRegistered ? (
+                    <>
+                      This number was registered earlier
+                      {config.registered_at
+                        ? ` (${new Date(config.registered_at).toLocaleString()})`
+                        : ''}
+                      , but the access token is no longer valid. Paste a
+                      fresh token below and save — then verify registration.
+                    </>
+                  ) : (
+                    <>
+                      Connect with a valid access token first, then enter the
+                      2-step PIN and save to register the number.
+                    </>
+                  )}
+                </>
+              ) : isRegistered ? (
                 <>
                   Subscribed since{' '}
                   {config.registered_at
@@ -504,7 +564,7 @@ export function WhatsAppConfig() {
               ) : lastRegistrationError ? (
                 <>
                   Last attempt failed with:{' '}
-                  <span className="text-red-300">
+                  <span className="font-medium text-red-700">
                     &quot;{lastRegistrationError}&quot;
                   </span>
                   . Enter (or correct) the 2-step PIN below and click
@@ -521,20 +581,26 @@ export function WhatsAppConfig() {
             </AlertDescription>
 
             {registrationProbe && (
-              <div className="mt-3 rounded border border-border bg-card/60 px-3 py-2 space-y-1.5 text-[11px]">
+              <div className="mt-3 rounded border border-border bg-background px-3 py-2 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
-                  Diagnostic — last run: {' '}
-                  <span className={registrationProbe.live ? 'text-emerald-400' : 'text-amber-400'}>
+                  Diagnostic — last run:{' '}
+                  <span
+                    className={
+                      registrationProbe.live
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }
+                  >
                     {registrationProbe.live ? 'live' : 'not live'}
                   </span>
                 </p>
-                <ul className="space-y-0.5 text-muted-foreground">
+                <ul className="space-y-0.5 text-foreground/70">
                   {Object.entries(registrationProbe.checks).map(([k, v]) => (
                     <li key={k} className="flex items-center gap-1.5">
                       {v === true ? (
-                        <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="size-3 text-emerald-700 shrink-0" />
                       ) : v === false ? (
-                        <XCircle className="size-3 text-red-400 shrink-0" />
+                        <XCircle className="size-3 text-red-600 shrink-0" />
                       ) : (
                         <span className="size-3 rounded-full border border-border shrink-0" />
                       )}
@@ -543,7 +609,7 @@ export function WhatsAppConfig() {
                   ))}
                 </ul>
                 {(registrationProbe.errors ?? []).length > 0 && (
-                  <ul className="pt-1 space-y-0.5 text-red-300">
+                  <ul className="pt-1 space-y-0.5 text-red-700">
                     {registrationProbe.errors?.map((e, i) => (
                       <li key={i}>• {e}</li>
                     ))}
@@ -554,15 +620,184 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
+        {/* Multiple WhatsApp numbers */}
+        <Card className="bg-card border-border ring-0 ring-transparent">
+          <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+            <div>
+              <CardTitle className="text-foreground">WhatsApp numbers</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Add multiple numbers for this account, set a default for
+                broadcasts, and assign numbers to teammates in Team settings.
+              </CardDescription>
+            </div>
+            {canEditTeam ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedConfigId(null);
+                  setConfig(null);
+                  setDisplayName('');
+                  setPhoneNumberId('');
+                  setWabaId('');
+                  setAccessToken('');
+                  setVerifyToken('');
+                  setPin('');
+                  setTokenEdited(false);
+                  setIsDefault(configs.length === 0);
+                  setConnectionStatus('unknown');
+                  setStatusMessage('');
+                  setRegistrationProbe(null);
+                }}
+              >
+                Add number
+              </Button>
+            ) : null}
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {configs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No numbers yet. Fill in the credentials below to add the first
+                one.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border rounded-xl border border-border">
+                {configs.map((row) => {
+                  const active = row.id === (selectedConfigId || config?.id);
+                  return (
+                    <li
+                      key={row.id}
+                      className={`flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between ${
+                        active ? 'bg-muted/40' : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="min-w-0 text-left"
+                        onClick={() => {
+                          setSelectedConfigId(row.id);
+                          setConfig(row);
+                          setDisplayName(row.display_name || '');
+                          setPhoneNumberId(row.phone_number_id || '');
+                          setWabaId(row.waba_id || '');
+                          setAccessToken(MASKED_TOKEN);
+                          setVerifyToken('');
+                          setPin('');
+                          setTokenEdited(false);
+                          setIsDefault(Boolean(row.is_default));
+                          setRegistrationProbe(null);
+                        }}
+                      >
+                        <p className="truncate text-sm font-medium">
+                          {row.display_name || row.phone_number_id}
+                          {Boolean(row.is_default) ? (
+                            <span className="ml-2 text-xs font-normal text-teal-700">
+                              Default
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {row.phone_number_id}
+                          {row.waba_id ? ` · WABA ${row.waba_id}` : ''}
+                        </p>
+                      </button>
+                      <div className="flex shrink-0 gap-2">
+                        {!Boolean(row.is_default) && canEditTeam ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const res = await fetch('/api/whatsapp/numbers', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  id: row.id,
+                                  is_default: true,
+                                }),
+                              });
+                              if (!res.ok) {
+                                toast.error('Failed to set default');
+                                return;
+                              }
+                              toast.success('Default number updated');
+                              if (accountId) await fetchConfig(accountId);
+                            }}
+                          >
+                            Set default
+                          </Button>
+                        ) : null}
+                        {canEditTeam && configs.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={async () => {
+                              if (
+                                !window.confirm(
+                                  'Remove this WhatsApp number from the account?',
+                                )
+                              ) {
+                                return;
+                              }
+                              const res = await fetch(
+                                `/api/whatsapp/config?id=${encodeURIComponent(row.id)}`,
+                                { method: 'DELETE' },
+                              );
+                              if (!res.ok) {
+                                toast.error('Failed to remove number');
+                                return;
+                              }
+                              toast.success('Number removed');
+                              if (accountId) await fetchConfig(accountId);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
         {/* API Credentials */}
         <Card className="bg-card border-border ring-0 ring-transparent">
           <CardHeader>
-            <CardTitle className="text-foreground">API Credentials</CardTitle>
+            <CardTitle className="text-foreground">
+              {selectedConfigId || config?.id
+                ? 'Edit number credentials'
+                : 'Add number credentials'}
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Enter your Meta WhatsApp Business API credentials.
+              Enter Meta WhatsApp Business API credentials for this number.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-foreground/80">Display name</Label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Sales line"
+                disabled={!canEditTeam}
+                className="bg-muted border-border"
+              />
+            </div>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={isDefault}
+                disabled={!canEditTeam}
+                onChange={(e) => setIsDefault(e.target.checked)}
+              />
+              Use as account default (broadcasts &amp; unassigned members)
+            </label>
             <div className="space-y-2">
               <Label className="text-foreground/80">Phone Number ID</Label>
               <Input

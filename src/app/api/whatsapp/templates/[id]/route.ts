@@ -145,11 +145,13 @@ export async function PATCH(
     let submitPayload: TemplatePayload = payload
 
     if (!isDryRun()) {
-      const { data: config, error: configError } = await supabase
-        .from('whatsapp_config')
-        .select('*')
-        .eq('account_id', accountId)
-        .single()
+      const { fetchAccountWhatsAppConfig } = await import(
+        '@/lib/whatsapp/resolve-config'
+      )
+      const { data: config, error: configError } = await fetchAccountWhatsAppConfig(
+        supabase,
+        accountId,
+      )
       if (configError || !config) {
         return NextResponse.json(
           { error: 'WhatsApp not configured.' },
@@ -319,11 +321,13 @@ export async function DELETE(
     }
 
     if (existing.meta_template_id && !isDryRun()) {
-      const { data: config, error: configError } = await supabase
-        .from('whatsapp_config')
-        .select('*')
-        .eq('account_id', accountId)
-        .single()
+      const { fetchAccountWhatsAppConfig } = await import(
+        '@/lib/whatsapp/resolve-config'
+      )
+      const { data: config, error: configError } = await fetchAccountWhatsAppConfig(
+        supabase,
+        accountId,
+      )
       if (configError || !config || !config.waba_id) {
         return NextResponse.json(
           { error: 'WhatsApp not configured — cannot delete on Meta.' },

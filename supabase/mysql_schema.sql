@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   account_id VARCHAR(36),
   account_role VARCHAR(50),
   beta_features JSON,
+  whatsapp_config_id VARCHAR(36) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -49,6 +50,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   last_contacted_at TIMESTAMP NULL,
   last_contacted_via VARCHAR(50) NULL,
   first_inbound_message_at TIMESTAMP NULL,
+  opted_out TINYINT(1) NOT NULL DEFAULT 0,
+  opted_out_at TIMESTAMP NULL,
+  opt_out_source VARCHAR(50) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
@@ -59,6 +63,35 @@ CREATE TABLE IF NOT EXISTS contacts (
 CREATE INDEX idx_contacts_account_id ON contacts(account_id);
 CREATE INDEX idx_contacts_phone ON contacts(phone);
 CREATE INDEX idx_contacts_assigned_to ON contacts(assigned_to);
+CREATE INDEX idx_contacts_opted_out ON contacts(account_id, opted_out);
+
+CREATE TABLE IF NOT EXISTS account_compliance_settings (
+  account_id VARCHAR(36) NOT NULL,
+  opt_out_keywords JSON NULL,
+  opt_in_keywords JSON NULL,
+  opt_out_reply TEXT NULL,
+  opt_in_reply TEXT NULL,
+  auto_reply_enabled TINYINT(1) NOT NULL DEFAULT 1,
+  exclude_from_broadcasts TINYINT(1) NOT NULL DEFAULT 1,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (account_id),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id VARCHAR(36) NOT NULL,
+  account_id VARCHAR(36) NOT NULL,
+  actor_user_id VARCHAR(36) NULL,
+  action VARCHAR(80) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id VARCHAR(36) NULL,
+  meta JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_account_created (account_id, created_at),
+  KEY idx_audit_action (account_id, action),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS tags (
   id VARCHAR(36) PRIMARY KEY,
@@ -181,6 +214,8 @@ CREATE TABLE IF NOT EXISTS whatsapp_config (
   waba_id VARCHAR(255),
   access_token TEXT NOT NULL,
   verify_token VARCHAR(255),
+  display_name VARCHAR(255) NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
   status VARCHAR(50) DEFAULT 'disconnected',
   connected_at TIMESTAMP NULL,
   registered_at TIMESTAMP NULL,
@@ -190,11 +225,14 @@ CREATE TABLE IF NOT EXISTS whatsapp_config (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   meta_app_secret TEXT,
   UNIQUE(phone_number_id),
-  UNIQUE(account_id),
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE INDEX idx_whatsapp_config_account ON whatsapp_config(account_id);
+CREATE INDEX idx_whatsapp_config_account_default ON whatsapp_config(account_id, is_default);
+
+-- Legacy personal-override table (unused; kept so old DBs don't break reads).
 CREATE TABLE IF NOT EXISTS member_whatsapp_config (
   user_id VARCHAR(36) PRIMARY KEY,
   account_id VARCHAR(36) NOT NULL,

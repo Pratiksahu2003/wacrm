@@ -220,6 +220,144 @@ async function applyIncrementalPatches(connection) {
     'TIMESTAMP NULL',
   );
 
+  // Compliance / DND / opt-out
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'opted_out',
+    'TINYINT(1) NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'opted_out_at',
+    'TIMESTAMP NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'contacts',
+    'opt_out_source',
+    'VARCHAR(50) NULL',
+  );
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS account_compliance_settings (
+      account_id VARCHAR(36) NOT NULL,
+      opt_out_keywords JSON NULL,
+      opt_in_keywords JSON NULL,
+      opt_out_reply TEXT NULL,
+      opt_in_reply TEXT NULL,
+      auto_reply_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      exclude_from_broadcasts TINYINT(1) NOT NULL DEFAULT 1,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (account_id),
+      CONSTRAINT fk_compliance_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured account_compliance_settings table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id VARCHAR(36) NOT NULL,
+      account_id VARCHAR(36) NOT NULL,
+      actor_user_id VARCHAR(36) NULL,
+      action VARCHAR(80) NOT NULL,
+      entity_type VARCHAR(50) NOT NULL,
+      entity_id VARCHAR(36) NULL,
+      meta JSON NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_audit_account_created (account_id, created_at),
+      KEY idx_audit_action (account_id, action),
+      CONSTRAINT fk_audit_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured audit_log table');
+
+  // Multi WhatsApp numbers per account + member assignment
+  await addColumnIfMissing(
+    connection,
+    'whatsapp_config',
+    'display_name',
+    'VARCHAR(255) NULL',
+  );
+  await addColumnIfMissing(
+    connection,
+    'whatsapp_config',
+    'is_default',
+    'TINYINT(1) NOT NULL DEFAULT 0',
+  );
+  try {
+    // Allow multiple numbers per account (was UNIQUE(account_id)).
+    // MySQL binds the FK to that unique index — add a non-unique index
+    // first, then drop the unique key so the FK can keep using account_id.
+    await connection.query(
+      'ALTER TABLE whatsapp_config ADD INDEX idx_whatsapp_config_account_id (account_id)',
+    );
+    console.log('[Migration] Added non-unique index on whatsapp_config.account_id');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!/Duplicate key name|already exists/i.test(msg)) {
+      console.warn('[Migration] Add idx_whatsapp_config_account_id:', msg);
+    }
+  }
+  try {
+    await connection.query('ALTER TABLE whatsapp_config DROP INDEX account_id');
+    console.log('[Migration] Dropped UNIQUE(account_id) on whatsapp_config');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/needed in a foreign key/i.test(msg)) {
+      try {
+        await connection.query(
+          'ALTER TABLE whatsapp_config DROP FOREIGN KEY whatsapp_config_ibfk_1',
+        );
+        await connection.query('ALTER TABLE whatsapp_config DROP INDEX account_id');
+        await connection.query(`
+          ALTER TABLE whatsapp_config
+          ADD CONSTRAINT whatsapp_config_ibfk_1
+          FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+        `);
+        console.log(
+          '[Migration] Dropped UNIQUE(account_id) and restored FK on whatsapp_config',
+        );
+      } catch (inner) {
+        console.warn(
+          '[Migration] Drop whatsapp_config.account_id unique (FK path):',
+          inner instanceof Error ? inner.message : String(inner),
+        );
+      }
+    } else if (!/check that.+exists|Can't DROP|1091/i.test(msg)) {
+      console.warn('[Migration] Drop whatsapp_config.account_id unique:', msg);
+    }
+  }
+  // Mark existing single rows as default when none set.
+  await connection.query(`
+    UPDATE whatsapp_config wc
+    INNER JOIN (
+      SELECT account_id, MIN(created_at) AS first_at
+      FROM whatsapp_config
+      GROUP BY account_id
+    ) first_row
+      ON first_row.account_id = wc.account_id
+     AND first_row.first_at = wc.created_at
+    SET wc.is_default = 1
+    WHERE wc.account_id NOT IN (
+      SELECT account_id FROM (
+        SELECT account_id FROM whatsapp_config WHERE is_default = 1
+      ) t
+    )
+  `);
+  console.log('[Migration] Ensured default WhatsApp numbers per account');
+
+  await addColumnIfMissing(
+    connection,
+    'profiles',
+    'whatsapp_config_id',
+    'VARCHAR(36) NULL',
+  );
+
   // Subscription plan expiry cache (VedMint Billing auto-expire cron)
   await connection.query(`
     CREATE TABLE IF NOT EXISTS subscription_state (

@@ -43,11 +43,13 @@ export async function sendTemplateBatch(
 
   if (recipients.length === 0) return [];
 
-  const { data: config, error: configError } = await supabase
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', accountId)
-    .single();
+  const { fetchAccountWhatsAppConfig } = await import(
+    '@/lib/whatsapp/resolve-config'
+  );
+  const { data: config, error: configError } = await fetchAccountWhatsAppConfig(
+    supabase,
+    accountId,
+  );
 
   if (configError || !config) {
     throw new Error('WhatsApp not configured for this account.');

@@ -64,7 +64,7 @@ function supabaseAdmin() {
  *   { connected: false, reason: 'token_corrupted',  message: '...', needs_reset: true }
  *   { connected: false, reason: 'meta_api_error',   message: '...' }
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient()
 
@@ -89,11 +89,15 @@ export async function GET() {
       )
     }
 
-    const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('phone_number_id, access_token, status')
-      .eq('account_id', accountId)
-      .maybeSingle()
+    const preferredId = new URL(request.url).searchParams.get('id')
+    const { fetchAccountWhatsAppConfig } = await import(
+      '@/lib/whatsapp/resolve-config'
+    )
+    const { data: config, error: configError } = await fetchAccountWhatsAppConfig(
+      supabase,
+      accountId,
+      preferredId,
+    )
 
     if (configError) {
       console.error('Error fetching whatsapp_config:', configError)
@@ -203,7 +207,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { phone_number_id, waba_id, access_token, verify_token, pin } = body
+    const {
+      id: configId,
+      phone_number_id,
+      waba_id,
+      access_token,
+      verify_token,
+      pin,
+      display_name,
+      is_default: wantDefault,
+    } = body
 
     if (!access_token || !phone_number_id) {
       return NextResponse.json(
@@ -287,14 +300,44 @@ export async function POST(request: Request) {
       )
     }
 
-    // Look up any pre-existing row for this account so we know whether
-    // this number is already registered with Meta — if so we can skip
-    // /register when the user didn't provide a PIN this time around.
-    const { data: existing } = await supabase
+    // Look up existing row: by id, else by phone on this account, else none (insert).
+    let existing: {
+      id: string
+      registered_at: string | null
+      phone_number_id: string
+      meta_app_secret: string | null
+      is_default?: number | boolean | null
+    } | null = null
+
+    if (typeof configId === 'string' && configId.trim()) {
+      const { data } = await supabase
+        .from('whatsapp_config')
+        .select('id, registered_at, phone_number_id, meta_app_secret, is_default')
+        .eq('id', configId)
+        .eq('account_id', accountId)
+        .maybeSingle()
+      existing = data
+    }
+    if (!existing) {
+      const { data } = await supabase
+        .from('whatsapp_config')
+        .select('id, registered_at, phone_number_id, meta_app_secret, is_default')
+        .eq('account_id', accountId)
+        .eq('phone_number_id', phone_number_id)
+        .maybeSingle()
+      existing = data
+    }
+
+    const { count: existingCount } = await supabase
       .from('whatsapp_config')
-      .select('id, registered_at, phone_number_id, meta_app_secret')
+      .select('id', { count: 'exact', head: true })
       .eq('account_id', accountId)
-      .maybeSingle()
+
+    const makeDefault =
+      wantDefault === true ||
+      Boolean(existing?.is_default) ||
+      !existingCount ||
+      existingCount === 0
 
     const sameNumber =
       existing?.phone_number_id === phone_number_id &&
@@ -369,6 +412,10 @@ export async function POST(request: Request) {
       waba_id: waba_id || null,
       access_token: encryptedAccessToken,
       verify_token: encryptedVerifyToken,
+      display_name:
+        typeof display_name === 'string' && display_name.trim()
+          ? display_name.trim()
+          : null,
       // Preserve App Secret when saving credentials — it is managed via
       // PUT /api/whatsapp/config/app-secret.
       ...(existing?.meta_app_secret
@@ -380,12 +427,21 @@ export async function POST(request: Request) {
       subscribed_apps_at: subscribedAppsAt ?? null,
       last_registration_error: registrationError,
       updated_at: new Date().toISOString(),
+      is_default: makeDefault ? 1 : 0,
+    }
+
+    if (makeDefault) {
+      await supabase
+        .from('whatsapp_config')
+        .update({ is_default: 0 })
+        .eq('account_id', accountId)
     }
 
     if (existing) {
       const { error: updateError } = await supabase
         .from('whatsapp_config')
         .update(baseRow)
+        .eq('id', existing.id)
         .eq('account_id', accountId)
 
       if (updateError) {
@@ -396,13 +452,11 @@ export async function POST(request: Request) {
         )
       }
     } else {
-      // Insert with both columns: `account_id` is the tenancy key
-      // (NOT NULL post-017, UNIQUE so duplicates trip the constraint
-      // up-front), `user_id` is the audit column identifying which
-      // member of the account saved the config.
+      const { randomUUID } = await import('crypto')
       const { error: insertError } = await supabase
         .from('whatsapp_config')
         .insert({
+          id: randomUUID(),
           account_id: accountId,
           user_id: user.id,
           ...baseRow,
@@ -410,18 +464,8 @@ export async function POST(request: Request) {
 
       if (insertError) {
         console.error('Error inserting whatsapp_config:', insertError)
-        const detail =
-          typeof insertError === 'object' &&
-          insertError !== null &&
-          'details' in insertError
-            ? String((insertError as { details?: string }).details)
-            : null
         return NextResponse.json(
-          {
-            error: detail
-              ? `Failed to save configuration: ${detail}`
-              : 'Failed to save configuration',
-          },
+          { error: 'Failed to save configuration' },
           { status: 500 }
         )
       }
@@ -453,13 +497,11 @@ export async function POST(request: Request) {
 }
 
 /**
- * DELETE /api/whatsapp/config
+ * DELETE /api/whatsapp/config?id=...
  *
- * Removes the authenticated user's WhatsApp configuration row.
- * Used by the "Reset Configuration" button to recover from a corrupted
- * encrypted token (mismatched ENCRYPTION_KEY across environments).
+ * Removes one WhatsApp number (or all account numbers if id omitted — legacy reset).
  */
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     const supabase = await createClient()
 
@@ -480,10 +522,11 @@ export async function DELETE() {
       )
     }
 
-    const { error: deleteError } = await supabase
-      .from('whatsapp_config')
-      .delete()
-      .eq('account_id', accountId)
+    const id = new URL(request.url).searchParams.get('id')
+    let query = supabase.from('whatsapp_config').delete().eq('account_id', accountId)
+    if (id) query = query.eq('id', id)
+
+    const { error: deleteError } = await query
 
     if (deleteError) {
       console.error('Error deleting whatsapp_config:', deleteError)
@@ -491,6 +534,20 @@ export async function DELETE() {
         { error: 'Failed to delete configuration' },
         { status: 500 }
       )
+    }
+
+    // Ensure some default remains when numbers are left.
+    const { data: remaining } = await supabase
+      .from('whatsapp_config')
+      .select('id, is_default')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: true })
+
+    if (remaining && remaining.length > 0 && !remaining.some((r) => Number(r.is_default) === 1)) {
+      await supabase
+        .from('whatsapp_config')
+        .update({ is_default: 1 })
+        .eq('id', remaining[0].id)
     }
 
     return NextResponse.json({ success: true })

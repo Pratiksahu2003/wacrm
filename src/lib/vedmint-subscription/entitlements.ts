@@ -13,7 +13,8 @@ export type PlanCapability =
   | "templates"
   | "pipelines"
   | "contacts"
-  | "ai_credits";
+  | "ai_credits"
+  | "compliance";
 
 export type PlanLimitKey =
   | "max_contacts"
@@ -61,6 +62,14 @@ export const FEATURE_ALIASES: Record<PlanCapability, string[]> = {
   pipelines: ["pipelines", "pipeline", "deals", "crm"],
   contacts: ["contacts", "contact", "leads"],
   ai_credits: ["ai_credits", "ai", "credits"],
+  compliance: [
+    "compliance",
+    "opt_out",
+    "dnd",
+    "gdpr",
+    "audit_log",
+    "do_not_disturb",
+  ],
 };
 
 export const LIMIT_ALIASES: Record<PlanLimitKey, string[]> = {
@@ -118,6 +127,7 @@ export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
   pipelines: "manage pipelines",
   contacts: "manage contacts",
   ai_credits: "use AI credits",
+  compliance: "manage compliance & DND",
 };
 
 export function resolveFeatureKey(

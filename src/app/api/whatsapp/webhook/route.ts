@@ -502,6 +502,7 @@ async function processWebhook(
           config.user_id,
           decryptedAccessToken,
           requestId,
+          phoneNumberId,
         )
       }
     }
@@ -749,6 +750,7 @@ async function processMessage(
   configOwnerUserId: string,
   accessToken: string,
   requestId: string,
+  phoneNumberId: string,
 ) {
   const senderPhone = normalizePhone(message.from)
   const contactName = contact.profile.name
@@ -954,12 +956,41 @@ async function processMessage(
   })
   const flowConsumed = flowResult.consumed
 
+  // Compliance STOP/START — runs after message persist so inbox still
+  // shows the keyword, but before marketing automations fire.
+  const inboundText = contentText ?? message.text?.body ?? ''
+  let complianceHandled = false
+  if (!flowConsumed && inboundText.trim()) {
+    try {
+      const { handleInboundComplianceKeyword } = await import(
+        '@/lib/compliance'
+      )
+      const result = await handleInboundComplianceKeyword({
+        accountId,
+        contactId: contactRecord.id,
+        phone: senderPhone,
+        messageText: inboundText,
+        phoneNumberId,
+        accessToken,
+      })
+      complianceHandled = result.handled
+      if (result.handled) {
+        logWebhook('info', 'compliance_keyword_handled', {
+          request_id: requestId,
+          action: result.action,
+          meta_message_id: maskId(message.id),
+        })
+      }
+    } catch (err) {
+      console.error('[compliance] inbound handler failed:', err)
+    }
+  }
+
   // Fire any automations that react to this webhook event. All dispatches
   // run here (not earlier) so the contact, conversation, and inbound
   // message all exist before any step — including send_message — runs.
   // Fire-and-forget: a slow or failing automation must not block the
   // webhook's 200 OK response to Meta.
-  const inboundText = contentText ?? message.text?.body ?? ''
   const automationTriggers: (
     | 'new_contact_created'
     | 'first_inbound_message'
@@ -967,8 +998,10 @@ async function processMessage(
     | 'keyword_match'
   )[] = []
   // Content-level triggers are suppressed when a flow consumed the
-  // message — see the comment block above.
-  if (!flowConsumed) {
+  // message — see the comment block above. Also suppress keyword/
+  // new_message automations for STOP/START so marketing bots don't
+  // fight the compliance auto-reply.
+  if (!flowConsumed && !complianceHandled) {
     automationTriggers.push('new_message_received', 'keyword_match')
   }
   // new_contact_created fires only when the webhook just auto-created the

@@ -39,11 +39,13 @@ export async function GET() {
       return NextResponse.json({ configured: false, has_config: false })
     }
 
-    const { data: config, error } = await supabase
-      .from('whatsapp_config')
-      .select('meta_app_secret')
-      .eq('account_id', accountId)
-      .maybeSingle()
+    const { fetchAccountWhatsAppConfig } = await import(
+      '@/lib/whatsapp/resolve-config'
+    )
+    const { data: config, error } = await fetchAccountWhatsAppConfig(
+      supabase,
+      accountId,
+    )
 
     if (error) {
       console.error('[app-secret GET]', error)
@@ -119,6 +121,7 @@ export async function PUT(request: Request) {
       .from('whatsapp_config')
       .select('id')
       .eq('account_id', accountId)
+      .limit(1)
       .maybeSingle()
 
     if (fetchError) {

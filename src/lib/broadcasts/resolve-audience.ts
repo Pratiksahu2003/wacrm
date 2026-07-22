@@ -58,6 +58,22 @@ export async function resolveBroadcastAudience(
     contacts = contacts.filter((c) => !excludedIds.has(c.id));
   }
 
+  // Compliance: skip opted-out / DND contacts from marketing broadcasts.
+  try {
+    const { getComplianceSettings } = await import('@/lib/compliance');
+    const settings = await getComplianceSettings(accountId);
+    if (settings.exclude_from_broadcasts) {
+      contacts = contacts.filter((c) => {
+        const flagged =
+          Boolean((c as { opted_out?: boolean | number | null }).opted_out) ||
+          Number((c as { opted_out?: number }).opted_out) === 1;
+        return !flagged;
+      });
+    }
+  } catch (err) {
+    console.warn('[broadcasts] compliance filter skipped:', err);
+  }
+
   return contacts;
 }
 

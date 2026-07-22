@@ -69,6 +69,7 @@ interface Member {
   avatar_url: string | null;
   role: AccountRole;
   joined_at: string;
+  whatsapp_config_id?: string | null;
 }
 
 interface Invitation {
@@ -143,6 +144,14 @@ export function MembersTab() {
   const { user, canManageMembers } = useAuth();
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [whatsappNumbers, setWhatsappNumbers] = useState<
+    Array<{
+      id: string;
+      phone_number_id: string;
+      display_name: string | null;
+      is_default: boolean;
+    }>
+  >([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -169,6 +178,25 @@ export function MembersTab() {
       const mdata = (await mres.json()) as { members: Member[] };
       setMembers(mdata.members);
 
+      try {
+        const nres = await fetch('/api/whatsapp/numbers', {
+          credentials: 'include',
+        });
+        if (nres.ok) {
+          const ndata = (await nres.json()) as {
+            numbers?: Array<{
+              id: string;
+              phone_number_id: string;
+              display_name: string | null;
+              is_default: boolean;
+            }>;
+          };
+          setWhatsappNumbers(ndata.numbers || []);
+        }
+      } catch {
+        setWhatsappNumbers([]);
+      }
+
       if (ires) {
         if (!ires.ok) {
           const payload = await ires.json().catch(() => ({}));
@@ -191,6 +219,61 @@ export function MembersTab() {
   useEffect(() => {
     void loadEverything();
   }, [loadEverything]);
+
+  async function handleWhatsAppAssign(
+    member: Member,
+    whatsappConfigId: string | null,
+  ) {
+    if ((member.whatsapp_config_id || null) === whatsappConfigId) return;
+    const previous = member.whatsapp_config_id ?? null;
+    setPendingMemberAction(member.user_id);
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.user_id === member.user_id
+          ? { ...m, whatsapp_config_id: whatsappConfigId }
+          : m,
+      ),
+    );
+    try {
+      const res = await fetch(
+        `/api/account/members/${member.user_id}/whatsapp`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ whatsapp_config_id: whatsappConfigId }),
+        },
+      );
+      if (!res.ok) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.user_id === member.user_id
+              ? { ...m, whatsapp_config_id: previous }
+              : m,
+          ),
+        );
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || 'Failed to assign WhatsApp number');
+        return;
+      }
+      toast.success(
+        whatsappConfigId
+          ? `Assigned WhatsApp number to ${member.full_name || 'member'}`
+          : `${member.full_name || 'Member'} will use the default number`,
+      );
+    } catch (err) {
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.user_id === member.user_id
+            ? { ...m, whatsapp_config_id: previous }
+            : m,
+        ),
+      );
+      console.error('[MembersTab] whatsapp assign error:', err);
+      toast.error('Could not reach the server');
+    } finally {
+      setPendingMemberAction(null);
+    }
+  }
 
   async function handleRoleChange(member: Member, nextRole: AccountRole) {
     if (member.role === nextRole) return;
@@ -418,6 +501,59 @@ export function MembersTab() {
                         {roleMeta.label}
                       </span>
                     )}
+
+                    {whatsappNumbers.length > 0 ? (
+                      canManageMembers ? (
+                        <Select
+                          value={member.whatsapp_config_id || '__default__'}
+                          onValueChange={(v) => {
+                            if (!v) return;
+                            void handleWhatsAppAssign(
+                              member,
+                              v === '__default__' ? null : v,
+                            );
+                          }}
+                        >
+                          <SelectTrigger
+                            className="w-40 bg-muted border-border text-foreground"
+                            disabled={isBusy}
+                            title="WhatsApp number this member sends from"
+                          >
+                            <SelectValue placeholder="WhatsApp number" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__default__">
+                              Default number
+                            </SelectItem>
+                            {whatsappNumbers.map((n) => (
+                              <SelectItem key={n.id} value={n.id}>
+                                {n.display_name || n.phone_number_id}
+                                {n.is_default ? ' (default)' : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="max-w-40 truncate text-xs text-muted-foreground">
+                          {(() => {
+                            const assigned = whatsappNumbers.find(
+                              (n) => n.id === member.whatsapp_config_id,
+                            );
+                            if (assigned) {
+                              return (
+                                assigned.display_name || assigned.phone_number_id
+                              );
+                            }
+                            const def =
+                              whatsappNumbers.find((n) => n.is_default) ||
+                              whatsappNumbers[0];
+                            return def
+                              ? `Default · ${def.display_name || def.phone_number_id}`
+                              : 'Default number';
+                          })()}
+                        </span>
+                      )
+                    ) : null}
 
                     {/* Remove. Admin+ only; never on the owner row;
                         never on yourself. Pre-polish styling was
