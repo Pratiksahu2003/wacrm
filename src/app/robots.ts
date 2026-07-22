@@ -1,12 +1,21 @@
 import type { MetadataRoute } from "next";
 import { OFFICIAL_APP_URL } from "@/lib/brand";
+import { getSitemapIndexUrl } from "@/lib/seo/sitemap";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/docs", "/docs/"],
+        allow: [
+          "/",
+          "/pricing",
+          "/discover",
+          "/whatsapp-crm",
+          "/whatsapp-crm/",
+          "/docs",
+          "/docs/",
+        ],
         disallow: [
           "/login",
           "/signup",
@@ -23,10 +32,13 @@ export default function robots(): MetadataRoute.Robots {
           "/automations",
           "/flows",
           "/settings",
+          "/billing",
+          "/compliance",
           "/api/",
         ],
       },
     ],
-    sitemap: `${OFFICIAL_APP_URL}/sitemap.xml`,
+    host: OFFICIAL_APP_URL.replace(/^https?:\/\//, ""),
+    sitemap: getSitemapIndexUrl(),
   };
 }

@@ -1,32 +1,11 @@
 import type { MetadataRoute } from "next";
-import { OFFICIAL_APP_URL } from "@/lib/brand";
+import { buildSitemapEntries } from "@/lib/seo/sitemap";
 
+/**
+ * Single authoritative sitemap for all public indexable URLs.
+ * Served at /sitemap.xml — includes home, pricing, discover, docs,
+ * and ~1,000 WhatsApp CRM SEO landing pages.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
-  return [
-    {
-      url: OFFICIAL_APP_URL,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-    {
-      url: `${OFFICIAL_APP_URL}/docs/getting-started`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${OFFICIAL_APP_URL}/docs/whatsapp-setup`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${OFFICIAL_APP_URL}/docs/troubleshooting`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-  ];
+  return buildSitemapEntries();
 }

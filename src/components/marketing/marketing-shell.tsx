@@ -13,7 +13,8 @@ const NAV_LINKS = [
   { href: "/#about", label: "About" },
   { href: "/#features", label: "Features" },
   { href: "/#how-it-works", label: "How it works" },
-  { href: "/#ecosystem", label: "Ecosystem" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/whatsapp-crm", label: "Guides" },
   { href: "/discover", label: "Discover All" },
   { href: "/docs/getting-started", label: "Docs" },
 ] as const;
@@ -155,6 +156,8 @@ export function MarketingShell({
               </p>
               <ul className="mt-4 space-y-2 text-sm">
                 {[
+                  { href: "/pricing", label: "Pricing & plans" },
+                  { href: "/whatsapp-crm", label: "WhatsApp CRM guides" },
                   { href: "/discover", label: "Discover all features" },
                   { href: "/docs/getting-started", label: "Documentation" },
                   { href: "/login", label: "Sign in" },
