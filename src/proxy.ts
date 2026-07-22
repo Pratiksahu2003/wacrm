@@ -82,6 +82,7 @@ export async function proxy(request: NextRequest) {
     "/flows",
     "/settings",
     "/billing",
+    "/compliance",
   ];
   if (
     !user &&

@@ -114,6 +114,7 @@ export const NAV_CAPABILITY: Record<string, PlanCapability | "active"> = {
   "/broadcasts": "broadcasts",
   "/automations": "automations",
   "/flows": "flows",
+  "/compliance": "compliance",
 };
 
 export const CAPABILITY_LABEL: Record<PlanCapability, string> = {

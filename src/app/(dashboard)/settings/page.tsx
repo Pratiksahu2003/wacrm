@@ -10,7 +10,6 @@ import {
   Palette,
   UsersRound,
   Shield,
-  ShieldCheck,
   CreditCard,
   type LucideIcon,
 } from 'lucide-react';
@@ -27,7 +26,6 @@ import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { MembersTab } from '@/components/settings/members-tab';
 import { MetaAppSecretPanel } from '@/components/settings/meta-app-secret-panel';
 import { BillingSettingsPanel } from '@/components/settings/billing-settings-panel';
-import { CompliancePanel } from '@/components/settings/compliance-panel';
 
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User },
@@ -38,7 +36,6 @@ const TABS = [
   { value: 'appearance', label: 'Appearance', icon: Palette },
   { value: 'members', label: 'Team', icon: UsersRound },
   { value: 'billing', label: 'Billing', icon: CreditCard },
-  { value: 'compliance', label: 'Compliance', icon: ShieldCheck },
 ] as const;
 
 type TabValue = (typeof TABS)[number]['value'];
@@ -81,6 +78,14 @@ function SettingsPageInner() {
   const searchParams = useSearchParams();
 
   const queryTab = searchParams.get('tab');
+
+  // Old Settings → Compliance tab moved to its own page.
+  useEffect(() => {
+    if (queryTab === 'compliance') {
+      router.replace('/compliance');
+    }
+  }, [queryTab, router]);
+
   const urlTab: TabValue = isTabValue(queryTab) ? queryTab : 'profile';
 
   // Local state so clicks switch immediately even if the URL sync lags.
@@ -105,8 +110,8 @@ function SettingsPageInner() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, team, billing, compliance, WhatsApp® integration,
-          message templates, and tags.
+          Manage your profile, team, billing, WhatsApp® integration, message
+          templates, and tags.
         </p>
       </div>
 
@@ -151,8 +156,6 @@ function SettingsPageInner() {
       {tab === 'members' ? <MembersTab /> : null}
 
       {tab === 'billing' ? <BillingSettingsPanel /> : null}
-
-      {tab === 'compliance' ? <CompliancePanel /> : null}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   CreditCard,
   Crown,
   GitBranch,
+  Headset,
   LayoutDashboard,
   Lock,
   LogOut,
@@ -21,6 +22,7 @@ import {
   Radio,
   Settings,
   Shield,
+  ShieldCheck,
   BookOpen,
   User,
   UserCog,
@@ -84,6 +86,8 @@ interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
+  /** Open in a new browser tab (external support / marketing links). */
+  external?: boolean;
   /** Subscription capability required; shows a lock when unavailable. */
   capability?:
     | "messaging"
@@ -92,7 +96,8 @@ interface NavItem {
     | "broadcasts"
     | "automations"
     | "flows"
-    | "team";
+    | "team"
+    | "compliance";
 }
 
 const navItems: NavItem[] = [
@@ -103,11 +108,23 @@ const navItems: NavItem[] = [
   { href: "/broadcasts", label: "Broadcasts", icon: Radio, capability: "broadcasts" },
   { href: "/automations", label: "Automations", icon: Zap, capability: "automations" },
   { href: "/flows", label: "Flows", icon: Workflow, capability: "flows" },
+  {
+    href: "/compliance",
+    label: "Compliance",
+    icon: ShieldCheck,
+    capability: "compliance",
+  },
 ];
 
 const bottomNavItems: NavItem[] = [
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/docs/getting-started", label: "Docs", icon: BookOpen },
+  {
+    href: "https://www.vedmint.com/contact",
+    label: "Support",
+    icon: Headset,
+    external: true,
+  },
   { href: "/settings?tab=members", label: "Team", icon: UsersRound, capability: "team" },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -275,37 +292,55 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
           <ul className="flex flex-col gap-1">
             {bottomNavItems.map((item) => {
-              const isActive =
-                item.href.startsWith("/docs")
+              const isActive = item.external
+                ? false
+                : item.href.startsWith("/docs")
                   ? pathname.startsWith("/docs")
                   : pathname.startsWith(item.href.split("?")[0] ?? item.href);
               const locked = planLocked(item.capability);
+              const className = cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                locked && "opacity-80",
+              );
+              const lockIcon = locked ? (
+                <Lock
+                  className="h-3.5 w-3.5 text-amber-600"
+                  aria-label="Locked by plan"
+                />
+              ) : null;
+
               return (
                 <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    title={
-                      locked
-                        ? "Requires an active subscription plan — open Billing to upgrade"
-                        : undefined
-                    }
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                      locked && "opacity-80",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.label}</span>
-                    {locked && (
-                      <Lock
-                        className="h-3.5 w-3.5 text-amber-600"
-                        aria-label="Locked by plan"
-                      />
-                    )}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open VedMint support contact in a new tab"
+                      className={className}
+                      onClick={onClose}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.label}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      title={
+                        locked
+                          ? "Requires an active subscription plan — open Billing to upgrade"
+                          : undefined
+                      }
+                      className={className}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.label}</span>
+                      {lockIcon}
+                    </Link>
+                  )}
                 </li>
               );
             })}
