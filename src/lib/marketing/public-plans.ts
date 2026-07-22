@@ -4,8 +4,10 @@ export type PublicPlan = {
   id: string;
   name: string;
   description: string;
-  monthlyLabel: string;
-  yearlyLabel: string;
+  /** Numeric display amount without currency symbol, e.g. "999" */
+  monthlyAmount: string;
+  yearlyAmount: string;
+  currencySymbol: string;
   featured?: boolean;
   cta: string;
   href: string;
@@ -18,8 +20,9 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
     name: "Starter",
     description:
       "For small teams getting started with WhatsApp Business and a shared inbox.",
-    monthlyLabel: "From ₹999",
-    yearlyLabel: "From ₹9,990",
+    monthlyAmount: "999",
+    yearlyAmount: "9,990",
+    currencySymbol: "₹",
     cta: "Start free trial",
     href: "/signup",
     features: [
@@ -36,8 +39,9 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
     name: "Growth",
     description:
       "For growing sales and support teams that need broadcasts and automations.",
-    monthlyLabel: "From ₹2,499",
-    yearlyLabel: "From ₹24,990",
+    monthlyAmount: "2,499",
+    yearlyAmount: "24,990",
+    currencySymbol: "₹",
     featured: true,
     cta: "Choose Growth",
     href: "/signup",
@@ -55,8 +59,9 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
     name: "Business",
     description:
       "For multi-agent workspaces that need higher limits and stronger controls.",
-    monthlyLabel: "From ₹4,999",
-    yearlyLabel: "From ₹49,990",
+    monthlyAmount: "4,999",
+    yearlyAmount: "49,990",
+    currencySymbol: "₹",
     cta: "Choose Business",
     href: "/signup",
     features: [
@@ -75,8 +80,6 @@ export const CUSTOM_PLAN = {
   name: "Custom CRM / ERP",
   description:
     "Fully tailored CRM & ERP modules around your process — not a one-size SaaS template.",
-  monthlyLabel: "Custom quote",
-  yearlyLabel: "Custom quote",
   ctaPhone: "8738871535",
   ctaEmail: "support@vedmint.com",
   features: [
