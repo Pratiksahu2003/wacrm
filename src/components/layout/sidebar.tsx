@@ -84,11 +84,6 @@ interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
-  /**
-   * When true, the nav row renders a small "Beta" chip after the label.
-   * Purely informational — doesn't affect routing or access.
-   */
-  beta?: boolean;
   /** Subscription capability required; shows a lock when unavailable. */
   capability?:
     | "messaging"
@@ -107,7 +102,7 @@ const navItems: NavItem[] = [
   { href: "/pipelines", label: "Pipelines", icon: GitBranch, capability: "pipelines" },
   { href: "/broadcasts", label: "Broadcasts", icon: Radio, capability: "broadcasts" },
   { href: "/automations", label: "Automations", icon: Zap, capability: "automations" },
-  { href: "/flows", label: "Flows", icon: Workflow, beta: true, capability: "flows" },
+  { href: "/flows", label: "Flows", icon: Workflow, capability: "flows" },
 ];
 
 const bottomNavItems: NavItem[] = [
@@ -260,14 +255,6 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                         className="h-3.5 w-3.5 text-amber-600"
                         aria-label="Locked by plan"
                       />
-                    )}
-                    {item.beta && (
-                      <span
-                        aria-label="Beta feature"
-                        className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700"
-                      >
-                        Beta
-                      </span>
                     )}
                     {showUnreadDot && (
                       <span

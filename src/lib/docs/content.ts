@@ -279,8 +279,7 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
     id: "flows",
     title: "Flows",
     href: "/flows",
-    summary: "Interactive multi-step conversation flows with buttons and lists (Beta).",
-    badge: "Beta",
+    summary: "Interactive multi-step conversation flows with buttons and lists.",
     capabilities: [
       "Triggers: keyword, first inbound message, manual start from Inbox",
       "Nodes: send message, buttons, list, media, collect input, condition, set tag, handoff, end",

@@ -7,6 +7,7 @@ import {
   attachVedmintTokenIfNeeded,
   getVedmintConfig,
   purchaseSubscription,
+  rememberPurchasedBillingCycle,
   withVedmintToken,
   type BillingCycle,
 } from "@/lib/vedmint-subscription/server";
@@ -32,7 +33,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Billing changes are account-admin actions.
     const ctx = await requireRole("admin");
     const body = (await request.json().catch(() => ({}))) as {
       plan_id?: number;
@@ -51,13 +51,25 @@ export async function POST(request: Request) {
     const billingCycle: BillingCycle =
       body.billing_cycle === "yearly" ? "yearly" : "monthly";
 
+    // Remember monthly vs yearly so expiry math matches what was purchased.
+    try {
+      await rememberPurchasedBillingCycle({
+        accountId: ctx.accountId,
+        userId: ctx.userId,
+        billingCycle,
+        periodStart: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn("[POST /api/billing/purchase] remember cycle:", err);
+    }
+
     const { result, freshToken } = await withVedmintToken(ctx.userId, (jwt) =>
       purchaseSubscription(jwt, {
         planId,
         billingCycle,
         couponCode: body.coupon_code?.trim() || undefined,
-        successUrl: billingAppUrl("/billing/return"),
-        cancelUrl: billingAppUrl("/billing"),
+        successUrl: billingAppUrl("/billing?checkout=success"),
+        cancelUrl: billingAppUrl("/billing?checkout=cancelled"),
       }),
     );
 

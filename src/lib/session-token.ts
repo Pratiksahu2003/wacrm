@@ -9,7 +9,7 @@ function sessionSecret(): Uint8Array {
   );
 }
 
-/** Verify a vedmint_crm_session JWT. Works in Edge middleware and Node routes. */
+/** Verify a vedmint_crm_session JWT. Works in Proxy and Node routes. */
 export async function verifySessionToken(
   token: string,
 ): Promise<SessionUser | null> {

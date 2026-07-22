@@ -5,7 +5,7 @@ import {
   verifySessionToken,
 } from "@/lib/session-token";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let user: { id: string; email: string } | null = null;
   const token = readSessionTokenFromCookieHeader(
     request.headers.get("cookie"),

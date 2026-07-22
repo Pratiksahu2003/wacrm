@@ -138,14 +138,13 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     throw new UnauthorizedError();
   }
 
-  // Selecting through the FK gives us the account name in one
-  // query — `account:accounts!inner(id,name)` is Supabase's
-  // explicit-join syntax. `!inner` so a NULL account_id (which
-  // shouldn't exist) yields no row and trips the guard below
-  // rather than silently returning a half-populated profile.
-  const { data, error } = await supabase
+  // Prefer a simple profile row + separate account fetch. The MySQL
+  // emulator historically choked on PostgREST `!inner` embed hints
+  // (`account:accounts!inner(...)`), which surfaced as
+  // "Profile is not linked to an account" even when account_id was set.
+  const { data: profile, error } = await supabase
     .from("profiles")
-    .select("account_id, account_role, account:accounts!inner(id, name)")
+    .select("account_id, account_role")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -153,29 +152,33 @@ export async function getCurrentAccount(): Promise<AccountContext> {
     console.error("[getCurrentAccount] profile fetch error:", error);
     throw new ForbiddenError("Could not load account context");
   }
-  if (!data || !data.account_id || !data.account_role || !data.account) {
-    // Pre-migration profile, or a manual insert that skipped the
-    // signup trigger. The user is authenticated but the app has
-    // no way to scope their queries — treat as forbidden.
+  if (!profile?.account_id || !profile.account_role) {
     throw new ForbiddenError("Profile is not linked to an account");
   }
-  if (!isAccountRole(data.account_role)) {
-    // The DB enum should make this impossible, but a future
-    // migration that broadens the enum without updating TS would
-    // hit this — surface it rather than silently widening.
-    throw new ForbiddenError(`Unknown account role: ${data.account_role}`);
+  if (!isAccountRole(profile.account_role)) {
+    throw new ForbiddenError(`Unknown account role: ${profile.account_role}`);
   }
 
-  // Supabase's typed client returns related rows as an array even
-  // for `!inner` single-record joins; normalise to a single object.
-  const accountRow = Array.isArray(data.account) ? data.account[0] : data.account;
+  const { data: account, error: accountErr } = await supabase
+    .from("accounts")
+    .select("id, name")
+    .eq("id", profile.account_id)
+    .maybeSingle();
+
+  if (accountErr) {
+    console.error("[getCurrentAccount] account fetch error:", accountErr);
+    throw new ForbiddenError("Could not load account context");
+  }
+  if (!account?.id) {
+    throw new ForbiddenError("Profile is not linked to an account");
+  }
 
   return {
     supabase,
     userId: user.id,
-    accountId: data.account_id,
-    role: data.account_role,
-    account: { id: accountRow.id, name: accountRow.name },
+    accountId: profile.account_id,
+    role: profile.account_role,
+    account: { id: account.id, name: account.name },
   };
 }
 

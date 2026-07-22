@@ -10,7 +10,7 @@ import {
 import { getVedmintConfig } from "@/lib/vedmint-subscription/config";
 import { withVedmintToken } from "@/lib/vedmint-subscription/token";
 import { VedmintApiError } from "@/lib/vedmint-subscription/types";
-import { isSubscriptionActive, getExpiryInfo, pickExpiryDate } from "@/lib/vedmint-subscription/plan-utils";
+import { isSubscriptionActive, getExpiryInfo, resolveSubscriptionPeriodEnd } from "@/lib/vedmint-subscription/plan-utils";
 import { applyLocalPlanExpiry } from "@/lib/vedmint-subscription/expire-local";
 import {
   upsertSubscriptionState,
@@ -182,12 +182,50 @@ export async function getEntitlementSnapshot(
       return { status, current, planFeatures };
     });
 
-    const expiryDate = pickExpiryDate(
-      result.status?.expires_at as string | undefined,
-      result.current?.expires_at as string | undefined,
-      result.current?.current_period_end as string | undefined,
-      result.current?.renews_at as string | undefined,
-    );
+    const current = result.current;
+    const status = result.status;
+    const billingCycle =
+      (typeof current?.billing_cycle === "string" && current.billing_cycle) ||
+      (current?.plan && typeof current.plan === "object"
+        ? String(
+            (current.plan as { billing_cycle?: string; interval?: string })
+              .billing_cycle ||
+              (current.plan as { interval?: string }).interval ||
+              "",
+          )
+        : "") ||
+      "monthly";
+
+    const daysRemaining =
+      typeof status?.days_remaining === "number"
+        ? status.days_remaining
+        : typeof current?.days_remaining === "number"
+          ? current.days_remaining
+          : null;
+
+    const expiryDate = resolveSubscriptionPeriodEnd({
+      currentPeriodEnd:
+        (current?.current_period_end as string | undefined) ||
+        (current?.period_end as string | undefined) ||
+        (current?.end_date as string | undefined) ||
+        null,
+      renewsAt:
+        (current?.renews_at as string | undefined) ||
+        (current?.next_billing_at as string | undefined) ||
+        null,
+      expiresAt:
+        (current?.expires_at as string | undefined) ||
+        (current?.valid_until as string | undefined) ||
+        null,
+      statusExpiresAt: (status?.expires_at as string | undefined) || null,
+      periodStart:
+        (current?.current_period_start as string | undefined) ||
+        (current?.starts_at as string | undefined) ||
+        (current?.created_at as string | undefined) ||
+        null,
+      billingCycle,
+      daysRemaining,
+    });
     const expiry = getExpiryInfo(expiryDate);
 
     let active = isSubscriptionActive(
@@ -240,6 +278,11 @@ export async function getEntitlementSnapshot(
         status: statusLabel,
         planName,
         expiresAt: expiry.expiresAt,
+        billingCycle,
+        periodStart:
+          (current?.current_period_start as string | undefined) ||
+          (current?.starts_at as string | undefined) ||
+          null,
       });
     } catch (err) {
       // Table may not exist until first migrate — don't break entitlements.
@@ -363,14 +406,54 @@ export async function assertActiveSubscription(
     return { status, current };
   });
 
-  const expiryDate = pickExpiryDate(
-    result.status && "expires_at" in result.status
-      ? (result.status.expires_at as string | null | undefined)
-      : undefined,
-    result.current?.expires_at as string | undefined,
-    result.current?.current_period_end as string | undefined,
-    result.current?.renews_at as string | undefined,
-  );
+  const current = result.current;
+  const status = result.status;
+  const billingCycle =
+    (typeof current?.billing_cycle === "string" && current.billing_cycle) ||
+    (current?.plan && typeof current.plan === "object"
+      ? String(
+          (current.plan as { billing_cycle?: string; interval?: string })
+            .billing_cycle ||
+            (current.plan as { interval?: string }).interval ||
+            "",
+        )
+      : "") ||
+    "monthly";
+
+  const daysRemaining =
+    typeof (status as { days_remaining?: unknown } | null)?.days_remaining ===
+    "number"
+      ? (status as { days_remaining: number }).days_remaining
+      : typeof current?.days_remaining === "number"
+        ? current.days_remaining
+        : null;
+
+  const expiryDate = resolveSubscriptionPeriodEnd({
+    currentPeriodEnd:
+      (current?.current_period_end as string | undefined) ||
+      (current?.period_end as string | undefined) ||
+      (current?.end_date as string | undefined) ||
+      null,
+    renewsAt:
+      (current?.renews_at as string | undefined) ||
+      (current?.next_billing_at as string | undefined) ||
+      null,
+    expiresAt:
+      (current?.expires_at as string | undefined) ||
+      (current?.valid_until as string | undefined) ||
+      null,
+    statusExpiresAt:
+      status && "expires_at" in status
+        ? (status.expires_at as string | null | undefined)
+        : null,
+    periodStart:
+      (current?.current_period_start as string | undefined) ||
+      (current?.starts_at as string | undefined) ||
+      (current?.created_at as string | undefined) ||
+      null,
+    billingCycle,
+    daysRemaining,
+  });
   const expiry = getExpiryInfo(expiryDate);
 
   const active = isSubscriptionActive(

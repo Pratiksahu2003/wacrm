@@ -44,6 +44,8 @@ export interface VedmintPlan {
 export interface VedmintSubscription {
   id?: number | string;
   status?: string;
+  /** Derived when API omits it (e.g. status "Active" + days_remaining). */
+  active?: boolean;
   plan?: VedmintPlan | null;
   plan_id?: number;
   plan_name?: string;
@@ -53,6 +55,7 @@ export interface VedmintSubscription {
   expires_at?: string | null;
   renews_at?: string | null;
   cancelled_at?: string | null;
+  days_remaining?: number;
   amount?: number;
   currency?: string;
   features?: string[] | Record<string, unknown>;
@@ -65,6 +68,23 @@ export interface VedmintSubscriptionStatus {
   plan_id?: number | null;
   plan_name?: string | null;
   expires_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface VedmintInvoice {
+  id: number | string;
+  invoice_number?: string;
+  number?: string;
+  status?: string;
+  amount?: number;
+  total?: number;
+  currency?: string;
+  issued_at?: string | null;
+  created_at?: string | null;
+  paid_at?: string | null;
+  pdf_url?: string | null;
+  download_url?: string | null;
+  plan_name?: string | null;
   [key: string]: unknown;
 }
 

@@ -8,6 +8,7 @@ export {
   type VedmintSubscriptionStatus,
   type VedmintPurchaseResult,
   type VedmintFeatureCheck,
+  type VedmintInvoice,
 } from "./types";
 export {
   type PlanCapability,
@@ -25,6 +26,9 @@ export {
   formatDate,
   getExpiryInfo,
   pickExpiryDate,
+  resolveSubscriptionPeriodEnd,
+  parseSubscriptionDate,
+  addBillingPeriod,
   isPastExpiry,
 } from "./plan-utils";
 export { EXPIRING_SOON_DAYS } from "./entitlements";

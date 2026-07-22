@@ -10,6 +10,7 @@ import { isSubscriptionActive } from "@/lib/vedmint-subscription/plan-utils";
 
 type Phase = "polling" | "active" | "timeout" | "error";
 
+/** Legacy return path — prefer `/billing?checkout=success`. */
 export function BillingReturn() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("polling");
@@ -48,16 +49,22 @@ export function BillingReturn() {
           if (!cancelled) {
             setPhase("active");
             setMessage("Subscription is active. Taking you to billing…");
-            timer = setTimeout(() => router.replace("/billing"), 1600);
+            timer = setTimeout(
+              () => router.replace("/billing?checkout=success"),
+              800,
+            );
           }
           return;
         }
 
         if (attempts.current >= 20) {
           if (!cancelled) {
+            // Still send them to billing so they can refresh there.
             setPhase("timeout");
-            setMessage(
-              "Payment is still processing. You can refresh billing in a moment — webhooks can take a few seconds.",
+            setMessage("Taking you to billing to finish confirming…");
+            timer = setTimeout(
+              () => router.replace("/billing?checkout=success"),
+              1000,
             );
           }
           return;
@@ -76,6 +83,7 @@ export function BillingReturn() {
       }
     };
 
+    // Prefer landing on billing immediately; keep a short confirm pass here.
     void poll();
     return () => {
       cancelled = true;
@@ -102,9 +110,11 @@ export function BillingReturn() {
             : "Almost there"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-      {phase !== "polling" && phase !== "active" ? (
+      {phase === "error" ? (
         <div className="mt-6 flex gap-2">
-          <Button render={<Link href="/billing" />}>Back to billing</Button>
+          <Button render={<Link href="/billing?checkout=success" />}>
+            Back to billing
+          </Button>
           <Button
             variant="outline"
             onClick={() => window.location.reload()}

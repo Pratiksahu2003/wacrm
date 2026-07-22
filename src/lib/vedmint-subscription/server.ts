@@ -8,6 +8,8 @@ export {
   getPlanFeatures,
   purchaseSubscription,
   cancelSubscription,
+  listInvoices,
+  downloadInvoicePdf,
   checkFeature,
 } from "./client";
 export {
@@ -40,17 +42,21 @@ export type {
   VedmintSubscriptionStatus,
   VedmintPurchaseResult,
   VedmintFeatureCheck,
+  VedmintInvoice,
 } from "./types";
 export type {
   PlanCapability,
   PlanLimitKey,
   EntitlementSnapshot,
 } from "./entitlements";
+export { toExternalUserId } from "./external-id";
 export { applyLocalPlanExpiry } from "./expire-local";
 export {
   upsertSubscriptionState,
   listDueExpirations,
   markExpiredApplied,
   ensureSubscriptionStateTable,
+  rememberPurchasedBillingCycle,
+  getSubscriptionState,
 } from "./subscription-state";
-export { isSubscriptionActive, getExpiryInfo, pickExpiryDate } from "./plan-utils";
+export { isSubscriptionActive, getExpiryInfo, pickExpiryDate, resolveSubscriptionPeriodEnd, parseSubscriptionDate } from "./plan-utils";

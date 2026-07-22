@@ -77,7 +77,7 @@ function parseSelect(selectStr: string) {
   const nestedRelations: { name: string; alias: string; select: string }[] = [];
 
   for (const field of fields) {
-    const match = field.match(/^([a-zA-Z0-9_:]+)\((.*)\)$/);
+    const match = field.match(/^([a-zA-Z0-9_:!]+)\((.*)\)$/);
     if (match) {
       let nameWithAlias = match[1];
       let selectBody = match[2];
@@ -86,8 +86,11 @@ function parseSelect(selectStr: string) {
       if (nameWithAlias.includes(':')) {
         const parts = nameWithAlias.split(':');
         alias = parts[0];
-        name = parts[1];
+        name = parts.slice(1).join(':');
       }
+      // PostgREST embed hints: accounts!inner, messages!left, …
+      name = name.split('!')[0];
+      alias = alias.split('!')[0];
       nestedRelations.push({ name, alias, select: selectBody });
     } else {
       let name = field;
@@ -95,8 +98,9 @@ function parseSelect(selectStr: string) {
       if (field.includes(':')) {
         const parts = field.split(':');
         alias = parts[0];
-        name = parts[1];
+        name = parts.slice(1).join(':');
       }
+      name = name.split('!')[0];
       flatColumns.push(name);
     }
   }
