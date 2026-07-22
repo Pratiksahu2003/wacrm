@@ -22,15 +22,18 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
   Crown,
   Loader2,
+  Lock,
   Mail,
   MailX,
   Plus,
   Shield,
+  Sparkles,
   Trash2,
   UserCog,
   UserIcon,
@@ -59,6 +62,7 @@ import {
 import { RequireRole } from '@/components/auth/require-role';
 import { PlanGatedButton } from '@/components/billing/plan-gated-button';
 import { useAuth } from '@/hooks/use-auth';
+import { useEntitlements } from '@/hooks/use-entitlements';
 import type { AccountRole } from '@/lib/auth/roles';
 import { InviteMemberDialog } from './invite-member-dialog';
 
@@ -142,6 +146,13 @@ function fmtExpiresIn(iso: string): string {
 
 export function MembersTab() {
   const { user, canManageMembers } = useAuth();
+  const {
+    canUse,
+    loading: entitlementsLoading,
+    planName,
+    upgradeMessage,
+  } = useEntitlements();
+  const teamAllowed = canUse('team');
 
   const [members, setMembers] = useState<Member[]>([]);
   const [whatsappNumbers, setWhatsappNumbers] = useState<
@@ -377,13 +388,44 @@ export function MembersTab() {
 
   return (
     <div className="space-y-6 mt-4">
+      {!entitlementsLoading && !teamAllowed ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white">
+              <Lock className="size-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                Team invites require the Business plan
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {upgradeMessage('team')}
+                {planName ? (
+                  <span className="text-slate-500">
+                    {' '}
+                    Current plan: {planName}.
+                  </span>
+                ) : null}
+              </p>
+            </div>
+          </div>
+          <Button
+            className="shrink-0 bg-teal-600 text-white hover:bg-teal-500"
+            render={<Link href="/billing" />}
+          >
+            <Sparkles className="size-4" />
+            Upgrade to Business
+          </Button>
+        </div>
+      ) : null}
+
       {/* Header + invite button */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Team members</h2>
           <p className="text-sm text-muted-foreground">
             Invite sub-users and manage roles. Assign leads from Contacts or
-            the Inbox.
+            the Inbox. Available on the Business plan.
           </p>
         </div>
         <RequireRole min="admin">

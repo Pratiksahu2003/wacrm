@@ -9,6 +9,7 @@ import {
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
 import {
   assertCanPerform,
+  assertPlanLimit,
   PlanGateError,
   planGateResponse,
 } from '@/lib/vedmint-subscription/server'
@@ -326,6 +327,17 @@ export async function POST(request: Request) {
         .eq('phone_number_id', phone_number_id)
         .maybeSingle()
       existing = data
+    }
+
+    if (!existing) {
+      try {
+        await assertPlanLimit(user.id, accountId, 'max_whatsapp_numbers', {
+          adding: 1,
+        })
+      } catch (err) {
+        if (err instanceof PlanGateError) return planGateResponse(err)
+        throw err
+      }
     }
 
     const { count: existingCount } = await supabase

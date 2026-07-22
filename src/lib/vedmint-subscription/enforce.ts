@@ -19,8 +19,12 @@ import {
 import {
   FEATURE_ALIASES,
   featureEnabledInMap,
+  isBusinessPlan,
   pickLimitValue,
   resolveFeatureKey,
+  TEAM_BUSINESS_ONLY_MESSAGE,
+  whatsappNumberLimitForPlan,
+  whatsappNumberLimitMessage,
   type EntitlementSnapshot,
   type PlanCapability,
   type PlanLimitKey,
@@ -101,6 +105,7 @@ async function loadUsage(accountId: string): Promise<Partial<Record<PlanLimitKey
   const [
     contacts,
     members,
+    whatsappNumbers,
     automations,
     activeAutomations,
     flows,
@@ -113,6 +118,10 @@ async function loadUsage(accountId: string): Promise<Partial<Record<PlanLimitKey
     ),
     query<{ c: number }>(
       "SELECT COUNT(*) AS c FROM profiles WHERE account_id = ?",
+      [accountId],
+    ),
+    query<{ c: number }>(
+      "SELECT COUNT(*) AS c FROM whatsapp_config WHERE account_id = ?",
       [accountId],
     ),
     query<{ c: number }>(
@@ -142,6 +151,7 @@ async function loadUsage(accountId: string): Promise<Partial<Record<PlanLimitKey
   return {
     max_contacts: Number(contacts[0]?.c ?? 0),
     max_team_members: Number(members[0]?.c ?? 0),
+    max_whatsapp_numbers: Number(whatsappNumbers[0]?.c ?? 0),
     max_automations: Number(automations[0]?.c ?? 0),
     max_active_automations: Number(activeAutomations[0]?.c ?? 0),
     max_flows: Number(flows[0]?.c ?? 0),
@@ -271,6 +281,12 @@ export async function getEntitlementSnapshot(
       (result.status?.plan_name as string) ||
       null;
 
+    const planSlug =
+      (plan && typeof plan.slug === "string" ? plan.slug : null) ||
+      (typeof result.current?.plan_slug === "string"
+        ? result.current.plan_slug
+        : null);
+
     try {
       await upsertSubscriptionState({
         accountId,
@@ -308,6 +324,8 @@ export async function getEntitlementSnapshot(
       ),
     };
 
+    const businessPlan = isBusinessPlan({ planName, planSlug });
+
     const features: Record<string, boolean> = {};
     (Object.keys(FEATURE_ALIASES) as PlanCapability[]).forEach((cap) => {
       const enabled = featureEnabledInMap(featureRaw, cap);
@@ -315,11 +333,15 @@ export async function getEntitlementSnapshot(
       features[cap] = enabled == null ? active : active && enabled;
     });
 
+    // Hard gate: Team invites / seats are Business-plan only.
+    features.team = Boolean(active && businessPlan);
+
     const limits: Record<string, number | null> = {};
     (
       [
         "max_contacts",
         "max_team_members",
+        "max_whatsapp_numbers",
         "max_broadcast_recipients",
         "max_broadcasts_per_month",
         "max_automations",
@@ -332,6 +354,17 @@ export async function getEntitlementSnapshot(
       limits[key] = pickLimitValue(limitsRaw, key);
     });
 
+    // Non-Business plans: only the account owner (1 seat) — no invites.
+    if (!businessPlan) {
+      limits.max_team_members = 1;
+    }
+
+    // Hard limits by VedMint CRM plan tier (override remote catalog).
+    // Starter=1, Growth=10, Business=unlimited (null).
+    limits.max_whatsapp_numbers = whatsappNumberLimitForPlan({
+      planName,
+      planSlug,
+    });
     return {
       configured: true,
       active,
@@ -497,6 +530,46 @@ export async function assertPlanCapability(
 
   await assertActiveSubscription(userId, opts?.accountId);
 
+  // Team is Business-plan only — enforce locally even if remote
+  // check-feature aliases are missing / allow-by-default for active subs.
+  if (capability === "team") {
+    const accountId = opts?.accountId;
+    if (accountId) {
+      const snap = await getEntitlementSnapshot(userId, accountId);
+      if (!snap.features.team) {
+        throw new PlanGateError(TEAM_BUSINESS_ONLY_MESSAGE, {
+          code: "FEATURE_NOT_ALLOWED",
+          status: 403,
+          feature: "team",
+        });
+      }
+    } else {
+      // No account context — still require Business via a fresh snapshot path
+      // using entitlements after resolving from token below.
+      const { result } = await withVedmintToken(userId, async (jwt) => {
+        const current = await getCurrentSubscription(jwt).catch(() => null);
+        return { current };
+      });
+      const plan =
+        result.current?.plan && typeof result.current.plan === "object"
+          ? result.current.plan
+          : null;
+      const planName =
+        (result.current?.plan_name as string) ||
+        (plan?.name as string) ||
+        null;
+      const planSlug =
+        (plan && typeof plan.slug === "string" ? plan.slug : null) || null;
+      if (!isBusinessPlan({ planName, planSlug })) {
+        throw new PlanGateError(TEAM_BUSINESS_ONLY_MESSAGE, {
+          code: "FEATURE_NOT_ALLOWED",
+          status: 403,
+          feature: "team",
+        });
+      }
+    }
+  }
+
   const aliases = FEATURE_ALIASES[capability];
   let lastError: unknown = null;
 
@@ -507,7 +580,9 @@ export async function assertPlanCapability(
       );
       if (result.allowed === false) {
         throw new PlanGateError(
-          `Your plan does not allow you to ${capability.replace(/_/g, " ")}. Upgrade to continue.`,
+          capability === "team"
+            ? TEAM_BUSINESS_ONLY_MESSAGE
+            : `Your plan does not allow you to ${capability.replace(/_/g, " ")}. Upgrade to continue.`,
           {
             code: "FEATURE_NOT_ALLOWED",
             status: 403,
@@ -541,6 +616,10 @@ export async function assertPlanCapability(
       continue;
     }
   }
+
+  // Team already passed the Business gate above — allow if check-feature
+  // keys are unknown on the remote API.
+  if (capability === "team") return;
 
   // If every check-feature call failed (unknown keys), allow when sub is active.
   if (lastError) {
@@ -581,7 +660,9 @@ export async function assertPlanLimit(
   const adding = opts?.adding ?? 1;
   if (usage + adding > limit) {
     throw new PlanGateError(
-      `Plan limit reached for ${limitKey.replace(/_/g, " ")} (${usage}/${limit}). Upgrade your plan to continue.`,
+      limitKey === "max_whatsapp_numbers"
+        ? whatsappNumberLimitMessage(limit)
+        : `Plan limit reached for ${limitKey.replace(/_/g, " ")} (${usage}/${limit}). Upgrade your plan to continue.`,
       {
         code: "PLAN_LIMIT",
         status: 403,

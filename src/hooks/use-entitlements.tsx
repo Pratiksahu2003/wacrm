@@ -13,6 +13,7 @@ import {
 
 import {
   CAPABILITY_LABEL,
+  TEAM_BUSINESS_ONLY_MESSAGE,
   type EntitlementSnapshot,
   type PlanCapability,
   type PlanLimitKey,
@@ -155,6 +156,9 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
       }
       if (!snap.active) {
         return "Your subscription is inactive. Choose a plan to unlock the CRM.";
+      }
+      if (capability === "team") {
+        return TEAM_BUSINESS_ONLY_MESSAGE;
       }
       if (capability) {
         return `Your plan can’t ${CAPABILITY_LABEL[capability]}. Upgrade to continue.`;

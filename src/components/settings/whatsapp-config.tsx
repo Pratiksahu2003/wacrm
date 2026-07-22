@@ -14,10 +14,13 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
+  Lock,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useCan } from '@/hooks/use-can';
+import { useEntitlements } from '@/hooks/use-entitlements';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +33,7 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
+import { whatsappNumberLimitMessage } from '@/lib/vedmint-subscription';
 
 const MASKED_TOKEN = '••••••••••••••••';
 
@@ -38,6 +42,7 @@ type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
 
 export function WhatsAppConfig() {
   const supabase = createClient();
+  const router = useRouter();
   // After multi-user, whatsapp_config is one-row-per-account, not
   // one-row-per-user. We pull `accountId` straight off the auth
   // context and key every read off it — so a teammate who just
@@ -45,6 +50,13 @@ export function WhatsAppConfig() {
   // having to re-enter anything.
   const { user, accountId, loading: authLoading, profileLoading } = useAuth();
   const canEditTeam = useCan('edit-settings');
+  const {
+    withinLimit,
+    remaining,
+    limits,
+    usage,
+    loading: entitlementsLoading,
+  } = useEntitlements();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,6 +98,16 @@ export function WhatsAppConfig() {
   const [registrationProbe, setRegistrationProbe] =
     useState<RegistrationProbe | null>(null);
   const [webhookSignatureReady, setWebhookSignatureReady] = useState(true);
+
+  const whatsappLimit = limits.max_whatsapp_numbers ?? null;
+  const whatsappUsed = Math.max(
+    usage.max_whatsapp_numbers ?? 0,
+    configs.length,
+  );
+  const canAddWhatsAppNumber =
+    entitlementsLoading || withinLimit('max_whatsapp_numbers', 1);
+  const whatsappRemaining = remaining('max_whatsapp_numbers');
+  const isAddingNewNumber = !(selectedConfigId || config?.id);
 
   const webhookUrl =
     typeof window !== 'undefined'
@@ -204,6 +226,15 @@ export function WhatsAppConfig() {
   async function handleSave() {
     if (!phoneNumberId.trim()) {
       toast.error('Phone Number ID is required');
+      return;
+    }
+    if (isAddingNewNumber && !canAddWhatsAppNumber) {
+      toast.error(
+        whatsappLimit != null
+          ? whatsappNumberLimitMessage(whatsappLimit)
+          : 'WhatsApp number limit reached. Upgrade your plan.',
+      );
+      router.push('/billing');
       return;
     }
     if (!config && (!accessToken.trim() || !tokenEdited)) {
@@ -626,8 +657,11 @@ export function WhatsAppConfig() {
             <div>
               <CardTitle className="text-foreground">WhatsApp numbers</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Add multiple numbers for this account, set a default for
-                broadcasts, and assign numbers to teammates in Team settings.
+                Add numbers for this account, set a default for broadcasts, and
+                assign them in Team settings.
+                {whatsappLimit == null
+                  ? ' Business plan: unlimited numbers.'
+                  : ` Plan limit: ${whatsappUsed}/${whatsappLimit}.`}
               </CardDescription>
             </div>
             {canEditTeam ? (
@@ -635,7 +669,22 @@ export function WhatsAppConfig() {
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={!canAddWhatsAppNumber}
+                title={
+                  !canAddWhatsAppNumber && whatsappLimit != null
+                    ? whatsappNumberLimitMessage(whatsappLimit)
+                    : undefined
+                }
                 onClick={() => {
+                  if (!canAddWhatsAppNumber) {
+                    toast.error(
+                      whatsappLimit != null
+                        ? whatsappNumberLimitMessage(whatsappLimit)
+                        : 'WhatsApp number limit reached. Upgrade your plan.',
+                    );
+                    router.push('/billing');
+                    return;
+                  }
                   setSelectedConfigId(null);
                   setConfig(null);
                   setDisplayName('');
@@ -651,11 +700,38 @@ export function WhatsAppConfig() {
                   setRegistrationProbe(null);
                 }}
               >
+                {!canAddWhatsAppNumber ? <Lock className="size-3.5" /> : null}
                 Add number
               </Button>
             ) : null}
           </CardHeader>
           <CardContent className="space-y-2">
+            {!entitlementsLoading &&
+            !canAddWhatsAppNumber &&
+            whatsappLimit != null ? (
+              <Alert className="border-amber-200 bg-amber-50 text-amber-950">
+                <Lock className="size-4" />
+                <AlertTitle>Number limit reached</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span>{whatsappNumberLimitMessage(whatsappLimit)}</span>
+                  <Button
+                    size="sm"
+                    className="shrink-0"
+                    render={<Link href="/billing" />}
+                  >
+                    Upgrade plan
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {whatsappLimit != null &&
+            whatsappRemaining != null &&
+            canAddWhatsAppNumber ? (
+              <p className="text-xs text-muted-foreground">
+                {whatsappRemaining} number
+                {whatsappRemaining === 1 ? '' : 's'} remaining on your plan.
+              </p>
+            ) : null}
             {configs.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No numbers yet. Fill in the credentials below to add the first

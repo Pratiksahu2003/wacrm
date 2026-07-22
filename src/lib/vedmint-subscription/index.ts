@@ -17,6 +17,12 @@ export {
   CAPABILITY_LABEL,
   NAV_CAPABILITY,
   FEATURE_ALIASES,
+  isBusinessPlan,
+  isGrowthPlan,
+  isStarterPlan,
+  whatsappNumberLimitForPlan,
+  whatsappNumberLimitMessage,
+  TEAM_BUSINESS_ONLY_MESSAGE,
 } from "./entitlements";
 export {
   isSubscriptionActive,
