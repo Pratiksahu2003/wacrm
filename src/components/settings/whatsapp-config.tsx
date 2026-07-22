@@ -865,6 +865,46 @@ export function WhatsAppConfig() {
               Use as default number
             </label>
 
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto px-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={() => setShowHelp((v) => !v)}
+              >
+                {showHelp ? 'Hide help' : 'Need help?'}
+              </Button>
+              {showHelp ? (
+                <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                  <ol className="list-decimal space-y-1.5 pl-4">
+                    <li>Create a Meta Business app and add WhatsApp.</li>
+                    <li>Copy Phone Number ID, WABA ID, and a permanent token.</li>
+                    <li>Paste them here, set a verify token + 6-digit PIN, then Save.</li>
+                    <li>
+                      In Meta webhooks, paste this URL and the same verify token. Subscribe to{' '}
+                      <strong className="text-foreground">messages</strong>.
+                    </li>
+                    <li>
+                      Add your{' '}
+                      <Link href="/settings?tab=app-secret" className="text-primary underline">
+                        App Secret
+                      </Link>
+                      .
+                    </li>
+                  </ol>
+                  <a
+                    href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Meta docs
+                  </a>
+                </div>
+              ) : null}
+            </div>
+
             <div className="space-y-1.5">
               <Label>Webhook URL</Label>
               <div className="flex gap-2">
@@ -899,44 +939,7 @@ export function WhatsAppConfig() {
                   Reset
                 </Button>
               ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowHelp((v) => !v)}
-              >
-                {showHelp ? 'Hide help' : 'Need help?'}
-              </Button>
             </div>
-
-            {showHelp ? (
-              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                <ol className="list-decimal space-y-1.5 pl-4">
-                  <li>Create a Meta Business app and add WhatsApp.</li>
-                  <li>Copy Phone Number ID, WABA ID, and a permanent token.</li>
-                  <li>Paste them here, set a verify token + 6-digit PIN, then Save.</li>
-                  <li>
-                    In Meta webhooks, paste this URL and the same verify token. Subscribe to{' '}
-                    <strong className="text-foreground">messages</strong>.
-                  </li>
-                  <li>
-                    Add your{' '}
-                    <Link href="/settings?tab=app-secret" className="text-primary underline">
-                      App Secret
-                    </Link>
-                    .
-                  </li>
-                </ol>
-                <a
-                  href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <ExternalLink className="size-3.5" />
-                  Meta docs
-                </a>
-              </div>
-            ) : null}
           </CardContent>
         </Card>
       </div>
