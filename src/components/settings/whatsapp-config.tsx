@@ -640,117 +640,159 @@ export function WhatsAppConfig() {
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-        {/* Numbers list */}
-        <Card className="border-border bg-card ring-0">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
-            <div>
-              <CardTitle className="text-base">Numbers</CardTitle>
-              <CardDescription className="text-xs">
-                {whatsappLimit == null
-                  ? `${whatsappUsed} connected · unlimited`
-                  : `${whatsappUsed}/${whatsappLimit} used`}
-              </CardDescription>
-            </div>
-            {canEditTeam ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!canAddWhatsAppNumber}
-                onClick={startAddNumber}
-              >
-                {!canAddWhatsAppNumber ? <Lock className="size-3.5" /> : null}
-                Add
-              </Button>
-            ) : null}
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {!entitlementsLoading && !canAddWhatsAppNumber && whatsappLimit != null ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                Limit reached.{' '}
-                <Link href="/billing" className="font-medium underline">
-                  Upgrade
-                </Link>
+        {/* Numbers list + help */}
+        <div className="space-y-3">
+          <Card className="border-border bg-card ring-0">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
+              <div>
+                <CardTitle className="text-base">Numbers</CardTitle>
+                <CardDescription className="text-xs">
+                  {whatsappLimit == null
+                    ? `${whatsappUsed} connected · unlimited`
+                    : `${whatsappUsed}/${whatsappLimit} used`}
+                </CardDescription>
+              </div>
+              {canEditTeam ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!canAddWhatsAppNumber}
+                  onClick={startAddNumber}
+                >
+                  {!canAddWhatsAppNumber ? <Lock className="size-3.5" /> : null}
+                  Add
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              {!entitlementsLoading && !canAddWhatsAppNumber && whatsappLimit != null ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  Limit reached.{' '}
+                  <Link href="/billing" className="font-medium underline">
+                    Upgrade
+                  </Link>
+                </div>
+              ) : null}
+
+              {configs.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                  No numbers yet
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {configs.map((row) => {
+                    const active = row.id === (selectedConfigId || config?.id);
+                    return (
+                      <li key={row.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormError(null);
+                            setSelectedConfigId(row.id);
+                            setConfig(row);
+                            setDisplayName(row.display_name || '');
+                            setPhoneNumberId(row.phone_number_id || '');
+                            setWabaId(row.waba_id || '');
+                            setAccessToken(MASKED_TOKEN);
+                            setVerifyToken('');
+                            setPin('');
+                            setTokenEdited(false);
+                            setIsDefault(Boolean(row.is_default));
+                            setRegistrationProbe(null);
+                          }}
+                          className={
+                            active
+                              ? 'w-full rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-left'
+                              : 'w-full rounded-xl border border-transparent px-3 py-2.5 text-left hover:bg-muted/60'
+                          }
+                        >
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {row.display_name || row.phone_number_id}
+                            {Boolean(row.is_default) ? (
+                              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">
+                                Default
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {row.phone_number_id}
+                          </p>
+                        </button>
+                        {active && canEditTeam ? (
+                          <div className="mt-1.5 flex gap-1.5 px-1">
+                            {!Boolean(row.is_default) ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => void setDefaultNumber(row.id)}
+                              >
+                                Set default
+                              </Button>
+                            ) : null}
+                            {configs.length > 1 ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs text-destructive"
+                                onClick={() => void removeNumber(row.id)}
+                              >
+                                Remove
+                              </Button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-2 px-1">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto px-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
+              onClick={() => setShowHelp((v) => !v)}
+            >
+              {showHelp ? 'Hide help' : 'Need help?'}
+            </Button>
+            {showHelp ? (
+              <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
+                <ol className="list-decimal space-y-1.5 pl-4">
+                  <li>Create a Meta Business app and add WhatsApp.</li>
+                  <li>Copy Phone Number ID, WABA ID, and a permanent token.</li>
+                  <li>Paste them here, set a verify token + 6-digit PIN, then Save.</li>
+                  <li>
+                    In Meta webhooks, paste this URL and the same verify token. Subscribe to{' '}
+                    <strong className="text-foreground">messages</strong>.
+                  </li>
+                  <li>
+                    Add your{' '}
+                    <Link href="/settings?tab=app-secret" className="text-primary underline">
+                      App Secret
+                    </Link>
+                    .
+                  </li>
+                </ol>
+                <a
+                  href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="size-3.5" />
+                  Meta docs
+                </a>
               </div>
             ) : null}
-
-            {configs.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-                No numbers yet
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {configs.map((row) => {
-                  const active = row.id === (selectedConfigId || config?.id);
-                  return (
-                    <li key={row.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormError(null);
-                          setSelectedConfigId(row.id);
-                          setConfig(row);
-                          setDisplayName(row.display_name || '');
-                          setPhoneNumberId(row.phone_number_id || '');
-                          setWabaId(row.waba_id || '');
-                          setAccessToken(MASKED_TOKEN);
-                          setVerifyToken('');
-                          setPin('');
-                          setTokenEdited(false);
-                          setIsDefault(Boolean(row.is_default));
-                          setRegistrationProbe(null);
-                        }}
-                        className={
-                          active
-                            ? 'w-full rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-left'
-                            : 'w-full rounded-xl border border-transparent px-3 py-2.5 text-left hover:bg-muted/60'
-                        }
-                      >
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {row.display_name || row.phone_number_id}
-                          {Boolean(row.is_default) ? (
-                            <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">
-                              Default
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {row.phone_number_id}
-                        </p>
-                      </button>
-                      {active && canEditTeam ? (
-                        <div className="mt-1.5 flex gap-1.5 px-1">
-                          {!Boolean(row.is_default) ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => void setDefaultNumber(row.id)}
-                            >
-                              Set default
-                            </Button>
-                          ) : null}
-                          {configs.length > 1 ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-destructive"
-                              onClick={() => void removeNumber(row.id)}
-                            >
-                              Remove
-                            </Button>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Credentials form */}
         <Card className="border-border bg-card ring-0">
@@ -864,46 +906,6 @@ export function WhatsAppConfig() {
               />
               Use as default number
             </label>
-
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-auto px-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
-                onClick={() => setShowHelp((v) => !v)}
-              >
-                {showHelp ? 'Hide help' : 'Need help?'}
-              </Button>
-              {showHelp ? (
-                <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                  <ol className="list-decimal space-y-1.5 pl-4">
-                    <li>Create a Meta Business app and add WhatsApp.</li>
-                    <li>Copy Phone Number ID, WABA ID, and a permanent token.</li>
-                    <li>Paste them here, set a verify token + 6-digit PIN, then Save.</li>
-                    <li>
-                      In Meta webhooks, paste this URL and the same verify token. Subscribe to{' '}
-                      <strong className="text-foreground">messages</strong>.
-                    </li>
-                    <li>
-                      Add your{' '}
-                      <Link href="/settings?tab=app-secret" className="text-primary underline">
-                        App Secret
-                      </Link>
-                      .
-                    </li>
-                  </ol>
-                  <a
-                    href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                  >
-                    <ExternalLink className="size-3.5" />
-                    Meta docs
-                  </a>
-                </div>
-              ) : null}
-            </div>
 
             <div className="space-y-1.5">
               <Label>Webhook URL</Label>

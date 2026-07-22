@@ -162,26 +162,31 @@ export function MetaAppSecretPanel() {
           <Alert
             className={
               configured
-                ? 'bg-emerald-950/30 border-emerald-700/50'
-                : 'bg-amber-950/30 border-amber-700/50'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                : 'border-amber-200 bg-amber-50 text-amber-950'
             }
           >
             <div className="flex items-center gap-2">
               {configured ? (
-                <CheckCircle2 className="size-4 text-emerald-400" />
+                <CheckCircle2 className="size-4 text-emerald-600" />
               ) : (
-                <AlertTriangle className="size-4 text-amber-400" />
+                <AlertTriangle className="size-4 text-amber-600" />
               )}
               <AlertTitle
                 className={
-                  'mb-0 text-sm ' +
-                  (configured ? 'text-emerald-200' : 'text-amber-200')
+                  'mb-0 text-sm font-semibold ' +
+                  (configured ? 'text-emerald-900' : 'text-amber-900')
                 }
               >
                 {configured ? 'App Secret saved' : 'App Secret not configured'}
               </AlertTitle>
             </div>
-            <AlertDescription className="text-muted-foreground text-xs mt-1">
+            <AlertDescription
+              className={
+                'mt-1 text-xs ' +
+                (configured ? 'text-emerald-800/80' : 'text-amber-800/80')
+              }
+            >
               {configured
                 ? 'Inbound webhooks are verified with your stored secret.'
                 : hasWhatsAppConfig
