@@ -1,26 +1,42 @@
 import { describe, expect, it } from "vitest";
 import {
+  COUNTRIES,
+  INDUSTRIES,
   getAllSeoPages,
-  getSeoPageBySlug,
+  getSeoPageByPath,
   getSeoPageCount,
-  getSeoSlugs,
+  getSeoStaticParams,
+  seoPagePath,
 } from "@/lib/seo/whatsapp-crm-pages";
 
 describe("whatsapp-crm SEO pages", () => {
-  it("generates about 1000 unique pages", () => {
-    const pages = getAllSeoPages();
+  it("generates 1000 unique country×industry pages", () => {
+    expect(COUNTRIES).toHaveLength(50);
+    expect(INDUSTRIES).toHaveLength(20);
     expect(getSeoPageCount()).toBe(1000);
-    expect(pages).toHaveLength(1000);
-    expect(new Set(getSeoSlugs()).size).toBe(1000);
+    expect(new Set(getAllSeoPages().map((p) => p.path)).size).toBe(1000);
   });
 
-  it("resolves pages by slug with unique metadata", () => {
-    const first = getAllSeoPages()[0];
-    const found = getSeoPageBySlug(first.slug);
-    expect(found?.title).toContain(first.country);
-    expect(found?.country).toBeTruthy();
-    expect(found?.slug).toContain("-in-");
-    expect(found?.description.length).toBeGreaterThan(40);
-    expect(found?.benefits.length).toBeGreaterThan(0);
+  it("uses nested SEO-friendly URLs", () => {
+    const page = getSeoPageByPath("real-estate", "united-states");
+    expect(page?.path).toBe("/whatsapp-crm/real-estate/united-states");
+    expect(page?.headline).toContain("United States");
+    expect(page?.faqs.length).toBeGreaterThanOrEqual(6);
+    expect(page?.trustSignals.length).toBeGreaterThan(0);
+    expect(page?.expertise.length).toBeGreaterThan(40);
+  });
+
+  it("exposes static params for nested routes", () => {
+    const params = getSeoStaticParams();
+    expect(params).toHaveLength(1000);
+    expect(params[0]).toEqual(
+      expect.objectContaining({
+        industry: expect.any(String),
+        country: expect.any(String),
+      }),
+    );
+    expect(seoPagePath("saas", "singapore")).toBe(
+      "/whatsapp-crm/saas/singapore",
+    );
   });
 });

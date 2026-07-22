@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { logoUrl, OFFICIAL_APP_URL } from "@/lib/brand";
 import { DOC_PAGES } from "@/lib/docs/content";
-import { getAllSeoPages } from "@/lib/seo/whatsapp-crm-pages";
+import { getAllSeoPages, INDUSTRIES } from "@/lib/seo/whatsapp-crm-pages";
 
 export type SitemapChangeFrequency = NonNullable<
   MetadataRoute.Sitemap[number]["changeFrequency"]
@@ -82,14 +82,23 @@ export function getCoreSitemapInputs(): SitemapEntryInput[] {
   ];
 }
 
-/** Programmatic SEO landing pages (~1k). */
+/** Programmatic SEO landing pages (~1k) + industry hubs. */
 export function getSeoSitemapInputs(): SitemapEntryInput[] {
-  return getAllSeoPages().map((page) => ({
-    path: `/whatsapp-crm/${page.slug}`,
+  const industryHubs = INDUSTRIES.map((industry) => ({
+    path: `/whatsapp-crm/${industry.slug}`,
     changeFrequency: "monthly" as const,
-    priority: 0.6,
+    priority: 0.7,
     lastModified: SITEMAP_DATES.seoPages,
   }));
+
+  const countryPages = getAllSeoPages().map((page) => ({
+    path: page.path,
+    changeFrequency: "monthly" as const,
+    priority: 0.65,
+    lastModified: SITEMAP_DATES.seoPages,
+  }));
+
+  return [...industryHubs, ...countryPages];
 }
 
 /**

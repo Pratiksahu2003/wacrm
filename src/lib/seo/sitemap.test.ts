@@ -8,14 +8,15 @@ import {
   getSitemapIndexUrl,
   getSitemapUrlCount,
 } from "@/lib/seo/sitemap";
-import { getSeoPageCount } from "@/lib/seo/whatsapp-crm-pages";
+import { getSeoPageCount, INDUSTRIES } from "@/lib/seo/whatsapp-crm-pages";
 
 describe("sitemap", () => {
-  it("includes every public core + SEO URL exactly once", () => {
+  it("includes every public core + industry hub + SEO URL exactly once", () => {
     const entries = buildSitemapEntries();
     const urls = entries.map((e) => e.url);
-    const expectedCore = 1 + 1 + 1 + 1 + DOC_PAGES.length; // home, pricing, discover, hub, docs
-    const expected = expectedCore + getSeoPageCount();
+    const expectedCore = 1 + 1 + 1 + 1 + DOC_PAGES.length;
+    const expected =
+      expectedCore + INDUSTRIES.length + getSeoPageCount();
 
     expect(getSitemapUrlCount()).toBe(expected);
     expect(urls).toHaveLength(expected);
@@ -42,12 +43,13 @@ describe("sitemap", () => {
     expect(entries[1]?.priority).toBeGreaterThanOrEqual(0.9);
   });
 
-  it("covers all SEO landing pages under /whatsapp-crm/", () => {
-    const seoPaths = new Set(getSeoSitemapInputs().map((i) => i.path));
-    expect(seoPaths.size).toBe(1000);
-    for (const path of seoPaths) {
-      expect(path.startsWith("/whatsapp-crm/whatsapp-crm-for-")).toBe(true);
-    }
+  it("covers nested SEO landing pages", () => {
+    const seoPaths = getSeoSitemapInputs().map((i) => i.path);
+    expect(seoPaths).toContain("/whatsapp-crm/real-estate");
+    expect(seoPaths).toContain("/whatsapp-crm/real-estate/united-states");
+    expect(seoPaths.filter((p) => p.split("/").length === 4)).toHaveLength(
+      getSeoPageCount(),
+    );
   });
 
   it("exposes a single sitemap index URL for robots", () => {
