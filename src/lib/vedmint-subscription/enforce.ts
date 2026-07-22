@@ -19,10 +19,10 @@ import {
 import {
   FEATURE_ALIASES,
   featureEnabledInMap,
-  isBusinessPlan,
+  isEnterprisePlan,
   pickLimitValue,
   resolveFeatureKey,
-  TEAM_BUSINESS_ONLY_MESSAGE,
+  TEAM_ENTERPRISE_ONLY_MESSAGE,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
   type EntitlementSnapshot,
@@ -324,7 +324,7 @@ export async function getEntitlementSnapshot(
       ),
     };
 
-    const businessPlan = isBusinessPlan({ planName, planSlug });
+    const enterprisePlan = isEnterprisePlan({ planName, planSlug });
 
     const features: Record<string, boolean> = {};
     (Object.keys(FEATURE_ALIASES) as PlanCapability[]).forEach((cap) => {
@@ -333,8 +333,8 @@ export async function getEntitlementSnapshot(
       features[cap] = enabled == null ? active : active && enabled;
     });
 
-    // Hard gate: Team invites / seats are Business-plan only.
-    features.team = Boolean(active && businessPlan);
+    // Hard gate: Team invites / seats are Enterprise-plan only.
+    features.team = Boolean(active && enterprisePlan);
 
     const limits: Record<string, number | null> = {};
     (
@@ -354,13 +354,13 @@ export async function getEntitlementSnapshot(
       limits[key] = pickLimitValue(limitsRaw, key);
     });
 
-    // Non-Business plans: only the account owner (1 seat) — no invites.
-    if (!businessPlan) {
+    // Non-Enterprise plans: only the account owner (1 seat) — no invites.
+    if (!enterprisePlan) {
       limits.max_team_members = 1;
     }
 
     // Hard limits by VedMint CRM plan tier (override remote catalog).
-    // Starter=1, Growth=10, Business=unlimited (null).
+    // Starter=1, Business (legacy Growth)=10, Enterprise=unlimited (null).
     limits.max_whatsapp_numbers = whatsappNumberLimitForPlan({
       planName,
       planSlug,
@@ -530,21 +530,21 @@ export async function assertPlanCapability(
 
   await assertActiveSubscription(userId, opts?.accountId);
 
-  // Team is Business-plan only — enforce locally even if remote
+  // Team is Enterprise-plan only — enforce locally even if remote
   // check-feature aliases are missing / allow-by-default for active subs.
   if (capability === "team") {
     const accountId = opts?.accountId;
     if (accountId) {
       const snap = await getEntitlementSnapshot(userId, accountId);
       if (!snap.features.team) {
-        throw new PlanGateError(TEAM_BUSINESS_ONLY_MESSAGE, {
+        throw new PlanGateError(TEAM_ENTERPRISE_ONLY_MESSAGE, {
           code: "FEATURE_NOT_ALLOWED",
           status: 403,
           feature: "team",
         });
       }
     } else {
-      // No account context — still require Business via a fresh snapshot path
+      // No account context — still require Enterprise via a fresh snapshot path
       // using entitlements after resolving from token below.
       const { result } = await withVedmintToken(userId, async (jwt) => {
         const current = await getCurrentSubscription(jwt).catch(() => null);
@@ -560,8 +560,8 @@ export async function assertPlanCapability(
         null;
       const planSlug =
         (plan && typeof plan.slug === "string" ? plan.slug : null) || null;
-      if (!isBusinessPlan({ planName, planSlug })) {
-        throw new PlanGateError(TEAM_BUSINESS_ONLY_MESSAGE, {
+      if (!isEnterprisePlan({ planName, planSlug })) {
+        throw new PlanGateError(TEAM_ENTERPRISE_ONLY_MESSAGE, {
           code: "FEATURE_NOT_ALLOWED",
           status: 403,
           feature: "team",
@@ -581,7 +581,7 @@ export async function assertPlanCapability(
       if (result.allowed === false) {
         throw new PlanGateError(
           capability === "team"
-            ? TEAM_BUSINESS_ONLY_MESSAGE
+            ? TEAM_ENTERPRISE_ONLY_MESSAGE
             : `Your plan does not allow you to ${capability.replace(/_/g, " ")}. Upgrade to continue.`,
           {
             code: "FEATURE_NOT_ALLOWED",

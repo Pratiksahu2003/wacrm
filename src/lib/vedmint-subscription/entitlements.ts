@@ -130,7 +130,7 @@ export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
   broadcasts: "run broadcasts",
   automations: "use automations",
   flows: "use flows",
-  team: "invite team members (Business plan)",
+  team: "invite team members (Enterprise plan)",
   whatsapp: "configure WhatsApp",
   templates: "manage templates",
   pipelines: "manage pipelines",
@@ -139,86 +139,98 @@ export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
   compliance: "manage compliance & DND",
 };
 
+function normalizePlanKey(raw?: string | null): string {
+  return String(raw || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+}
+
+function planTextMatches(
+  input: { planName?: string | null; planSlug?: string | null },
+  word: string,
+): boolean {
+  const slug = normalizePlanKey(input.planSlug);
+  const re = new RegExp(`(^|_)${word}($|_)`);
+  if (slug === word || re.test(slug)) return true;
+  const name = String(input.planName || "")
+    .toLowerCase()
+    .trim();
+  if (!name) return false;
+  return new RegExp(`\\b${word}\\b`).test(name);
+}
+
+/** Top tier — unlimited WhatsApp numbers + team invites. */
+export function isEnterprisePlan(input: {
+  planName?: string | null;
+  planSlug?: string | null;
+}): boolean {
+  return planTextMatches(input, "enterprise");
+}
+
 /**
- * Team seats / invites are Business-plan only.
- * Matches plan name or slug containing a whole-word "business"
- * (e.g. "Business", "Business Monthly", slug "business").
+ * Mid tier (Business). Also accepts legacy "Growth" plan names.
+ * 10 WhatsApp numbers, no team invites.
  */
 export function isBusinessPlan(input: {
   planName?: string | null;
   planSlug?: string | null;
 }): boolean {
-  const slug = String(input.planSlug || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s-]+/g, "_");
-  if (slug === "business" || /(^|_)business($|_)/.test(slug)) return true;
-
-  const name = String(input.planName || "")
-    .toLowerCase()
-    .trim();
-  if (!name) return false;
-  return /\bbusiness\b/.test(name);
+  if (isEnterprisePlan(input)) return false;
+  return (
+    planTextMatches(input, "business") || planTextMatches(input, "growth")
+  );
 }
 
+/** @deprecated Use isBusinessPlan — Growth was renamed to Business. */
 export function isGrowthPlan(input: {
   planName?: string | null;
   planSlug?: string | null;
 }): boolean {
-  const slug = String(input.planSlug || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s-]+/g, "_");
-  if (slug === "growth" || /(^|_)growth($|_)/.test(slug)) return true;
-
-  const name = String(input.planName || "")
-    .toLowerCase()
-    .trim();
-  if (!name) return false;
-  return /\bgrowth\b/.test(name);
+  return isBusinessPlan(input);
 }
 
 export function isStarterPlan(input: {
   planName?: string | null;
   planSlug?: string | null;
 }): boolean {
-  const slug = String(input.planSlug || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s-]+/g, "_");
-  if (slug === "starter" || /(^|_)starter($|_)/.test(slug)) return true;
-
-  const name = String(input.planName || "")
-    .toLowerCase()
-    .trim();
-  if (!name) return false;
-  return /\bstarter\b/.test(name);
+  return planTextMatches(input, "starter");
 }
 
 /**
- * WhatsApp Business numbers allowed by plan tier.
+ * WhatsApp Business numbers by plan tier:
  * - Starter: 1
- * - Growth: 10
- * - Business: unlimited (`null`)
- * - Unknown / no plan: treat as Starter (1)
+ * - Business (legacy Growth): 10
+ * - Enterprise: unlimited (`null`)
+ * - Unknown: Starter (1)
  */
 export function whatsappNumberLimitForPlan(input: {
   planName?: string | null;
   planSlug?: string | null;
 }): number | null {
-  if (isBusinessPlan(input)) return null;
-  if (isGrowthPlan(input)) return 10;
+  if (isEnterprisePlan(input)) return null;
+  if (isBusinessPlan(input)) return 10;
   return 1;
 }
 
+/** Team invites are Enterprise-only. */
+export function planAllowsTeam(input: {
+  planName?: string | null;
+  planSlug?: string | null;
+}): boolean {
+  return isEnterprisePlan(input);
+}
+
 export const TEAM_BUSINESS_ONLY_MESSAGE =
-  "Team invites are available on the Business plan only. Upgrade to Business to invite teammates.";
+  "Team invites are available on the Enterprise plan only. Upgrade to Enterprise to invite teammates.";
+
+export const TEAM_ENTERPRISE_ONLY_MESSAGE = TEAM_BUSINESS_ONLY_MESSAGE;
 
 export function whatsappNumberLimitMessage(limit: number): string {
   if (limit <= 1) {
-    return "Starter allows 1 WhatsApp number. Upgrade to Growth (10) or Business (unlimited) to add more.";
+    return "Starter allows 1 WhatsApp number. Upgrade to Business (10) or Enterprise (unlimited) to add more.";
   }
-  return `Your plan allows up to ${limit} WhatsApp numbers. Upgrade to Business for unlimited numbers.`;
+  return `Your plan allows up to ${limit} WhatsApp numbers. Upgrade to Enterprise for unlimited numbers.`;
 }
 
 

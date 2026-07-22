@@ -142,10 +142,11 @@ export async function issueVedmintToken(input: {
   });
 }
 
-export async function listPlans(jwt: string): Promise<VedmintPlan[]> {
+/** List catalog plans. JWT optional — app credentials alone work for public pricing. */
+export async function listPlans(jwt?: string | null): Promise<VedmintPlan[]> {
   const data = await vedmintFetch<
     VedmintPlan[] | { plans: VedmintPlan[]; data?: VedmintPlan[] }
-  >("/plans", { jwt });
+  >("/plans", { jwt: jwt || undefined });
   if (Array.isArray(data)) return data;
   if (data && typeof data === "object") {
     if (Array.isArray(data.plans)) return data.plans;

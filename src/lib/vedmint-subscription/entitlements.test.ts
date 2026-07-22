@@ -1,55 +1,74 @@
 import { describe, expect, it } from "vitest";
 import {
   isBusinessPlan,
+  isEnterprisePlan,
   isGrowthPlan,
   isStarterPlan,
-  TEAM_BUSINESS_ONLY_MESSAGE,
+  TEAM_ENTERPRISE_ONLY_MESSAGE,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
-} from "@/lib/vedmint-subscription/entitlements";
+} from "./entitlements";
 
-describe("isBusinessPlan", () => {
-  it("allows Business plan names and slugs", () => {
-    expect(isBusinessPlan({ planName: "Business" })).toBe(true);
-    expect(isBusinessPlan({ planName: "Business Monthly" })).toBe(true);
-    expect(isBusinessPlan({ planName: "VedMint Business" })).toBe(true);
-    expect(isBusinessPlan({ planSlug: "business" })).toBe(true);
-    expect(isBusinessPlan({ planSlug: "business-yearly" })).toBe(true);
+describe("isEnterprisePlan", () => {
+  it("allows Enterprise plan names and slugs", () => {
+    expect(isEnterprisePlan({ planName: "Enterprise" })).toBe(true);
+    expect(isEnterprisePlan({ planName: "Enterprise Monthly" })).toBe(true);
+    expect(isEnterprisePlan({ planSlug: "enterprise" })).toBe(true);
+    expect(isEnterprisePlan({ planSlug: "enterprise-yearly" })).toBe(true);
   });
 
-  it("denies Starter, Growth, and custom plans", () => {
+  it("denies Starter and Business", () => {
+    expect(isEnterprisePlan({ planName: "Starter" })).toBe(false);
+    expect(isEnterprisePlan({ planName: "Business" })).toBe(false);
+    expect(isEnterprisePlan({ planSlug: "business" })).toBe(false);
+  });
+});
+
+describe("isBusinessPlan", () => {
+  it("allows Business and legacy Growth as mid-tier", () => {
+    expect(isBusinessPlan({ planName: "Business" })).toBe(true);
+    expect(isBusinessPlan({ planName: "Business Monthly" })).toBe(true);
+    expect(isBusinessPlan({ planSlug: "business" })).toBe(true);
+    expect(isBusinessPlan({ planName: "Growth" })).toBe(true);
+    expect(isBusinessPlan({ planSlug: "growth-monthly" })).toBe(true);
+  });
+
+  it("denies Starter, Enterprise, and custom plans", () => {
     expect(isBusinessPlan({ planName: "Starter" })).toBe(false);
-    expect(isBusinessPlan({ planName: "Growth" })).toBe(false);
+    expect(isBusinessPlan({ planName: "Enterprise" })).toBe(false);
     expect(isBusinessPlan({ planName: "Custom CRM / ERP" })).toBe(false);
     expect(isBusinessPlan({ planSlug: "starter" })).toBe(false);
-    expect(isBusinessPlan({ planSlug: "growth" })).toBe(false);
+    expect(isBusinessPlan({ planSlug: "enterprise" })).toBe(false);
     expect(isBusinessPlan({ planName: null, planSlug: null })).toBe(false);
   });
 
-  it("exports a clear upgrade message", () => {
-    expect(TEAM_BUSINESS_ONLY_MESSAGE.toLowerCase()).toContain("business");
+  it("exposes an Enterprise-only team message", () => {
+    expect(TEAM_ENTERPRISE_ONLY_MESSAGE.toLowerCase()).toContain("enterprise");
   });
 });
 
 describe("whatsappNumberLimitForPlan", () => {
-  it("limits Starter to 1, Growth to 10, Business unlimited", () => {
+  it("limits Starter to 1, Business to 10, Enterprise unlimited", () => {
     expect(whatsappNumberLimitForPlan({ planName: "Starter" })).toBe(1);
     expect(whatsappNumberLimitForPlan({ planSlug: "starter" })).toBe(1);
+    expect(whatsappNumberLimitForPlan({ planName: "Business" })).toBe(10);
+    expect(whatsappNumberLimitForPlan({ planSlug: "business" })).toBe(10);
     expect(whatsappNumberLimitForPlan({ planName: "Growth" })).toBe(10);
-    expect(whatsappNumberLimitForPlan({ planSlug: "growth-monthly" })).toBe(10);
-    expect(whatsappNumberLimitForPlan({ planName: "Business" })).toBeNull();
-    expect(whatsappNumberLimitForPlan({ planSlug: "business" })).toBeNull();
+    expect(whatsappNumberLimitForPlan({ planName: "Enterprise" })).toBeNull();
+    expect(whatsappNumberLimitForPlan({ planSlug: "enterprise" })).toBeNull();
   });
 
   it("defaults unknown plans to Starter (1)", () => {
     expect(whatsappNumberLimitForPlan({ planName: null })).toBe(1);
     expect(whatsappNumberLimitForPlan({ planName: "Pro" })).toBe(1);
   });
+});
 
-  it("detects plan helpers", () => {
-    expect(isStarterPlan({ planName: "Starter" })).toBe(true);
+describe("legacy helpers", () => {
+  it("maps Growth alias and limit messages", () => {
     expect(isGrowthPlan({ planName: "Growth Yearly" })).toBe(true);
+    expect(isStarterPlan({ planName: "Starter" })).toBe(true);
     expect(whatsappNumberLimitMessage(1)).toMatch(/Starter/i);
-    expect(whatsappNumberLimitMessage(10)).toMatch(/10/);
+    expect(whatsappNumberLimitMessage(10)).toMatch(/Enterprise/i);
   });
 });

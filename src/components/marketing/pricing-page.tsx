@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -114,6 +114,41 @@ function PlanCard({ plan, cycle }: { plan: PublicPlan; cycle: Cycle }) {
 
 export function PricingPageContent() {
   const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [plans, setPlans] = useState<PublicPlan[]>(PUBLIC_SUBSCRIPTION_PLANS);
+  const [source, setSource] = useState<"api" | "fallback" | "loading">(
+    "loading",
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/billing/public-plans", {
+          credentials: "omit",
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as {
+          data?: { plans?: PublicPlan[]; source?: "api" | "fallback" };
+        };
+        const next = json.data?.plans;
+        if (!cancelled && Array.isArray(next) && next.length > 0) {
+          setPlans(next);
+          setSource(json.data?.source === "api" ? "api" : "fallback");
+          return;
+        }
+      } catch {
+        // keep static fallback
+      }
+      if (!cancelled) {
+        setPlans(PUBLIC_SUBSCRIPTION_PLANS);
+        setSource("fallback");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <MarketingShell theme="light">
@@ -166,14 +201,12 @@ export function PricingPageContent() {
       </section>
 
       <section className="relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-        {/* Self-serve plans */}
         <div className="grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {PUBLIC_SUBSCRIPTION_PLANS.map((plan) => (
+          {plans.map((plan) => (
             <PlanCard key={plan.id} plan={plan} cycle={cycle} />
           ))}
         </div>
 
-        {/* Custom plan — full-width modern strip */}
         <article className="relative mt-8 overflow-hidden rounded-3xl border border-slate-800/10 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-900 p-6 text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.65)] sm:p-8 lg:mt-10 lg:p-10">
           <div
             aria-hidden
@@ -236,8 +269,9 @@ export function PricingPageContent() {
         </article>
 
         <p className="mt-8 text-center text-xs text-slate-500">
-          Starting prices are indicative. After signup, Billing shows live
-          VedMint plan amounts, coupons, and entitlements for your workspace.
+          {source === "api"
+            ? "Prices loaded from the VedMint Subscription API. After signup, Billing applies your workspace entitlements and checkout total."
+            : "Starting prices match Starter ₹499, Business ₹999, and Enterprise ₹2,999. After signup, Billing shows live VedMint plan amounts."}
         </p>
       </section>
 

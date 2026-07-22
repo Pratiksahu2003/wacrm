@@ -93,12 +93,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // API routes that need auth (not webhooks)
+  // API routes that need auth (not webhooks / public billing catalog)
   if (
     !user &&
     ((request.nextUrl.pathname.startsWith("/api/whatsapp/") &&
       !request.nextUrl.pathname.includes("/webhook")) ||
-      request.nextUrl.pathname.startsWith("/api/billing/"))
+      (request.nextUrl.pathname.startsWith("/api/billing/") &&
+        request.nextUrl.pathname !== "/api/billing/public-plans"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

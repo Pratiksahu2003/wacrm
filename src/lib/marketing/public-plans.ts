@@ -1,5 +1,13 @@
 /** Public marketing plans shown on /pricing (checkout happens after signup). */
 
+import type { VedmintPlan } from "@/lib/vedmint-subscription/types";
+import { planFeatureList, planPrice } from "@/lib/vedmint-subscription/plan-utils";
+import {
+  isBusinessPlan,
+  isEnterprisePlan,
+  isStarterPlan,
+} from "@/lib/vedmint-subscription/entitlements";
+
 export type PublicPlan = {
   id: string;
   name: string;
@@ -14,68 +22,59 @@ export type PublicPlan = {
   features: string[];
 };
 
+/** Fallback catalog matching VedMint billing cards (Starter / Business / Enterprise). */
 export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
   {
     id: "starter",
     name: "Starter",
-    description:
-      "For small teams getting started with WhatsApp Business and a shared inbox.",
-    monthlyAmount: "999",
-    yearlyAmount: "9,990",
+    description: "For small teams getting started with WhatsApp CRM.",
+    monthlyAmount: "499",
+    yearlyAmount: "4,990",
     currencySymbol: "₹",
     cta: "Start free trial",
     href: "/signup",
     features: [
-      "Shared WhatsApp team inbox",
-      "Contacts, tags & CSV import",
-      "Basic sales pipelines",
-      "Approved template messages",
+      "Basic CRM",
+      "WhatsApp Inbox",
+      "Contact Management",
       "1 WhatsApp Business number",
       "Single-user workspace (no team invites)",
-      "Email support",
-    ],
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    description:
-      "For growing sales and support teams that need broadcasts and automations.",
-    monthlyAmount: "2,499",
-    yearlyAmount: "24,990",
-    currencySymbol: "₹",
-    featured: true,
-    cta: "Choose Growth",
-    href: "/signup",
-    features: [
-      "Everything in Starter",
-      "Up to 10 WhatsApp Business numbers",
-      "Template broadcasts & audience segments",
-      "No-code automations & conversation flows",
-      "Deal pipelines with assignment",
-      "Delivery & read tracking",
-      "Single-user workspace (no team invites)",
-      "Priority email support",
     ],
   },
   {
     id: "business",
     name: "Business",
-    description:
-      "For multi-agent workspaces that need higher limits and stronger controls.",
-    monthlyAmount: "4,999",
-    yearlyAmount: "49,990",
+    description: "For growing businesses with automation needs.",
+    monthlyAmount: "999",
+    yearlyAmount: "9,990",
     currencySymbol: "₹",
+    featured: true,
     cta: "Choose Business",
     href: "/signup",
     features: [
-      "Everything in Growth",
+      "Everything in Starter",
+      "AI Chat",
+      "Bulk WhatsApp",
+      "Automation",
+      "Up to 10 WhatsApp Business numbers",
+      "Single-user workspace (no team invites)",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    description: "Unlimited scale for large organizations.",
+    monthlyAmount: "2,999",
+    yearlyAmount: "29,990",
+    currencySymbol: "₹",
+    cta: "Choose Enterprise",
+    href: "/signup",
+    features: [
+      "Everything in Business",
+      "Dedicated Support",
+      "Custom Integrations",
       "Unlimited WhatsApp Business numbers",
       "Team invites & multi-agent seats",
-      "Higher message & contact limits",
-      "Role-based access (Owner, Admin, Agent, Viewer)",
-      "Compliance tools & audit-friendly workflows",
-      "Advanced reporting & exports",
-      "Priority onboarding assistance",
     ],
   },
 ];
@@ -108,10 +107,103 @@ export const PRICING_FAQ = [
   },
   {
     q: "Are prices shown here final?",
-    a: "Marketing prices are starting points. Live plan amounts, coupons, and entitlements are loaded from VedMint Billing after you sign in.",
+    a: "Public pricing loads live amounts from the VedMint Subscription API when available. After you sign in, Billing shows your exact entitlements, coupons, and checkout total.",
   },
   {
     q: "Do you offer custom CRM / ERP builds?",
     a: "Yes. Contact support for scoped development, integrations, and dedicated onboarding beyond self-serve plans.",
   },
 ] as const;
+
+const TIER_ORDER = ["starter", "business", "enterprise"] as const;
+
+function formatAmountDigits(amount: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
+}
+
+function currencySymbolFor(currency?: string): string {
+  const c = String(currency || "INR").toUpperCase();
+  if (c === "INR") return "₹";
+  if (c === "USD") return "$";
+  if (c === "EUR") return "€";
+  return c;
+}
+
+function resolveTierId(plan: VedmintPlan): string | null {
+  const input = {
+    planName: plan.name,
+    planSlug: typeof plan.slug === "string" ? plan.slug : null,
+  };
+  if (isEnterprisePlan(input)) return "enterprise";
+  if (isBusinessPlan(input)) return "business";
+  if (isStarterPlan(input)) return "starter";
+  // Legacy Growth → Business mid-tier
+  const slug = String(plan.slug || "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const name = String(plan.name || "").toLowerCase();
+  if (slug.includes("growth") || /\bgrowth\b/.test(name)) return "business";
+  return null;
+}
+
+function fallbackForTier(tierId: string): PublicPlan | undefined {
+  return PUBLIC_SUBSCRIPTION_PLANS.find((p) => p.id === tierId);
+}
+
+/**
+ * Map VedMint API plans onto the public Starter / Business / Enterprise cards.
+ * Falls back to static catalog prices/features when API omits fields.
+ */
+export function mapVedmintPlansToPublic(apiPlans: VedmintPlan[]): PublicPlan[] {
+  const byTier = new Map<string, PublicPlan>();
+
+  for (const plan of apiPlans) {
+    const tierId = resolveTierId(plan);
+    if (!tierId) continue;
+    const fallback = fallbackForTier(tierId);
+    if (!fallback) continue;
+
+    const monthly = planPrice(plan, "monthly");
+    const yearly = planPrice(plan, "yearly");
+    const apiFeatures = planFeatureList(plan);
+
+    byTier.set(tierId, {
+      ...fallback,
+      id: tierId,
+      name: plan.name?.trim() || fallback.name,
+      description:
+        (typeof plan.description === "string" && plan.description.trim()) ||
+        fallback.description,
+      monthlyAmount:
+        monthly.amount != null
+          ? formatAmountDigits(monthly.amount)
+          : fallback.monthlyAmount,
+      yearlyAmount:
+        yearly.amount != null
+          ? formatAmountDigits(yearly.amount)
+          : fallback.yearlyAmount,
+      currencySymbol: currencySymbolFor(plan.currency) || fallback.currencySymbol,
+      featured:
+        Boolean(plan.is_popular || plan.is_featured) ||
+        tierId === "business" ||
+        fallback.featured,
+      features: apiFeatures.length > 0 ? apiFeatures : fallback.features,
+      cta: fallback.cta,
+      href: fallback.href,
+    });
+  }
+
+  const ordered = TIER_ORDER.map(
+    (id) => byTier.get(id) || fallbackForTier(id)!,
+  ).filter(Boolean);
+
+  // Ensure Business stays the featured mid-tier card when API flags are missing.
+  if (!ordered.some((p) => p.featured)) {
+    const mid = ordered.find((p) => p.id === "business");
+    if (mid) mid.featured = true;
+  }
+
+  return ordered;
+}

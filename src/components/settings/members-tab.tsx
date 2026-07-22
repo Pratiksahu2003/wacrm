@@ -396,7 +396,7 @@ export function MembersTab() {
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                Team invites require the Business plan
+                Team invites require the Enterprise plan
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {upgradeMessage('team')}
@@ -414,7 +414,7 @@ export function MembersTab() {
             render={<Link href="/billing" />}
           >
             <Sparkles className="size-4" />
-            Upgrade to Business
+            Upgrade to Enterprise
           </Button>
         </div>
       ) : null}
@@ -425,7 +425,7 @@ export function MembersTab() {
           <h2 className="text-lg font-semibold text-foreground">Team members</h2>
           <p className="text-sm text-muted-foreground">
             Invite sub-users and manage roles. Assign leads from Contacts or
-            the Inbox. Available on the Business plan.
+            the Inbox. Available on the Enterprise plan.
           </p>
         </div>
         <RequireRole min="admin">

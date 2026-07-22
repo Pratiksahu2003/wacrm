@@ -18,11 +18,14 @@ export {
   NAV_CAPABILITY,
   FEATURE_ALIASES,
   isBusinessPlan,
+  isEnterprisePlan,
   isGrowthPlan,
   isStarterPlan,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
   TEAM_BUSINESS_ONLY_MESSAGE,
+  TEAM_ENTERPRISE_ONLY_MESSAGE,
+  planAllowsTeam,
 } from "./entitlements";
 export {
   isSubscriptionActive,

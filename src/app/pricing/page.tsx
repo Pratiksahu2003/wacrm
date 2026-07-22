@@ -9,7 +9,7 @@ import {
 
 export const metadata: Metadata = {
   title: `Pricing & Subscription Plans — ${PRODUCT_NAME}`,
-  description: `Compare ${PRODUCT_NAME} subscription plans for WhatsApp Business CRM — Starter, Growth, Business, and custom CRM/ERP development.`,
+  description: `Compare ${PRODUCT_NAME} subscription plans for WhatsApp Business CRM — Starter, Business, Enterprise, and custom CRM/ERP development.`,
   metadataBase: new URL(OFFICIAL_APP_URL),
   alternates: { canonical: `${OFFICIAL_APP_URL}/pricing` },
   robots: { index: true, follow: true },
