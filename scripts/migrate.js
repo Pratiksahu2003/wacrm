@@ -373,6 +373,147 @@ async function applyIncrementalPatches(connection) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   console.log('[Migration] Ensured subscription_state table');
+
+  // Email marketing (BYO SMTP + lists + campaigns)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS account_smtp_settings (
+      account_id VARCHAR(36) NOT NULL,
+      host VARCHAR(255) NOT NULL,
+      port INT NOT NULL DEFAULT 587,
+      secure TINYINT(1) NOT NULL DEFAULT 0,
+      username VARCHAR(255) NOT NULL,
+      password_encrypted TEXT NOT NULL,
+      from_name VARCHAR(255) NULL,
+      from_email VARCHAR(255) NOT NULL,
+      reply_to VARCHAR(255) NULL,
+      verified_at TIMESTAMP NULL,
+      last_error TEXT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (account_id),
+      CONSTRAINT fk_smtp_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured account_smtp_settings table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS email_lists (
+      id VARCHAR(36) NOT NULL,
+      account_id VARCHAR(36) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT NULL,
+      public_slug VARCHAR(80) NOT NULL,
+      double_opt_in TINYINT(1) NOT NULL DEFAULT 0,
+      subscriber_count INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_email_lists_account_slug (account_id, public_slug),
+      KEY idx_email_lists_account (account_id),
+      CONSTRAINT fk_email_lists_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured email_lists table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS email_subscribers (
+      id VARCHAR(36) NOT NULL,
+      account_id VARCHAR(36) NOT NULL,
+      list_id VARCHAR(36) NOT NULL,
+      email VARCHAR(320) NOT NULL,
+      name VARCHAR(255) NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'subscribed',
+      source VARCHAR(20) NOT NULL DEFAULT 'manual',
+      unsubscribe_token VARCHAR(64) NOT NULL,
+      subscribed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      unsubscribed_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_email_subscribers_list_email (list_id, email),
+      UNIQUE KEY uq_email_subscribers_token (unsubscribe_token),
+      KEY idx_email_subscribers_list_status (list_id, status),
+      KEY idx_email_subscribers_account (account_id),
+      CONSTRAINT fk_email_subscribers_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+      CONSTRAINT fk_email_subscribers_list
+        FOREIGN KEY (list_id) REFERENCES email_lists(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured email_subscribers table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS email_templates (
+      id VARCHAR(36) NOT NULL,
+      account_id VARCHAR(36) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      subject VARCHAR(500) NOT NULL,
+      html_body MEDIUMTEXT NOT NULL,
+      text_body TEXT NULL,
+      variables JSON NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_email_templates_account (account_id),
+      CONSTRAINT fk_email_templates_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured email_templates table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS email_campaigns (
+      id VARCHAR(36) NOT NULL,
+      account_id VARCHAR(36) NOT NULL,
+      list_id VARCHAR(36) NOT NULL,
+      template_id VARCHAR(36) NULL,
+      name VARCHAR(255) NOT NULL,
+      subject VARCHAR(500) NOT NULL,
+      html_body MEDIUMTEXT NOT NULL,
+      text_body TEXT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'draft',
+      scheduled_at TIMESTAMP NULL,
+      started_at TIMESTAMP NULL,
+      completed_at TIMESTAMP NULL,
+      total_count INT NOT NULL DEFAULT 0,
+      sent_count INT NOT NULL DEFAULT 0,
+      failed_count INT NOT NULL DEFAULT 0,
+      skipped_count INT NOT NULL DEFAULT 0,
+      created_by VARCHAR(36) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_email_campaigns_account_status (account_id, status),
+      KEY idx_email_campaigns_list (list_id),
+      CONSTRAINT fk_email_campaigns_account
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+      CONSTRAINT fk_email_campaigns_list
+        FOREIGN KEY (list_id) REFERENCES email_lists(id) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured email_campaigns table');
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS email_campaign_recipients (
+      id VARCHAR(36) NOT NULL,
+      campaign_id VARCHAR(36) NOT NULL,
+      subscriber_id VARCHAR(36) NOT NULL,
+      email VARCHAR(320) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      error TEXT NULL,
+      sent_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_email_recipients_campaign_status (campaign_id, status),
+      KEY idx_email_recipients_subscriber (subscriber_id),
+      CONSTRAINT fk_email_recipients_campaign
+        FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE CASCADE,
+      CONSTRAINT fk_email_recipients_subscriber
+        FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured email_campaign_recipients table');
 }
 
 async function migrate({ patchesOnly = false } = {}) {

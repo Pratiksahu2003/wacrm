@@ -14,7 +14,8 @@ export type PlanCapability =
   | "pipelines"
   | "contacts"
   | "ai_credits"
-  | "compliance";
+  | "compliance"
+  | "email_marketing";
 
 export type PlanLimitKey =
   | "max_contacts"
@@ -26,7 +27,9 @@ export type PlanLimitKey =
   | "max_active_automations"
   | "max_flows"
   | "max_active_flows"
-  | "max_messages_per_day";
+  | "max_messages_per_day"
+  | "max_email_subscribers"
+  | "max_emails_per_day";
 
 /** Client + server snapshot shape for GET /api/billing/entitlements */
 export interface EntitlementSnapshot {
@@ -71,6 +74,13 @@ export const FEATURE_ALIASES: Record<PlanCapability, string[]> = {
     "audit_log",
     "do_not_disturb",
   ],
+  email_marketing: [
+    "email_marketing",
+    "email",
+    "email_campaigns",
+    "smtp",
+    "email_lists",
+  ],
 };
 
 export const LIMIT_ALIASES: Record<PlanLimitKey, string[]> = {
@@ -112,6 +122,16 @@ export const LIMIT_ALIASES: Record<PlanLimitKey, string[]> = {
     "messages_per_day",
     "daily_messages",
   ],
+  max_email_subscribers: [
+    "max_email_subscribers",
+    "email_subscribers",
+    "email_list_size",
+  ],
+  max_emails_per_day: [
+    "max_emails_per_day",
+    "emails_per_day",
+    "daily_emails",
+  ],
 };
 
 /** Nav items that require an active subscription (or a specific capability). */
@@ -123,6 +143,7 @@ export const NAV_CAPABILITY: Record<string, PlanCapability | "active"> = {
   "/automations": "automations",
   "/flows": "flows",
   "/compliance": "compliance",
+  "/email": "email_marketing",
 };
 
 export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
@@ -137,6 +158,7 @@ export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
   contacts: "manage contacts",
   ai_credits: "use AI credits",
   compliance: "manage compliance & DND",
+  email_marketing: "use email marketing",
 };
 
 function normalizePlanKey(raw?: string | null): string {

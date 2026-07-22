@@ -78,6 +78,7 @@ export async function proxy(request: NextRequest) {
     "/contacts",
     "/pipelines",
     "/broadcasts",
+    "/email",
     "/automations",
     "/flows",
     "/settings",

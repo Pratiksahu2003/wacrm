@@ -193,40 +193,47 @@ export async function listAuditLogs(
   accountId: string,
   limit = 50,
 ): Promise<AuditLogRow[]> {
-  const rows = await query<Record<string, unknown>>(
-    `SELECT id, account_id, actor_user_id, action, entity_type, entity_id, meta, created_at
-     FROM audit_log
-     WHERE account_id = ?
-     ORDER BY created_at DESC
-     LIMIT ?`,
-    [accountId, Math.min(Math.max(limit, 1), 200)],
-  );
+  // mysql2 prepared statements reject LIMIT ? on some servers (ER_WRONG_ARGUMENTS).
+  const safeLimit = Math.min(Math.max(Math.floor(Number(limit) || 50), 1), 200);
+  try {
+    const rows = await query<Record<string, unknown>>(
+      `SELECT id, account_id, actor_user_id, action, entity_type, entity_id, meta, created_at
+       FROM audit_log
+       WHERE account_id = ?
+       ORDER BY created_at DESC
+       LIMIT ${safeLimit}`,
+      [accountId],
+    );
 
-  return rows.map((row) => {
-    let meta: Record<string, unknown> | null = null;
-    if (row.meta && typeof row.meta === "object") {
-      meta = row.meta as Record<string, unknown>;
-    } else if (typeof row.meta === "string") {
-      try {
-        meta = JSON.parse(row.meta) as Record<string, unknown>;
-      } catch {
-        meta = null;
+    return rows.map((row) => {
+      let meta: Record<string, unknown> | null = null;
+      if (row.meta && typeof row.meta === "object") {
+        meta = row.meta as Record<string, unknown>;
+      } else if (typeof row.meta === "string") {
+        try {
+          meta = JSON.parse(row.meta) as Record<string, unknown>;
+        } catch {
+          meta = null;
+        }
       }
-    }
-    return {
-      id: String(row.id),
-      account_id: String(row.account_id),
-      actor_user_id: row.actor_user_id ? String(row.actor_user_id) : null,
-      action: String(row.action),
-      entity_type: String(row.entity_type),
-      entity_id: row.entity_id ? String(row.entity_id) : null,
-      meta,
-      created_at:
-        row.created_at instanceof Date
-          ? row.created_at.toISOString()
-          : String(row.created_at),
-    };
-  });
+      return {
+        id: String(row.id),
+        account_id: String(row.account_id),
+        actor_user_id: row.actor_user_id ? String(row.actor_user_id) : null,
+        action: String(row.action),
+        entity_type: String(row.entity_type),
+        entity_id: row.entity_id ? String(row.entity_id) : null,
+        meta,
+        created_at:
+          row.created_at instanceof Date
+            ? row.created_at.toISOString()
+            : String(row.created_at),
+      };
+    });
+  } catch (err) {
+    console.warn("[compliance] listAuditLogs:", err);
+    return [];
+  }
 }
 
 /** Exact keyword match (case-insensitive), whole message trimmed. */
@@ -284,11 +291,16 @@ export async function setContactOptOut(input: {
 export async function countOptedOutContacts(
   accountId: string,
 ): Promise<number> {
-  const rows = await query<{ c: number }>(
-    `SELECT COUNT(*) AS c FROM contacts WHERE account_id = ? AND opted_out = 1`,
-    [accountId],
-  );
-  return Number(rows[0]?.c ?? 0);
+  try {
+    const rows = await query<{ c: number }>(
+      `SELECT COUNT(*) AS c FROM contacts WHERE account_id = ? AND opted_out = 1`,
+      [accountId],
+    );
+    return Number(rows[0]?.c ?? 0);
+  } catch (err) {
+    console.warn("[compliance] countOptedOutContacts:", err);
+    return 0;
+  }
 }
 
 export async function listOptedOutContacts(
@@ -303,26 +315,33 @@ export async function listOptedOutContacts(
     opt_out_source: string | null;
   }>
 > {
-  const rows = await query<Record<string, unknown>>(
-    `SELECT id, name, phone, opted_out_at, opt_out_source
-     FROM contacts
-     WHERE account_id = ? AND opted_out = 1
-     ORDER BY opted_out_at DESC
-     LIMIT ?`,
-    [accountId, Math.min(Math.max(limit, 1), 500)],
-  );
+  // mysql2 prepared statements reject LIMIT ? on some servers (ER_WRONG_ARGUMENTS).
+  const safeLimit = Math.min(Math.max(Math.floor(Number(limit) || 100), 1), 500);
+  try {
+    const rows = await query<Record<string, unknown>>(
+      `SELECT id, name, phone, opted_out_at, opt_out_source
+       FROM contacts
+       WHERE account_id = ? AND opted_out = 1
+       ORDER BY opted_out_at DESC
+       LIMIT ${safeLimit}`,
+      [accountId],
+    );
 
-  return rows.map((row) => ({
-    id: String(row.id),
-    name: row.name ? String(row.name) : null,
-    phone: String(row.phone),
-    opted_out_at: row.opted_out_at
-      ? row.opted_out_at instanceof Date
-        ? row.opted_out_at.toISOString()
-        : String(row.opted_out_at)
-      : null,
-    opt_out_source: row.opt_out_source ? String(row.opt_out_source) : null,
-  }));
+    return rows.map((row) => ({
+      id: String(row.id),
+      name: row.name ? String(row.name) : null,
+      phone: String(row.phone),
+      opted_out_at: row.opted_out_at
+        ? row.opted_out_at instanceof Date
+          ? row.opted_out_at.toISOString()
+          : String(row.opted_out_at)
+        : null,
+      opt_out_source: row.opt_out_source ? String(row.opt_out_source) : null,
+    }));
+  } catch (err) {
+    console.warn("[compliance] listOptedOutContacts:", err);
+    return [];
+  }
 }
 
 /**

@@ -42,6 +42,12 @@ export const DOC_PAGES = [
     description: "Meta credentials, webhooks, and templates",
   },
   {
+    href: "/docs/email-marketing",
+    slug: "email-marketing",
+    label: "Email Marketing",
+    description: "BYO SMTP, lists, templates, and campaigns",
+  },
+  {
     href: "/docs/troubleshooting",
     slug: "troubleshooting",
     label: "Troubleshooting",
@@ -255,6 +261,29 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
     ],
   },
   {
+    id: "email-marketing",
+    title: "Email Marketing",
+    href: "/email",
+    summary:
+      "Bring your own SMTP, manage email lists, templates, and campaigns — separate from WhatsApp broadcasts.",
+    capabilities: [
+      "Per-account SMTP (Gmail, Brevo, SES, and others)",
+      "Email lists with CSV import and public subscribe forms",
+      "Reusable HTML templates with merge tags",
+      "Campaign wizard: list → compose → send or schedule",
+      "Delivery stats (sent / failed / skipped) from SMTP",
+      "One-click unsubscribe links on every campaign email",
+    ],
+    howToUse: [
+      "Connect SMTP under Email → SMTP or Settings → Email SMTP.",
+      "Create a list, import CSV or share the subscribe URL.",
+      "Optional: save an HTML template with {{name}} and {{email}}.",
+      "Email → Campaigns → New campaign, then send or schedule.",
+      "See /docs/email-marketing for provider setup tips.",
+    ],
+    roleNote: "Admins configure SMTP and send. Agents can view lists and campaigns.",
+  },
+  {
     id: "automations",
     title: "Automations",
     href: "/automations",
@@ -305,6 +334,7 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
       "Profile, password, avatar, sessions, leave team",
       "WhatsApp API credentials and registration",
       "Meta App Secret for webhook verification",
+      "Email SMTP for marketing campaigns",
       "Message template manager with Meta sync",
       "Tag manager with colors",
       "Team invites and role management",
@@ -312,7 +342,7 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
     ],
     howToUse: [
       "Use the tabs at the top to switch between settings sections.",
-      "Admins configure WhatsApp and templates; agents have read-only access to config.",
+      "Admins configure WhatsApp, Email SMTP, and templates; agents have read-only access to config.",
       "Owners can optionally set personal WhatsApp credentials.",
     ],
     badge: "Admin+",
@@ -364,6 +394,14 @@ export const SETTINGS_TABS: {
     label: "App Secret",
     href: "/settings?tab=app-secret",
     description: "Meta App Secret for webhook HMAC signature verification.",
+    who: "Admin+",
+  },
+  {
+    tab: "smtp",
+    label: "Email SMTP",
+    href: "/settings?tab=smtp",
+    description:
+      "Bring-your-own SMTP for email marketing (host, port, credentials, from address, test send).",
     who: "Admin+",
   },
   {
@@ -447,5 +485,11 @@ export const CRON_JOBS = [
     schedule: "As needed",
     purpose:
       "Large broadcasts are sent in batches. High-volume sends may need a scheduled processor.",
+  },
+  {
+    endpoint: "GET /api/email/campaigns/cron",
+    schedule: "Every 1–5 minutes (optional)",
+    purpose:
+      "Resumes stalled email campaigns and starts scheduled sends. Same secret as broadcast cron (BROADCAST_CRON_SECRET / ENCRYPTION_KEY).",
   },
 ];

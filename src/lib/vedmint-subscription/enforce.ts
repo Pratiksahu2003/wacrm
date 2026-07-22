@@ -349,6 +349,8 @@ export async function getEntitlementSnapshot(
         "max_flows",
         "max_active_flows",
         "max_messages_per_day",
+        "max_email_subscribers",
+        "max_emails_per_day",
       ] as PlanLimitKey[]
     ).forEach((key) => {
       limits[key] = pickLimitValue(limitsRaw, key);

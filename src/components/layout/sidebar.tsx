@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  Mail,
   MessageSquare,
   Radio,
   Settings,
@@ -97,7 +98,8 @@ interface NavItem {
     | "automations"
     | "flows"
     | "team"
-    | "compliance";
+    | "compliance"
+    | "email_marketing";
 }
 
 const navItems: NavItem[] = [
@@ -106,6 +108,12 @@ const navItems: NavItem[] = [
   { href: "/contacts", label: "Contacts", icon: Users, capability: "contacts" },
   { href: "/pipelines", label: "Pipelines", icon: GitBranch, capability: "pipelines" },
   { href: "/broadcasts", label: "Broadcasts", icon: Radio, capability: "broadcasts" },
+  {
+    href: "/email",
+    label: "Email",
+    icon: Mail,
+    capability: "email_marketing",
+  },
   { href: "/automations", label: "Automations", icon: Zap, capability: "automations" },
   { href: "/flows", label: "Flows", icon: Workflow, capability: "flows" },
   {
