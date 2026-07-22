@@ -8,11 +8,14 @@ import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/hooks/use-auth";
+import { useEntitlements } from "@/hooks/use-entitlements";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import {
+  CreditCard,
   Crown,
   GitBranch,
   LayoutDashboard,
+  Lock,
   LogOut,
   MessageSquare,
   Radio,
@@ -86,21 +89,31 @@ interface NavItem {
    * Purely informational — doesn't affect routing or access.
    */
   beta?: boolean;
+  /** Subscription capability required; shows a lock when unavailable. */
+  capability?:
+    | "messaging"
+    | "contacts"
+    | "pipelines"
+    | "broadcasts"
+    | "automations"
+    | "flows"
+    | "team";
 }
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inbox", label: "Inbox", icon: MessageSquare },
-  { href: "/contacts", label: "Contacts", icon: Users },
-  { href: "/pipelines", label: "Pipelines", icon: GitBranch },
-  { href: "/broadcasts", label: "Broadcasts", icon: Radio },
-  { href: "/automations", label: "Automations", icon: Zap },
-  { href: "/flows", label: "Flows", icon: Workflow, beta: true },
+  { href: "/inbox", label: "Inbox", icon: MessageSquare, capability: "messaging" },
+  { href: "/contacts", label: "Contacts", icon: Users, capability: "contacts" },
+  { href: "/pipelines", label: "Pipelines", icon: GitBranch, capability: "pipelines" },
+  { href: "/broadcasts", label: "Broadcasts", icon: Radio, capability: "broadcasts" },
+  { href: "/automations", label: "Automations", icon: Zap, capability: "automations" },
+  { href: "/flows", label: "Flows", icon: Workflow, beta: true, capability: "flows" },
 ];
 
-const bottomNavItems = [
+const bottomNavItems: NavItem[] = [
+  { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/docs/getting-started", label: "Docs", icon: BookOpen },
-  { href: "/settings?tab=members", label: "Team", icon: UsersRound },
+  { href: "/settings?tab=members", label: "Team", icon: UsersRound, capability: "team" },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -117,7 +130,15 @@ const ACCOUNT_SHARING_FLAG = "account_sharing";
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
+  const { canUse, active, configured, loading: entitlementsLoading } =
+    useEntitlements();
   const totalUnread = useTotalUnread();
+
+  const planLocked = (capability?: NavItem["capability"]) => {
+    if (!capability || entitlementsLoading || !configured) return false;
+    if (!active) return true;
+    return !canUse(capability);
+  };
   // Match the settings page's check: only treat the flag as enabled
   // once the profile has finished loading. Without this, the strip
   // would briefly flash absent during the initial profile fetch
@@ -212,20 +233,34 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               const showUnreadDot =
                 item.href === "/inbox" && totalUnread > 0 && !isActive;
 
+              const locked = planLocked(item.capability);
+
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    title={
+                      locked
+                        ? "Requires an active subscription plan — open Billing to upgrade"
+                        : undefined
+                    }
                     className={cn(
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      locked && "opacity-80",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
                     <span className="flex-1">{item.label}</span>
+                    {locked && (
+                      <Lock
+                        className="h-3.5 w-3.5 text-amber-600"
+                        aria-label="Locked by plan"
+                      />
+                    )}
                     {item.beta && (
                       <span
                         aria-label="Beta feature"
@@ -257,19 +292,32 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 item.href.startsWith("/docs")
                   ? pathname.startsWith("/docs")
                   : pathname.startsWith(item.href.split("?")[0] ?? item.href);
+              const locked = planLocked(item.capability);
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    title={
+                      locked
+                        ? "Requires an active subscription plan — open Billing to upgrade"
+                        : undefined
+                    }
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      locked && "opacity-80",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    {item.label}
+                    <span className="flex-1">{item.label}</span>
+                    {locked && (
+                      <Lock
+                        className="h-3.5 w-3.5 text-amber-600"
+                        aria-label="Locked by plan"
+                      />
+                    )}
                   </Link>
                 </li>
               );

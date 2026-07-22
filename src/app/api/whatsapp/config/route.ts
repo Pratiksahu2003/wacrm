@@ -7,6 +7,11 @@ import {
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api'
 import { decryptIfEncrypted, encrypt } from '@/lib/whatsapp/encryption'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 export const runtime = 'nodejs'
 
@@ -188,6 +193,13 @@ export async function POST(request: Request) {
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
+    }
+
+    try {
+      await assertCanPerform(user.id, accountId, 'whatsapp')
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err)
+      throw err
     }
 
     const body = await request.json()

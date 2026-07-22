@@ -48,7 +48,7 @@ import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactDetailView } from '@/components/contacts/contact-detail-view';
 import { ImportModal } from '@/components/contacts/import-modal';
 import { useCan } from '@/hooks/use-can';
-import { GatedButton } from '@/components/ui/gated-button';
+import { PlanGatedButton } from '@/components/billing/plan-gated-button';
 import { useAuth } from '@/hooks/use-auth';
 import type { Profile } from '@/types';
 import { memberLabel, TeamMemberSelect } from '@/components/team/team-member-select';
@@ -326,25 +326,29 @@ function ContactsPageContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <GatedButton
+          <PlanGatedButton
             variant="outline"
             canAct={canEdit}
-            gateReason="add or import contacts"
+            roleReason="add or import contacts"
+            capability="contacts"
+            limitKey="max_contacts"
             onClick={() => setImportOpen(true)}
             className="border-border text-foreground/80 hover:bg-muted"
           >
             <Upload className="size-4" />
             Import
-          </GatedButton>
-          <GatedButton
+          </PlanGatedButton>
+          <PlanGatedButton
             canAct={canEdit}
-            gateReason="add or import contacts"
+            roleReason="add or import contacts"
+            capability="contacts"
+            limitKey="max_contacts"
             onClick={openAddForm}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="size-4" />
             Add Contact
-          </GatedButton>
+          </PlanGatedButton>
         </div>
       </div>
 

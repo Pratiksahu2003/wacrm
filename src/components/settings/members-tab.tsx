@@ -57,6 +57,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RequireRole } from '@/components/auth/require-role';
+import { PlanGatedButton } from '@/components/billing/plan-gated-button';
 import { useAuth } from '@/hooks/use-auth';
 import type { AccountRole } from '@/lib/auth/roles';
 import { InviteMemberDialog } from './invite-member-dialog';
@@ -303,13 +304,15 @@ export function MembersTab() {
           </p>
         </div>
         <RequireRole min="admin">
-          <Button
+          <PlanGatedButton
+            capability="team"
+            limitKey="max_team_members"
             onClick={() => setInviteOpen(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="size-4" />
             Invite member
-          </Button>
+          </PlanGatedButton>
         </RequireRole>
       </div>
 

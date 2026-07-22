@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Radio, Plus, Loader2 } from 'lucide-react';
 import { useCan } from '@/hooks/use-can';
-import { GatedButton } from '@/components/ui/gated-button';
+import { PlanGatedButton } from '@/components/billing/plan-gated-button';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
 
 /**
@@ -184,15 +184,17 @@ export default function BroadcastsPage() {
             Send bulk messages to your contacts using approved templates.
           </p>
         </div>
-        <GatedButton
+        <PlanGatedButton
           canAct={canCreate}
-          gateReason="create broadcasts"
+          roleReason="create broadcasts"
+          capability="broadcasts"
+          limitKey="max_broadcasts_per_month"
           onClick={() => router.push('/broadcasts/new')}
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
           New Broadcast
-        </GatedButton>
+        </PlanGatedButton>
       </div>
 
       {broadcasts.length === 0 ? (
@@ -202,15 +204,17 @@ export default function BroadcastsPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             Create your first broadcast to reach your contacts at scale.
           </p>
-          <GatedButton
+          <PlanGatedButton
             canAct={canCreate}
-            gateReason="create broadcasts"
+            roleReason="create broadcasts"
+            capability="broadcasts"
+            limitKey="max_broadcasts_per_month"
             onClick={() => router.push('/broadcasts/new')}
             className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" />
             New Broadcast
-          </GatedButton>
+          </PlanGatedButton>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">

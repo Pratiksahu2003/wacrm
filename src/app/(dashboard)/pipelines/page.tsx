@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { GitBranch, Plus, ChevronDown, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useCan } from "@/hooks/use-can";
-import { GatedButton } from "@/components/ui/gated-button";
+import { PlanGatedButton } from "@/components/billing/plan-gated-button";
 
 // Pipeline creation is admin-class (settings-tier write under
 // the new RLS); deal creation is operational and only requires
@@ -372,26 +372,28 @@ export default function PipelinesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <GatedButton
+          <PlanGatedButton
             variant="outline"
             canAct={canEditSettings}
-            gateReason="create pipelines"
+            roleReason="create pipelines"
+            capability="pipelines"
             onClick={() => setNewPipelineOpen(true)}
             className="border-border bg-white text-foreground shadow-sm"
           >
             <Plus className="mr-1 h-4 w-4" />
             Add Pipeline
-          </GatedButton>
-          <GatedButton
+          </PlanGatedButton>
+          <PlanGatedButton
             canAct={canCreateDeals}
-            gateReason="create deals"
+            roleReason="create deals"
+            capability="pipelines"
             disabled={!selectedPipelineId || stages.length === 0}
             onClick={() => handleAddDeal()}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="mr-1 h-4 w-4" />
             Add Deal
-          </GatedButton>
+          </PlanGatedButton>
         </div>
       </div>
 
@@ -405,15 +407,16 @@ export default function PipelinesPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Create a pipeline to start tracking deals
           </p>
-          <GatedButton
+          <PlanGatedButton
             canAct={canEditSettings}
-            gateReason="create pipelines"
+            roleReason="create pipelines"
+            capability="pipelines"
             onClick={() => setNewPipelineOpen(true)}
             className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="mr-1 h-4 w-4" />
             Create Pipeline
-          </GatedButton>
+          </PlanGatedButton>
         </div>
       ) : (
         <>

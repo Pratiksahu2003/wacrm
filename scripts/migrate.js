@@ -219,6 +219,22 @@ async function applyIncrementalPatches(connection) {
     'first_inbound_message_at',
     'TIMESTAMP NULL',
   );
+
+  // Subscription plan expiry cache (VedMint Billing auto-expire cron)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS subscription_state (
+      account_id VARCHAR(36) NOT NULL,
+      user_id VARCHAR(36) NOT NULL,
+      status VARCHAR(50) NULL,
+      plan_name VARCHAR(255) NULL,
+      expires_at TIMESTAMP NULL,
+      expired_applied_at TIMESTAMP NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (account_id),
+      KEY idx_subscription_state_expires (expires_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  console.log('[Migration] Ensured subscription_state table');
 }
 
 async function migrate({ patchesOnly = false } = {}) {

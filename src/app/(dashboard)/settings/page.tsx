@@ -9,6 +9,7 @@ import {
   Palette,
   UsersRound,
   Shield,
+  CreditCard,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
@@ -22,6 +23,7 @@ import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { MembersTab } from '@/components/settings/members-tab';
 import { MetaAppSecretPanel } from '@/components/settings/meta-app-secret-panel';
 import { MemberWhatsAppConfig } from '@/components/settings/member-whatsapp-config';
+import { BillingSettingsPanel } from '@/components/settings/billing-settings-panel';
 
 const TAB_VALUES = [
   'profile',
@@ -31,6 +33,7 @@ const TAB_VALUES = [
   'tags',
   'appearance',
   'members',
+  'billing',
 ] as const;
 type TabValue = (typeof TAB_VALUES)[number];
 
@@ -56,8 +59,8 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your profile, team, WhatsApp® integration, message templates,
-          and tags.
+          Manage your profile, team, billing, WhatsApp® integration, message
+          templates, and tags.
         </p>
       </div>
 
@@ -112,6 +115,13 @@ export default function SettingsPage() {
             <UsersRound className="size-4" />
             Team
           </TabsTrigger>
+          <TabsTrigger
+            value="billing"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+          >
+            <CreditCard className="size-4" />
+            Billing
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -144,6 +154,10 @@ export default function SettingsPage() {
 
         <TabsContent value="members">
           <MembersTab />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingSettingsPanel />
         </TabsContent>
       </Tabs>
     </div>

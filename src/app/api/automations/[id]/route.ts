@@ -10,6 +10,11 @@ import {
   validateStepsForActivation,
   validateTriggerForActivation,
 } from '@/lib/automations/validate'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 async function requireUser() {
   const supabase = await createClient()
@@ -83,6 +88,26 @@ export async function PATCH(
   // are still allowed to be incomplete.
   const willBeActive =
     typeof update.is_active === 'boolean' ? update.is_active : existing.is_active
+  if (willBeActive && !existing.is_active) {
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const accountId = profile?.account_id as string | undefined
+    if (accountId) {
+      try {
+        await assertCanPerform(user.id, accountId, 'automations', {
+          limitKey: 'max_active_automations',
+          adding: 1,
+        })
+      } catch (err) {
+        if (err instanceof PlanGateError) return planGateResponse(err)
+        throw err
+      }
+    }
+  }
   if (willBeActive) {
     const mergedTriggerType = (update.trigger_type ?? existing.trigger_type) as string
     const mergedTriggerConfig = update.trigger_config ?? existing.trigger_config

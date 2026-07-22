@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { EntitlementsProvider } from "@/hooks/use-entitlements";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { SubscriptionBanner } from "@/components/billing/subscription-banner";
 
 // Auth-gated dashboard shell. Extracted from the layout so the layout
 // itself can stay a server component and export metadata (noindex) —
@@ -57,6 +59,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
       <Sidebar open={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
+        <SubscriptionBanner />
         {/* Thinner horizontal padding on mobile so cards have room to breathe. */}
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">{children}</main>
       </div>
@@ -67,7 +70,9 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <DashboardShellInner>{children}</DashboardShellInner>
+      <EntitlementsProvider>
+        <DashboardShellInner>{children}</DashboardShellInner>
+      </EntitlementsProvider>
     </AuthProvider>
   );
 }

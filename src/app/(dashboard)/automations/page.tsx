@@ -22,7 +22,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useCan } from "@/hooks/use-can"
 import type { Automation } from "@/types"
 import { Button } from "@/components/ui/button"
-import { GatedButton } from "@/components/ui/gated-button"
+import { PlanGatedButton } from "@/components/billing/plan-gated-button"
 import { Switch } from "@/components/ui/switch"
 import {
   DropdownMenu,
@@ -166,15 +166,17 @@ export default function AutomationsPage() {
             Build workflows that react to WhatsApp® events automatically.
           </p>
         </div>
-        <GatedButton
+        <PlanGatedButton
           canAct={canCreate}
-          gateReason="create automations"
+          roleReason="create automations"
+          capability="automations"
+          limitKey="max_automations"
           onClick={() => router.push("/automations/new")}
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
           Create Automation
-        </GatedButton>
+        </PlanGatedButton>
       </div>
 
       {showTemplates && (

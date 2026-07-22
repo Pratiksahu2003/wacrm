@@ -8,6 +8,11 @@ import {
   setSessionCookie,
   verificationEmailErrorMessage,
 } from '@/lib/auth-verification';
+import {
+  getVedmintConfig,
+  issueVedmintToken,
+  setVedmintApiTokenCookie,
+} from '@/lib/vedmint-subscription/server';
 
 export async function POST(request: Request) {
   try {
@@ -66,6 +71,25 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({ data: { user, session }, error: null });
     setSessionCookie(response, token);
+
+    // Issue VedMint Subscription API JWT after login (guide §2).
+    // Failures are non-blocking — billing routes re-issue lazily.
+    if (getVedmintConfig().configured) {
+      try {
+        const profiles = await query<{ full_name: string | null }>(
+          'SELECT full_name FROM profiles WHERE user_id = ? LIMIT 1',
+          [dbUser.id],
+        );
+        const issued = await issueVedmintToken({
+          externalUserId: dbUser.id,
+          email: dbUser.email,
+          name: profiles[0]?.full_name,
+        });
+        setVedmintApiTokenCookie(response, issued.access_token);
+      } catch (err) {
+        console.error('[POST /api/auth/signin] VedMint token issue failed:', err);
+      }
+    }
 
     return response;
   } catch (err: any) {

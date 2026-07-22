@@ -81,6 +81,7 @@ export async function middleware(request: NextRequest) {
     "/automations",
     "/flows",
     "/settings",
+    "/billing",
   ];
   if (
     !user &&
@@ -94,8 +95,9 @@ export async function middleware(request: NextRequest) {
   // API routes that need auth (not webhooks)
   if (
     !user &&
-    request.nextUrl.pathname.startsWith("/api/whatsapp/") &&
-    !request.nextUrl.pathname.includes("/webhook")
+    ((request.nextUrl.pathname.startsWith("/api/whatsapp/") &&
+      !request.nextUrl.pathname.includes("/webhook")) ||
+      request.nextUrl.pathname.startsWith("/api/billing/"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

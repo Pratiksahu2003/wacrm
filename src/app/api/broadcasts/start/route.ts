@@ -9,6 +9,12 @@ import { resolveBroadcastAudience } from '@/lib/broadcasts/resolve-audience';
 import { INSERT_BATCH_SIZE } from '@/lib/broadcasts/processor';
 import { triggerBroadcastProcessingHttp } from '@/lib/broadcasts/trigger';
 import type { AudienceConfig, VariableMapping } from '@/lib/broadcasts/types';
+import {
+  assertCanPerform,
+  assertPlanLimit,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server';
 
 export const runtime = 'nodejs';
 /** Large audiences need time to insert recipient rows before returning. */
@@ -61,6 +67,16 @@ export async function POST(request: Request) {
       );
     }
 
+    try {
+      await assertCanPerform(user.id, accountId, 'broadcasts', {
+        limitKey: 'max_broadcasts_per_month',
+        adding: 1,
+      });
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err);
+      throw err;
+    }
+
     const body = (await request.json()) as StartBroadcastBody;
     const { name, template_name, template_language, variables, audience } =
       body;
@@ -93,6 +109,16 @@ export async function POST(request: Request) {
         { error: 'No contacts found for this audience.' },
         { status: 400 },
       );
+    }
+
+    try {
+      await assertPlanLimit(user.id, accountId, 'max_broadcast_recipients', {
+        adding: contacts.length,
+        currentUsage: 0,
+      });
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err);
+      throw err;
     }
 
     const { data: broadcast, error: broadcastError } = await supabase

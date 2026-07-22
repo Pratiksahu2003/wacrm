@@ -33,6 +33,11 @@ import {
   RATE_LIMITS,
 } from "@/lib/rate-limit";
 import { OFFICIAL_APP_URL } from "@/lib/brand";
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from "@/lib/vedmint-subscription/server";
 
 // Resolve the base URL we publish invite links under.
 //
@@ -177,6 +182,16 @@ export async function POST(request: Request) {
       RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
+
+    try {
+      await assertCanPerform(ctx.userId, ctx.accountId, "team", {
+        limitKey: "max_team_members",
+        adding: 1,
+      });
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err);
+      throw err;
+    }
 
     const body = (await request.json().catch(() => null)) as
       | { role?: unknown; expiresInDays?: unknown; label?: unknown }

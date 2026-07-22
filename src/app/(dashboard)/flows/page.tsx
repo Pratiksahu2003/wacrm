@@ -20,7 +20,7 @@ import {
 
 import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
-import { GatedButton } from "@/components/ui/gated-button";
+import { PlanGatedButton } from "@/components/billing/plan-gated-button";
 import {
   Dialog,
   DialogContent,
@@ -229,14 +229,16 @@ export default function FlowsPage() {
             menus, FAQs, and triage before a human steps in.
           </p>
         </div>
-        <GatedButton
+        <PlanGatedButton
           canAct={canCreate}
-          gateReason="create flows"
+          roleReason="create flows"
+          capability="flows"
+          limitKey="max_flows"
           onClick={() => setCreateOpen(true)}
         >
           <Plus className="h-4 w-4" />
           New flow
-        </GatedButton>
+        </PlanGatedButton>
       </header>
 
       {flows.length === 0 ? (
@@ -398,15 +400,17 @@ function EmptyState({
         bot. Customers tap buttons; the bot routes them to the right answer (or
         the right agent).
       </p>
-      <GatedButton
+      <PlanGatedButton
         canAct={canCreate}
-        gateReason="create flows"
+        roleReason="create flows"
+        capability="flows"
+        limitKey="max_flows"
         onClick={onCreate}
         className="mt-5"
       >
         <Plus className="h-4 w-4" />
         Create your first flow
-      </GatedButton>
+      </PlanGatedButton>
     </div>
   );
 }

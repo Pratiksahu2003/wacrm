@@ -7,6 +7,11 @@ import {
   validateStepsForActivation,
   validateTriggerForActivation,
 } from '@/lib/automations/validate'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 export async function GET() {
   const supabase = await createClient()
@@ -38,6 +43,16 @@ export async function POST(request: Request) {
   const accountId = profile?.account_id as string | undefined
   if (!accountId) {
     return NextResponse.json({ error: 'Account not linked' }, { status: 403 })
+  }
+
+  try {
+    await assertCanPerform(user.id, accountId, 'automations', {
+      limitKey: 'max_automations',
+      adding: 1,
+    })
+  } catch (err) {
+    if (err instanceof PlanGateError) return planGateResponse(err)
+    throw err
   }
 
   const body = await request.json().catch(() => null)
@@ -74,6 +89,15 @@ export async function POST(request: Request) {
   // (is_active=false) are allowed to be incomplete so users can save
   // progress mid-build.
   if (is_active) {
+    try {
+      await assertCanPerform(user.id, accountId, 'automations', {
+        limitKey: 'max_active_automations',
+        adding: 1,
+      })
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err)
+      throw err
+    }
     const issues = [
       ...validateTriggerForActivation(effectiveTriggerType, effectiveTriggerConfig ?? {}),
       ...validateStepsForActivation(

@@ -11,6 +11,33 @@ import {
   getConfiguredSiteUrl,
   sanitizeAuthNextPath,
 } from "@/lib/site-url";
+import {
+  getVedmintConfig,
+  issueVedmintToken,
+  setVedmintApiTokenCookie,
+} from "@/lib/vedmint-subscription/server";
+
+async function attachVedmintToken(
+  response: NextResponse,
+  userId: string,
+  email: string,
+): Promise<void> {
+  if (!getVedmintConfig().configured) return;
+  try {
+    const profiles = await query<{ full_name: string | null }>(
+      "SELECT full_name FROM profiles WHERE user_id = ? LIMIT 1",
+      [userId],
+    );
+    const issued = await issueVedmintToken({
+      externalUserId: userId,
+      email,
+      name: profiles[0]?.full_name,
+    });
+    setVedmintApiTokenCookie(response, issued.access_token);
+  } catch (err) {
+    console.error("[auth/callback] VedMint token issue failed:", err);
+  }
+}
 
 const JWT_SECRET = process.env.ENCRYPTION_KEY || 'VedMint Crm-secret-default-encryption-key-32-chars';
 
@@ -52,6 +79,7 @@ export async function GET(request: Request) {
             );
             const response = NextResponse.redirect(`${redirectBase}${next}`);
             setSessionCookie(response, sessionToken);
+            await attachVedmintToken(response, dbUser.id, dbUser.email);
             return response;
           }
         }
@@ -62,9 +90,12 @@ export async function GET(request: Request) {
       }
 
       if (decoded.type === "reset-password" && decoded.email) {
-        const users = await query("SELECT id, email FROM users WHERE email = ?", [decoded.email.toLowerCase().trim()]);
+        const users = await query<{ id: string; email: string }>(
+          "SELECT id, email FROM users WHERE email = ?",
+          [decoded.email.toLowerCase().trim()],
+        );
         const dbUser = users[0];
-        
+
         if (dbUser) {
           const sessionToken = createVerifiedSessionToken(
             dbUser.id,
@@ -73,6 +104,7 @@ export async function GET(request: Request) {
 
           const response = NextResponse.redirect(`${redirectBase}${next}`);
           setSessionCookie(response, sessionToken);
+          await attachVedmintToken(response, dbUser.id, dbUser.email);
           return response;
         }
       }

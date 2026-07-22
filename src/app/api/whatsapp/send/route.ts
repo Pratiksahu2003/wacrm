@@ -22,6 +22,11 @@ import {
 } from '@/lib/rate-limit'
 import type { MessageTemplate } from '@/types'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 export const runtime = 'nodejs'
 
@@ -39,6 +44,21 @@ export async function POST(request: Request) {
         { error: 'Unauthorized' },
         { status: 401 }
       )
+    }
+
+    const { data: sendProfile } = await supabase
+      .from('profiles')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const sendAccountId = sendProfile?.account_id as string | undefined
+    if (sendAccountId) {
+      try {
+        await assertCanPerform(user.id, sendAccountId, 'messaging')
+      } catch (err) {
+        if (err instanceof PlanGateError) return planGateResponse(err)
+        throw err
+      }
     }
 
     // Per-user rate limit. Bucket key is scoped to this route so

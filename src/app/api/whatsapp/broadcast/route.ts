@@ -7,6 +7,11 @@ import {
 } from '@/lib/rate-limit'
 import { sendTemplateBatch } from '@/lib/broadcasts/send-batch'
 import type { BroadcastSendRecipient } from '@/lib/broadcasts/types'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 interface BroadcastResult {
   phone: string
@@ -33,6 +38,21 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: bcProfile } = await supabase
+      .from('profiles')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const bcAccountId = bcProfile?.account_id as string | undefined
+    if (bcAccountId) {
+      try {
+        await assertCanPerform(user.id, bcAccountId, 'broadcasts')
+      } catch (err) {
+        if (err instanceof PlanGateError) return planGateResponse(err)
+        throw err
+      }
     }
 
     const body = await request.json()

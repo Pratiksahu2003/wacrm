@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { createEmulatorClient } from '@/lib/supabase/emulator-server';
 import { query } from '@/lib/mysql';
 import { sessionUserFromRequest } from '@/lib/session-token';
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+  type PlanCapability,
+  type PlanLimitKey,
+} from '@/lib/vedmint-subscription/server';
 
 const TABLES_WITH_ACCOUNT_ID = [
   'profiles',
@@ -23,6 +30,19 @@ const TABLES_WITH_ACCOUNT_ID = [
   'flows',
   'flow_runs'
 ];
+
+const INSERT_PLAN_GATES: Record<
+  string,
+  { capability: PlanCapability; limitKey?: PlanLimitKey }
+> = {
+  contacts: { capability: 'contacts', limitKey: 'max_contacts' },
+  deals: { capability: 'pipelines' },
+  pipelines: { capability: 'pipelines' },
+  message_templates: { capability: 'templates' },
+  broadcasts: { capability: 'broadcasts', limitKey: 'max_broadcasts_per_month' },
+  automations: { capability: 'automations', limitKey: 'max_automations' },
+  flows: { capability: 'flows', limitKey: 'max_flows' },
+};
 
 export async function POST(request: Request) {
   try {
@@ -91,6 +111,19 @@ export async function POST(request: Request) {
         }
       }
       finalDataToSet = isArray ? rows : rows[0];
+
+      const gate = INSERT_PLAN_GATES[tableName];
+      if (gate) {
+        try {
+          await assertCanPerform(userId, accountId, gate.capability, {
+            limitKey: gate.limitKey,
+            adding: rows.length,
+          });
+        } catch (err) {
+          if (err instanceof PlanGateError) return planGateResponse(err);
+          throw err;
+        }
+      }
     }
 
     // Tenancy check for updates

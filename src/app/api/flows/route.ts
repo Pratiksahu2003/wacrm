@@ -7,6 +7,11 @@ import {
   STARTER_FLOW_NODES,
   STARTER_KEYWORD_TRIGGER,
 } from '@/lib/flows/starter-scaffold'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 /**
  * GET /api/flows — list the caller's flows.
@@ -64,6 +69,16 @@ export async function POST(request: Request) {
   const accountId = profile?.account_id as string | undefined
   if (!accountId) {
     return NextResponse.json({ error: 'Account not linked' }, { status: 403 })
+  }
+
+  try {
+    await assertCanPerform(userId, accountId, 'flows', {
+      limitKey: 'max_flows',
+      adding: 1,
+    })
+  } catch (err) {
+    if (err instanceof PlanGateError) return planGateResponse(err)
+    throw err
   }
 
   const body = (await request.json().catch(() => null)) as

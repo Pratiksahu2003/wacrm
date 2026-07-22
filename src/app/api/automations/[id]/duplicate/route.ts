@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from '@/lib/vedmint-subscription/server'
 
 export async function POST(
   _request: Request,
@@ -22,6 +27,16 @@ export async function POST(
     .maybeSingle()
   if (origErr) return NextResponse.json({ error: origErr.message }, { status: 500 })
   if (!original) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  try {
+    await assertCanPerform(user.id, original.account_id as string, 'automations', {
+      limitKey: 'max_automations',
+      adding: 1,
+    })
+  } catch (err) {
+    if (err instanceof PlanGateError) return planGateResponse(err)
+    throw err
+  }
 
   const { data: copy, error: copyErr } = await admin
     .from('automations')

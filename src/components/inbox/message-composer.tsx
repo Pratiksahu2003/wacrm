@@ -3,8 +3,9 @@
 import { useState, useRef, useCallback, KeyboardEvent } from "react";
 import { Send, LayoutTemplate, SmilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GatedButton } from "@/components/ui/gated-button";
+import { PlanGatedButton } from "@/components/billing/plan-gated-button";
 import { useCan } from "@/hooks/use-can";
+import { useEntitlements } from "@/hooks/use-entitlements";
 import { cn } from "@/lib/utils";
 import { ReplyQuote } from "./reply-quote";
 
@@ -35,7 +36,9 @@ export function MessageComposer({
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canSend = useCan("send-messages");
-  const readOnly = !canSend;
+  const { canUse, active, configured } = useEntitlements();
+  const planAllowsMessaging = !configured || (active && canUse("messaging"));
+  const readOnly = !canSend || !planAllowsMessaging;
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -111,17 +114,18 @@ export function MessageComposer({
       )}
 
       <div className="flex items-end gap-2">
-        <GatedButton
+        <PlanGatedButton
           variant="ghost"
           size="sm"
-          canAct={!readOnly}
-          gateReason="send messages"
+          canAct={canSend}
+          roleReason="send messages"
+          capability="messaging"
           title={readOnly ? undefined : "Send template"}
           className="h-10 w-10 shrink-0 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
           onClick={onOpenTemplates}
         >
           <LayoutTemplate className="h-6 w-6" />
-        </GatedButton>
+        </PlanGatedButton>
 
         <div className="wa-input-bar flex min-h-[42px] flex-1 items-end gap-2 px-3 py-2">
           <button
@@ -139,8 +143,10 @@ export function MessageComposer({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={
-              readOnly
+              !canSend
                 ? "Read-only — viewers can browse but not reply"
+                : !planAllowsMessaging
+                  ? "Subscription required — upgrade to send messages"
                 : sessionExpired
                   ? "Session expired — use a template"
                   : "Type a message"
@@ -148,7 +154,11 @@ export function MessageComposer({
             disabled={disabled}
             rows={1}
             title={
-              readOnly ? "Read-only — your role can't send messages" : undefined
+              !canSend
+                ? "Read-only — your role can't send messages"
+                : !planAllowsMessaging
+                  ? "Your plan does not allow messaging — open Billing to upgrade"
+                  : undefined
             }
             className={cn(
               "max-h-[100px] min-h-[24px] flex-1 resize-none bg-transparent text-[15px] leading-[20px] text-foreground placeholder:text-muted-foreground outline-none",
@@ -157,10 +167,11 @@ export function MessageComposer({
           />
         </div>
 
-        <GatedButton
+        <PlanGatedButton
           size="sm"
-          canAct={!readOnly}
-          gateReason="send messages"
+          canAct={canSend}
+          roleReason="send messages"
+          capability="messaging"
           disabled={!hasText || sessionExpired || sending}
           onClick={handleSend}
           className={cn(
@@ -171,7 +182,7 @@ export function MessageComposer({
           )}
         >
           <Send className="h-5 w-5" />
-        </GatedButton>
+        </PlanGatedButton>
       </div>
     </div>
   );
