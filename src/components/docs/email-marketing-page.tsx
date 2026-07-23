@@ -17,15 +17,45 @@ export function EmailMarketingDocsPage() {
   return (
     <DocsShell
       title="Email Marketing"
-      description="Bring your own SMTP, grow email lists, send campaigns, and stay compliant with unsubscribe links."
+      description="Business & Enterprise only — bring your own SMTP, grow lists with CSV upload, use starter templates, and send campaigns with unsubscribe links."
     >
       <div className="flex flex-wrap gap-2">
         <DocLinkButton href="/email" label="Email overview" />
         <DocLinkButton href="/email/smtp" label="SMTP" />
         <DocLinkButton href="/email/lists" label="Lists" />
+        <DocLinkButton href="/email/templates" label="Templates" />
         <DocLinkButton href="/email/campaigns/new" label="New campaign" />
-        <DocLinkButton href="/settings?tab=smtp" label="Settings → SMTP" />
+        <DocLinkButton href="/pricing" label="Plans & pricing" />
       </div>
+
+      <section className="space-y-4">
+        <SectionHeading
+          id="plans"
+          title="Who can use email marketing"
+          description="Email marketing is included on Business and Enterprise — not on Starter."
+        />
+        <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
+          <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                <strong>Starter:</strong> WhatsApp CRM only — no Email module.
+              </li>
+              <li>
+                <strong>Business:</strong> SMTP, lists, starter templates, and
+                campaigns (single-user workspace).
+              </li>
+              <li>
+                <strong>Enterprise:</strong> Same email tools, plus team invites
+                and unlimited WhatsApp numbers.
+              </li>
+            </ul>
+            <p>
+              Upgrade from Billing if you see an upgrade gate on{" "}
+              <code>/email</code>.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="space-y-4">
         <SectionHeading
@@ -36,9 +66,17 @@ export function EmailMarketingDocsPage() {
         <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <ol className="list-decimal space-y-2 pl-5">
-              <li>Connect SMTP (host, port, username, password, from address).</li>
-              <li>Create an email list and import CSV or share the public subscribe form.</li>
-              <li>Optional: save an HTML template with merge tags.</li>
+              <li>
+                Connect SMTP under Email → SMTP (host, port, username, password,
+                from address).
+              </li>
+              <li>
+                Create an email list, then upload a CSV file or paste rows — or
+                share the public subscribe form.
+              </li>
+              <li>
+                Pick a starter template (or write your own HTML) with merge tags.
+              </li>
               <li>Create a campaign, pick the list, compose, send or schedule.</li>
               <li>Track sent / failed / skipped on the campaign detail page.</li>
             </ol>
@@ -64,7 +102,8 @@ export function EmailMarketingDocsPage() {
             <CardContent className="space-y-2 text-sm text-slate-700">
               <p>
                 <strong>Brevo:</strong> smtp-relay.brevo.com · port 587 · SMTP key
-                as password. Whitelist this server’s IP if required.
+                as password. Whitelist this server’s IP if required. Verify the
+                exact From address in Brevo (e.g. noreply vs no-reply).
               </p>
               <p>
                 <strong>Gmail:</strong> smtp.gmail.com · port 587 · use an App
@@ -94,11 +133,15 @@ export function EmailMarketingDocsPage() {
       <section className="space-y-4">
         <SectionHeading
           id="lists"
-          title="Lists, CSV, and subscribe forms"
+          title="Lists, CSV upload, and subscribe forms"
         />
         <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
             <ul className="list-disc space-y-2 pl-5">
+              <li>
+                On the list detail page, use <strong>Choose CSV file</strong> to
+                upload, or paste rows into the import box.
+              </li>
               <li>
                 CSV format: <code>email,name</code> (header optional). Invalid or
                 duplicate rows are skipped; previously unsubscribed emails are
@@ -121,10 +164,15 @@ export function EmailMarketingDocsPage() {
       <section className="space-y-4">
         <SectionHeading
           id="templates"
-          title="Templates & merge tags"
+          title="Starter templates & merge tags"
         />
         <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
+            <p>
+              Email → Templates opens a gallery of ready-made starters (welcome,
+              promo, event, newsletter, and more). Duplicate or edit any starter,
+              then save it to your account.
+            </p>
             <p>Supported tags in subject and HTML:</p>
             <ul className="list-disc space-y-1 pl-5 font-mono text-xs">
               <li>{"{{name}}"}</li>

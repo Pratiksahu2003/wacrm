@@ -293,9 +293,9 @@ function buildPage(
   const slug = `${industry.slug}/${cSlug}`;
 
   const title = `WhatsApp CRM for ${industry.name} in ${country} | ${PRODUCT_NAME}`;
-  const description = `Best WhatsApp Business CRM for ${industry.name.toLowerCase()} teams in ${country}. Shared inbox, pipelines, Meta template broadcasts & automations by ${COMPANY_NAME}. Official WhatsApp Business API — start today.`;
+  const description = `Best WhatsApp Business CRM for ${industry.name.toLowerCase()} teams in ${country}. Shared inbox, pipelines, Meta template broadcasts, email marketing & automations by ${COMPANY_NAME}. Official WhatsApp Business API — start today.`;
   const headline = `WhatsApp CRM for ${industry.name} in ${country}`;
-  const intro = `${PRODUCT_NAME} by ${COMPANY_NAME} helps ${industry.name.toLowerCase()} organisations in ${country} run professional WhatsApp Business conversations — shared team inbox, CRM contacts, sales pipelines, template broadcasts, and no-code automations purpose-built for ${industry.angle}.`;
+  const intro = `${PRODUCT_NAME} by ${COMPANY_NAME} helps ${industry.name.toLowerCase()} organisations in ${country} run professional WhatsApp Business conversations — shared team inbox, CRM contacts, sales pipelines, template broadcasts, email marketing on Business+, and no-code automations purpose-built for ${industry.angle}.`;
 
   const challenge = `In ${country}, ${industry.name.toLowerCase()} teams often struggle because ${industry.pain} ${PRODUCT_NAME} replaces fragmented personal chats with an accountable workspace on the official WhatsApp Business API.`;
   const solution = `With ${PRODUCT_NAME}, your ${country} team centralises every WhatsApp thread, tags leads, assigns owners, moves deals through pipelines, and automates ${industry.angle} — so customers get faster replies and managers get visibility.`;
@@ -306,6 +306,7 @@ function buildPage(
     `CRM contacts, tags, and history tied to every conversation`,
     `Pipelines that track ${industry.angle} from first message to close`,
     `Meta-approved template broadcasts with delivery & read visibility`,
+    `Email marketing with BYO SMTP, lists, starter templates & campaigns (Business+)`,
     `No-code automations and conversation flows for 24/7 follow-ups`,
     `Owner / Admin / Agent / Viewer roles for secure collaboration`,
     `Works worldwide on the official WhatsApp Business API`,
@@ -323,7 +324,7 @@ function buildPage(
     },
     {
       title: "Run campaigns with accountability",
-      body: `Broadcast approved templates to segments, then continue the reply thread in the shared inbox with full CRM context.`,
+      body: `Broadcast approved WhatsApp templates to segments, send email campaigns over your SMTP, then continue replies in the shared inbox with full CRM context.`,
     },
     {
       title: "Hand off sales and support cleanly",
@@ -378,7 +379,7 @@ function buildPage(
     },
     {
       q: "Do we need the official WhatsApp Business API?",
-      a: `Yes. ${PRODUCT_NAME} connects through Meta’s official WhatsApp Business API (WABA). You bring your credentials; we provide inbox, CRM, broadcasts, flows, and team collaboration.`,
+      a: `Yes. ${PRODUCT_NAME} connects through Meta’s official WhatsApp Business API (WABA). You bring your credentials; we provide inbox, CRM, broadcasts, email marketing (Business+), flows, and team collaboration.`,
     },
     {
       q: `How long does setup take for a team in ${country}?`,

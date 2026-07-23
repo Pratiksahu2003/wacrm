@@ -43,15 +43,21 @@ import {
 } from "@/lib/docs/content";
 
 const HIGHLIGHT_FEATURES = DASHBOARD_FEATURES.filter((f) =>
-  ["inbox", "contacts", "pipelines", "broadcasts", "automations", "flows"].includes(
-    f.id,
-  ),
+  [
+    "inbox",
+    "contacts",
+    "pipelines",
+    "broadcasts",
+    "email-marketing",
+    "automations",
+    "flows",
+  ].includes(f.id),
 );
 
 const HERO_STATS = [
-  { value: "9+", label: "Dashboard modules" },
+  { value: "10+", label: "Dashboard modules" },
   { value: "Meta", label: "Official WhatsApp API" },
-  { value: "4", label: "Team role levels" },
+  { value: "Email", label: "BYO SMTP campaigns" },
   { value: "24/7", label: "Automation & flows" },
 ] as const;
 
@@ -59,7 +65,8 @@ const HERO_HIGHLIGHTS = [
   "Shared team inbox on one business number",
   "CRM contacts, tags & CSV import",
   "Drag-and-drop sales pipelines",
-  "Template broadcasts with read tracking",
+  "WhatsApp template broadcasts with read tracking",
+  "Email marketing with SMTP, lists & starter templates",
   "No-code automations & conversation flows",
 ] as const;
 
@@ -82,7 +89,7 @@ const USE_CASES = [
     icon: Radio,
     title: "Marketing & outreach",
     description:
-      "Send approved Meta template broadcasts to segmented audiences, track delivery and read rates, and nurture with automated drip sequences.",
+      "Send approved Meta WhatsApp template broadcasts and run email campaigns over your own SMTP — lists, starter templates, CSV import, and unsubscribe-ready sends.",
     color: "bg-teal-50 text-teal-600",
   },
 ] as const;
@@ -104,9 +111,9 @@ const WHY_CHOOSE = [
   },
   {
     icon: Zap,
-    title: "Automate everything",
+    title: "WhatsApp + email outreach",
     description:
-      "Keyword triggers, welcome messages, wait steps, conditions, and interactive flows — no code required.",
+      "Template broadcasts on WhatsApp, plus BYO SMTP email campaigns with lists, starter templates, and CSV import on Business and Enterprise.",
   },
   {
     icon: BarChart3,
@@ -162,7 +169,8 @@ function HeroPreview() {
           <div className="space-y-2">
             {[
               "New lead assigned to Priya — Inbox",
-              "Broadcast delivered to 340 contacts",
+              "WhatsApp broadcast delivered to 340 contacts",
+              "Email campaign sent to 120 subscribers",
               "Deal moved to Won — ₹85,000",
             ].map((line) => (
               <div
@@ -199,8 +207,8 @@ export function HomePageContent() {
               </h1>
 
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
-                {META_DESCRIPTION} Connect Meta WhatsApp, manage every
-                conversation, and grow revenue — from one modern dashboard.
+                {META_DESCRIPTION} Connect Meta WhatsApp, run email campaigns on
+                your SMTP, and grow revenue — from one modern dashboard.
               </p>
 
               <ul className="mt-6 space-y-2.5">
@@ -270,14 +278,16 @@ export function HomePageContent() {
               </h2>
               <p className="mt-4 text-base leading-relaxed text-slate-600">
                 {PRODUCT_NAME} is a complete WhatsApp Business CRM powered by the
-                official Meta API. Your sales, support, and marketing teams share
-                one inbox, one contact database, and one automation engine — without
-                juggling spreadsheets or third-party tools.
+                official Meta API, with email marketing on Business and Enterprise
+                plans. Your sales, support, and marketing teams share one inbox,
+                one contact database, and one automation engine — without juggling
+                spreadsheets or third-party tools.
               </p>
               <p className="mt-4 text-base leading-relaxed text-slate-600">
                 From the first inbound message to a closed deal, every step lives
-                inside VedMint: assign conversations, tag contacts, run template
-                broadcasts, build automations, and track pipeline value in real time.
+                inside VedMint: assign conversations, tag contacts, run WhatsApp
+                broadcasts, send email campaigns over your SMTP, build automations,
+                and track pipeline value in real time.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
@@ -345,7 +355,7 @@ export function HomePageContent() {
             </h2>
             <p className="mt-4 text-slate-600">
               Whether you sell, support, or market — VedMint adapts to how your
-              business talks to customers on WhatsApp.
+              business talks to customers on WhatsApp and email.
             </p>
           </div>
 
@@ -383,8 +393,8 @@ export function HomePageContent() {
               {DASHBOARD_FEATURES.length} powerful modules
             </h2>
             <p className="mt-4 text-slate-600">
-              Inbox, CRM, pipelines, broadcasts, automations, flows, analytics,
-              settings, and team management — all included.
+              Inbox, CRM, pipelines, WhatsApp broadcasts, email marketing,
+              automations, flows, analytics, settings, and team management.
             </p>
           </div>
 
@@ -596,9 +606,9 @@ export function HomePageContent() {
                 Everything documented
               </h2>
               <p className="mt-4 text-slate-600">
-                Step-by-step guides for Meta WhatsApp setup, every dashboard
-                module, team roles, settings tabs, and troubleshooting common
-                issues.
+                Step-by-step guides for Meta WhatsApp setup, email marketing
+                (SMTP, lists, templates, campaigns), every dashboard module,
+                team roles, and troubleshooting.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
@@ -653,8 +663,9 @@ export function HomePageContent() {
                 Ready to run WhatsApp like a pro?
               </h2>
               <p className={`mx-auto mt-3 ${vm.ctaSubtext}`}>
-                Create your free account, connect Meta WhatsApp, invite your
-                team, and start managing every conversation from one place.
+                Create your free account, connect Meta WhatsApp, upgrade for
+                email marketing when ready, and manage every conversation from
+                one place.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button

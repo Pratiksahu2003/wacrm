@@ -380,6 +380,51 @@ export async function purchaseSubscription(
   });
 }
 
+/** Upgrade an active subscription to a higher-priced plan (returns payment_url). */
+export async function upgradeSubscription(
+  jwt: string,
+  input: {
+    planId: number;
+    billingCycle?: BillingCycle;
+    couponCode?: string;
+    paymentGateway?: string;
+    successUrl?: string;
+    cancelUrl?: string;
+  },
+): Promise<VedmintPurchaseResult> {
+  return vedmintFetch<VedmintPurchaseResult>("/subscriptions/upgrade", {
+    method: "POST",
+    jwt,
+    body: {
+      plan_id: input.planId,
+      payment_gateway: input.paymentGateway || "nimbbl",
+      billing_cycle: input.billingCycle || "monthly",
+      ...(input.couponCode ? { coupon_code: input.couponCode } : {}),
+      ...(input.successUrl
+        ? {
+            success_url: input.successUrl,
+            return_url: input.successUrl,
+            redirect_url: input.successUrl,
+            callback_url: input.successUrl,
+          }
+        : {}),
+      ...(input.cancelUrl ? { cancel_url: input.cancelUrl } : {}),
+    },
+  });
+}
+
+/** Downgrade an active subscription to a lower-priced plan (immediate). */
+export async function downgradeSubscription(
+  jwt: string,
+  input: { planId: number },
+): Promise<unknown> {
+  return vedmintFetch("/subscriptions/downgrade", {
+    method: "POST",
+    jwt,
+    body: { plan_id: input.planId },
+  });
+}
+
 export async function cancelSubscription(jwt: string): Promise<unknown> {
   return vedmintFetch("/subscriptions/cancel", { method: "POST", jwt });
 }

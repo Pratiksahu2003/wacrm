@@ -3,19 +3,32 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import type { EmailTemplate } from "@/lib/email-marketing/types";
+import { cn } from "@/lib/utils";
+
+type StarterTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  description: string;
+  category: string;
+  html_body: string;
+};
 
 export function EmailTemplatesPanel() {
   const { canEditSettings } = useAuth();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [starterHtml, setStarterHtml] = useState("");
+  const [starters, setStarters] = useState<StarterTemplate[]>([]);
+  const [selectedStarterId, setSelectedStarterId] = useState<string | null>(
+    null,
+  );
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
@@ -29,7 +42,7 @@ export function EmailTemplatesPanel() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load templates");
       setTemplates(json.data?.templates ?? []);
-      setStarterHtml(json.data?.starter_html ?? "");
+      setStarters(json.data?.starter_templates ?? []);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to load templates",
@@ -43,11 +56,13 @@ export function EmailTemplatesPanel() {
     void refresh();
   }, [refresh]);
 
-  const loadStarter = () => {
-    setName("Weekly update");
-    setSubject("Hello {{name}} — what's new");
-    setHtml(starterHtml);
+  const applyStarter = (starter: StarterTemplate) => {
+    setSelectedStarterId(starter.id);
+    setName(starter.name);
+    setSubject(starter.subject);
+    setHtml(starter.html_body);
     setEditingId(null);
+    toast.success(`Loaded “${starter.name}” — edit and save when ready`);
   };
 
   const onSave = async () => {
@@ -74,6 +89,7 @@ export function EmailTemplatesPanel() {
       if (!res.ok) throw new Error(json.error || "Save failed");
       toast.success(editingId ? "Template updated" : "Template created");
       setEditingId(null);
+      setSelectedStarterId(null);
       setName("");
       setSubject("");
       setHtml("");
@@ -87,6 +103,7 @@ export function EmailTemplatesPanel() {
 
   const onEdit = (tpl: EmailTemplate) => {
     setEditingId(tpl.id);
+    setSelectedStarterId(null);
     setName(tpl.name);
     setSubject(tpl.subject);
     setHtml(tpl.html_body);
@@ -105,6 +122,7 @@ export function EmailTemplatesPanel() {
       toast.success("Template deleted");
       if (editingId === id) {
         setEditingId(null);
+        setSelectedStarterId(null);
         setName("");
         setSubject("");
         setHtml("");
@@ -113,6 +131,14 @@ export function EmailTemplatesPanel() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
     }
+  };
+
+  const onClearForm = () => {
+    setEditingId(null);
+    setSelectedStarterId(null);
+    setName("");
+    setSubject("");
+    setHtml("");
   };
 
   if (loading) {
@@ -126,6 +152,54 @@ export function EmailTemplatesPanel() {
 
   return (
     <div className="space-y-6">
+      {!editingId && starters.length > 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="mb-4 flex items-start gap-2">
+            <Sparkles className="mt-0.5 size-4 shrink-0 text-teal-600" />
+            <div>
+              <h2 className="text-base font-semibold">Choose a starter</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pick a ready-made layout, then edit name, subject, and HTML
+                before saving.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {starters.map((starter) => {
+              const selected = selectedStarterId === starter.id;
+              return (
+                <button
+                  key={starter.id}
+                  type="button"
+                  disabled={!canEditSettings}
+                  onClick={() => applyStarter(starter)}
+                  className={cn(
+                    "rounded-xl border p-4 text-left transition-all",
+                    selected
+                      ? "border-teal-300 bg-teal-50/80 ring-1 ring-teal-200"
+                      : "border-border bg-background hover:border-teal-200 hover:bg-muted/40",
+                    !canEditSettings && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-teal-700">
+                    {starter.category}
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-foreground">
+                    {starter.name}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {starter.description}
+                  </p>
+                  <p className="mt-2 truncate text-[11px] text-muted-foreground/80">
+                    {starter.subject}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -136,9 +210,11 @@ export function EmailTemplatesPanel() {
               Merge tags: {"{{name}}"}, {"{{email}}"}, {"{{unsubscribe_url}}"}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={loadStarter}>
-            Load starter
-          </Button>
+          {(editingId || name || subject || html) && canEditSettings ? (
+            <Button variant="outline" size="sm" onClick={onClearForm}>
+              Start blank
+            </Button>
+          ) : null}
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-3">
@@ -149,6 +225,7 @@ export function EmailTemplatesPanel() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={!canEditSettings}
+                placeholder="e.g. Welcome email"
               />
             </div>
             <div className="space-y-2">
@@ -158,6 +235,7 @@ export function EmailTemplatesPanel() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={!canEditSettings}
+                placeholder="Hello {{name}}"
               />
             </div>
             <div className="space-y-2">
@@ -190,7 +268,7 @@ export function EmailTemplatesPanel() {
               dangerouslySetInnerHTML={{
                 __html:
                   html ||
-                  "<p style='color:#9ca3af'>Preview appears here</p>",
+                  "<p style='color:#9ca3af'>Choose a starter or write HTML to preview</p>",
               }}
             />
           </div>
@@ -200,7 +278,9 @@ export function EmailTemplatesPanel() {
       <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h2 className="mb-4 text-base font-semibold">Saved templates</h2>
         {templates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No templates yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No saved templates yet. Choose a starter above and click Create.
+          </p>
         ) : (
           <ul className="divide-y divide-border">
             {templates.map((tpl) => (

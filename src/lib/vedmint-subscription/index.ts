@@ -21,11 +21,13 @@ export {
   isEnterprisePlan,
   isGrowthPlan,
   isStarterPlan,
+  planAllowsTeam,
+  planAllowsEmailMarketing,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
   TEAM_BUSINESS_ONLY_MESSAGE,
   TEAM_ENTERPRISE_ONLY_MESSAGE,
-  planAllowsTeam,
+  EMAIL_MARKETING_PLAN_MESSAGE,
 } from "./entitlements";
 export {
   isSubscriptionActive,

@@ -4,23 +4,28 @@ import { COPYRIGHT_NOTICE } from "@/lib/brand";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import {
+  ChevronDown,
   CreditCard,
   Crown,
+  FileText,
   GitBranch,
   Headset,
   LayoutDashboard,
+  List,
   Lock,
   LogOut,
   Mail,
+  Megaphone,
   MessageSquare,
   Radio,
+  Server,
   Settings,
   Shield,
   ShieldCheck,
@@ -83,12 +88,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface NavChild {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
 interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   /** Open in a new browser tab (external support / marketing links). */
   external?: boolean;
+  /** Nested links under this parent (e.g. Email). */
+  children?: NavChild[];
   /** Subscription capability required; shows a lock when unavailable. */
   capability?:
     | "messaging"
@@ -102,6 +115,14 @@ interface NavItem {
     | "email_marketing";
 }
 
+const emailChildren: NavChild[] = [
+  { href: "/email", label: "Overview", icon: LayoutDashboard },
+  { href: "/email/lists", label: "Lists", icon: List },
+  { href: "/email/templates", label: "Templates", icon: FileText },
+  { href: "/email/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/email/smtp", label: "SMTP", icon: Server },
+];
+
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/inbox", label: "Inbox", icon: MessageSquare, capability: "messaging" },
@@ -113,6 +134,7 @@ const navItems: NavItem[] = [
     label: "Email",
     icon: Mail,
     capability: "email_marketing",
+    children: emailChildren,
   },
   { href: "/automations", label: "Automations", icon: Zap, capability: "automations" },
   { href: "/flows", label: "Flows", icon: Workflow, capability: "flows" },
@@ -123,6 +145,22 @@ const navItems: NavItem[] = [
     capability: "compliance",
   },
 ];
+
+function pathMatches(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  if (href === "/dashboard" || href === "/email") return false;
+  return pathname.startsWith(`${href}/`);
+}
+
+function parentActive(pathname: string, item: NavItem): boolean {
+  if (!item.children?.length) {
+    return (
+      pathname === item.href ||
+      (item.href !== "/dashboard" && pathname.startsWith(item.href))
+    );
+  }
+  return item.children.some((child) => pathMatches(pathname, child.href));
+}
 
 const bottomNavItems: NavItem[] = [
   { href: "/billing", label: "Billing", icon: CreditCard },
@@ -153,6 +191,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
   const { canUse, active, configured, loading: entitlementsLoading } =
     useEntitlements();
   const totalUnread = useTotalUnread();
+  const emailSectionActive =
+    pathname === "/email" || pathname.startsWith("/email/");
+  const [emailOpen, setEmailOpen] = useState(emailSectionActive);
+
+  useEffect(() => {
+    if (emailSectionActive) setEmailOpen(true);
+  }, [emailSectionActive]);
 
   const planLocked = (capability?: NavItem["capability"]) => {
     if (!capability || entitlementsLoading || !configured) return false;
@@ -246,14 +291,89 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
-
+              const isActive = parentActive(pathname, item);
               const showUnreadDot =
                 item.href === "/inbox" && totalUnread > 0 && !isActive;
-
               const locked = planLocked(item.capability);
+              const hasChildren = Boolean(item.children?.length);
+
+              if (hasChildren && item.children) {
+                return (
+                  <li key={item.href}>
+                    <div
+                      className={cn(
+                        "flex items-center rounded-lg transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                        locked && "opacity-80",
+                      )}
+                    >
+                      <Link
+                        href={item.href}
+                        title={
+                          locked
+                            ? "Requires an active subscription plan — open Billing to upgrade"
+                            : undefined
+                        }
+                        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-sm font-medium lg:py-2"
+                        onClick={() => setEmailOpen(true)}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {locked ? (
+                          <Lock
+                            className="h-3.5 w-3.5 text-amber-600"
+                            aria-label="Locked by plan"
+                          />
+                        ) : null}
+                      </Link>
+                      <button
+                        type="button"
+                        aria-label={
+                          emailOpen ? "Collapse Email menu" : "Expand Email menu"
+                        }
+                        aria-expanded={emailOpen}
+                        onClick={() => setEmailOpen((v) => !v)}
+                        className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md hover:bg-sidebar-accent"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform",
+                            emailOpen ? "rotate-0" : "-rotate-90",
+                          )}
+                        />
+                      </button>
+                    </div>
+                    {emailOpen ? (
+                      <ul className="mt-0.5 ml-3 space-y-0.5 border-l border-sidebar-border pl-2">
+                        {item.children.map((child) => {
+                          const childActive = pathMatches(
+                            pathname,
+                            child.href,
+                          );
+                          return (
+                            <li key={`${child.href}-${child.label}`}>
+                              <Link
+                                href={child.href}
+                                className={cn(
+                                  "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors lg:py-1.5",
+                                  childActive
+                                    ? "bg-primary/10 font-medium text-primary"
+                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                                )}
+                              >
+                                <child.icon className="h-3.5 w-3.5 shrink-0" />
+                                <span>{child.label}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </li>
+                );
+              }
 
               return (
                 <li key={item.href}>

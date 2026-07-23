@@ -172,7 +172,9 @@ export function PricingPageContent() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
             Choose a {PRODUCT_NAME} plan for shared inbox, contacts, pipelines,
-            broadcasts, and automations. Sign up to unlock live checkout.
+            WhatsApp broadcasts, and automations. Email marketing (BYO SMTP,
+            lists, templates, campaigns) is included on Business and Enterprise.
+            Sign up to unlock live checkout.
           </p>
 
           <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur">

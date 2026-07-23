@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  EMAIL_MARKETING_PLAN_MESSAGE,
   isBusinessPlan,
   isEnterprisePlan,
   isGrowthPlan,
   isStarterPlan,
+  planAllowsEmailMarketing,
   TEAM_ENTERPRISE_ONLY_MESSAGE,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
@@ -61,6 +63,21 @@ describe("whatsappNumberLimitForPlan", () => {
   it("defaults unknown plans to Starter (1)", () => {
     expect(whatsappNumberLimitForPlan({ planName: null })).toBe(1);
     expect(whatsappNumberLimitForPlan({ planName: "Pro" })).toBe(1);
+  });
+});
+
+describe("planAllowsEmailMarketing", () => {
+  it("allows Business and Enterprise, denies Starter", () => {
+    expect(planAllowsEmailMarketing({ planName: "Business" })).toBe(true);
+    expect(planAllowsEmailMarketing({ planName: "Growth" })).toBe(true);
+    expect(planAllowsEmailMarketing({ planName: "Enterprise" })).toBe(true);
+    expect(planAllowsEmailMarketing({ planName: "Starter" })).toBe(false);
+    expect(planAllowsEmailMarketing({ planName: null })).toBe(false);
+  });
+
+  it("exposes an upgrade message for email marketing", () => {
+    expect(EMAIL_MARKETING_PLAN_MESSAGE.toLowerCase()).toContain("business");
+    expect(EMAIL_MARKETING_PLAN_MESSAGE.toLowerCase()).toContain("enterprise");
   });
 });
 

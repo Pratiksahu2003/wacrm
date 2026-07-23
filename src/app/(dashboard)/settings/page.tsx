@@ -11,7 +11,6 @@ import {
   UsersRound,
   Shield,
   CreditCard,
-  Mail,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -27,13 +26,11 @@ import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { MembersTab } from '@/components/settings/members-tab';
 import { MetaAppSecretPanel } from '@/components/settings/meta-app-secret-panel';
 import { BillingSettingsPanel } from '@/components/settings/billing-settings-panel';
-import { SmtpSettingsPanel } from '@/components/email/smtp-settings-panel';
 
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User },
   { value: 'whatsapp', label: 'WhatsApp Config', icon: Settings },
   { value: 'app-secret', label: 'App Secret', icon: Shield },
-  { value: 'smtp', label: 'Email SMTP', icon: Mail },
   { value: 'templates', label: 'Templates', icon: MessageSquare },
   { value: 'tags', label: 'Tags', icon: Tag },
   { value: 'appearance', label: 'Appearance', icon: Palette },
@@ -83,9 +80,12 @@ function SettingsPageInner() {
   const queryTab = searchParams.get('tab');
 
   // Old Settings → Compliance tab moved to its own page.
+  // Email SMTP lives under Email → SMTP (not Settings).
   useEffect(() => {
     if (queryTab === 'compliance') {
       router.replace('/compliance');
+    } else if (queryTab === 'smtp') {
+      router.replace('/email/smtp');
     }
   }, [queryTab, router]);
 
@@ -113,8 +113,8 @@ function SettingsPageInner() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, team, billing, WhatsApp® integration, email SMTP,
-          message templates, and tags.
+          Manage your profile, team, billing, WhatsApp® integration, message
+          templates, and tags.
         </p>
       </div>
 
@@ -149,8 +149,6 @@ function SettingsPageInner() {
       ) : null}
 
       {tab === 'app-secret' ? <MetaAppSecretPanel /> : null}
-
-      {tab === 'smtp' ? <SmtpSettingsPanel /> : null}
 
       {tab === 'templates' ? <TemplateManager /> : null}
 

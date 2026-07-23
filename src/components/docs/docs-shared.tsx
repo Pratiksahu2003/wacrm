@@ -178,8 +178,20 @@ export const TROUBLESHOOTING_ITEMS = [
     linkLabel: "Background Tasks",
   },
   {
+    issue: "Email marketing shows an upgrade gate",
+    fix: "Email marketing is on Business and Enterprise only. Upgrade from Billing, then open Email → SMTP.",
+    link: "/billing",
+    linkLabel: "Open Billing",
+  },
+  {
+    issue: "SMTP verifies but test email never arrives",
+    fix: "Confirm the From address is verified at your provider (exact local-part), check spam, and whitelist this server’s IP if required. See Email Marketing docs.",
+    link: "/docs/email-marketing",
+    linkLabel: "Email Marketing docs",
+  },
+  {
     issue: "Team invite link not working",
-    fix: "Revoke the old invite and send a new one from Settings → Team.",
+    fix: "Revoke the old invite and send a new one from Settings → Team. Team invites require Enterprise.",
     link: "/settings?tab=members",
     linkLabel: "Open Team",
   },

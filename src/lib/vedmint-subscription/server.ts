@@ -7,6 +7,8 @@ export {
   getSubscriptionStatus,
   getPlanFeatures,
   purchaseSubscription,
+  upgradeSubscription,
+  downgradeSubscription,
   cancelSubscription,
   listInvoices,
   downloadInvoicePdf,

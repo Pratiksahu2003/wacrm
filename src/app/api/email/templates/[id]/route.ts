@@ -6,13 +6,30 @@ import {
   getTemplate,
   updateTemplate,
 } from "@/lib/email-marketing/templates";
+import {
+  assertCanPerform,
+  PlanGateError,
+  planGateResponse,
+} from "@/lib/vedmint-subscription/server";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+async function requireEmailMarketing(userId: string, accountId: string) {
+  try {
+    await assertCanPerform(userId, accountId, "email_marketing");
+    return null;
+  } catch (err) {
+    if (err instanceof PlanGateError) return planGateResponse(err);
+    throw err;
+  }
+}
 
 export async function GET(_request: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
     const auth = await requireRole("agent");
+    const gated = await requireEmailMarketing(auth.userId, auth.accountId);
+    if (gated) return gated;
     const template = await getTemplate(auth.accountId, id);
     if (!template) {
       return NextResponse.json({ error: "Template not found" }, { status: 404 });
@@ -27,6 +44,8 @@ export async function PUT(request: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
     const auth = await requireRole("admin");
+    const gated = await requireEmailMarketing(auth.userId, auth.accountId);
+    if (gated) return gated;
     const body = (await request.json().catch(() => ({}))) as {
       name?: string;
       subject?: string;
@@ -47,6 +66,8 @@ export async function DELETE(_request: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
     const auth = await requireRole("admin");
+    const gated = await requireEmailMarketing(auth.userId, auth.accountId);
+    if (gated) return gated;
     await deleteTemplate(auth.accountId, id);
     return NextResponse.json({ data: { ok: true } });
   } catch (err) {

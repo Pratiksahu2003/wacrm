@@ -36,6 +36,7 @@ export function GettingStartedPage() {
     >
       <div className="flex flex-wrap gap-2">
         <DocLinkButton href="/docs/whatsapp-setup" label="WhatsApp Setup" />
+        <DocLinkButton href="/docs/email-marketing" label="Email Marketing" />
         <DocLinkButton href="/settings?tab=whatsapp" label="WhatsApp Config" />
         <DocLinkButton href="/dashboard" label="Dashboard" />
       </div>
@@ -44,7 +45,7 @@ export function GettingStartedPage() {
         <SectionHeading
           id="overview"
           title="Overview"
-          description={`${COMPANY_NAME} WhatsApp Business CRM — shared inbox, contacts, pipelines, broadcasts, automations, and interactive flows.`}
+          description={`${COMPANY_NAME} WhatsApp Business CRM — shared inbox, contacts, pipelines, WhatsApp broadcasts, email marketing (Business+), automations, and interactive flows.`}
         />
         <Card className="border-slate-200 bg-white shadow-sm ring-slate-200">
           <CardContent className="space-y-3 pt-4 text-sm text-slate-700">
@@ -58,10 +59,14 @@ export function GettingStartedPage() {
               <Link href="/docs/whatsapp-setup" className="text-primary hover:underline">
                 WhatsApp Setup
               </Link>{" "}
-              guide.
+              guide. For BYO SMTP campaigns, lists, and starter templates, see{" "}
+              <Link href="/docs/email-marketing" className="text-primary hover:underline">
+                Email Marketing
+              </Link>
+              .
             </p>
             <div className="flex flex-wrap gap-2">
-              {DASHBOARD_FEATURES.slice(0, 7).map((f) => (
+              {DASHBOARD_FEATURES.slice(0, 8).map((f) => (
                 <DocLinkButton key={f.id} href={f.href} label={f.title} />
               ))}
             </div>

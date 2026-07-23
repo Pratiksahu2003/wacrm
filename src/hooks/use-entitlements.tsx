@@ -13,6 +13,7 @@ import {
 
 import {
   CAPABILITY_LABEL,
+  EMAIL_MARKETING_PLAN_MESSAGE,
   TEAM_ENTERPRISE_ONLY_MESSAGE,
   type EntitlementSnapshot,
   type PlanCapability,
@@ -159,6 +160,9 @@ export function EntitlementsProvider({ children }: { children: ReactNode }) {
       }
       if (capability === "team") {
         return TEAM_ENTERPRISE_ONLY_MESSAGE;
+      }
+      if (capability === "email_marketing") {
+        return EMAIL_MARKETING_PLAN_MESSAGE;
       }
       if (capability) {
         return `Your plan can’t ${CAPABILITY_LABEL[capability]}. Upgrade to continue.`;

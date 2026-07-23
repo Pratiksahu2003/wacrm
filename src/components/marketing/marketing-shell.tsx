@@ -140,8 +140,8 @@ export function MarketingShell({
                   isLight ? "text-slate-600" : "text-slate-500",
                 )}
               >
-                {PRODUCT_NAME} — WhatsApp Business CRM by VedMint Consultancy
-                Services.
+                {PRODUCT_NAME} — WhatsApp Business CRM with email marketing by
+                VedMint Consultancy Services.
               </p>
             </div>
 
@@ -159,6 +159,7 @@ export function MarketingShell({
                   { href: "/pricing", label: "Pricing & plans" },
                   { href: "/whatsapp-crm", label: "WhatsApp CRM guides" },
                   { href: "/discover", label: "Discover all features" },
+                  { href: "/docs/email-marketing", label: "Email marketing docs" },
                   { href: "/docs/getting-started", label: "Documentation" },
                   { href: "/login", label: "Sign in" },
                   { href: "/signup", label: "Create account" },

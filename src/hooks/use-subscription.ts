@@ -29,6 +29,12 @@ interface UseSubscriptionState {
     billingCycle: BillingCycle;
     couponCode?: string;
   }) => Promise<{ paymentUrl: string }>;
+  upgrade: (input: {
+    planId: number;
+    billingCycle: BillingCycle;
+    couponCode?: string;
+  }) => Promise<{ paymentUrl: string }>;
+  downgrade: (input: { planId: number }) => Promise<void>;
   cancel: () => Promise<void>;
   downloadInvoice: (invoiceId: string | number) => Promise<void>;
 }
@@ -168,6 +174,55 @@ export function useSubscription(): UseSubscriptionState {
     [],
   );
 
+  const upgrade = useCallback(
+    async (input: {
+      planId: number;
+      billingCycle: BillingCycle;
+      couponCode?: string;
+    }) => {
+      const res = await fetch("/api/billing/upgrade", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan_id: input.planId,
+          billing_cycle: input.billingCycle,
+          coupon_code: input.couponCode || undefined,
+        }),
+      });
+      const json = await readJson(res);
+      if (!res.ok) {
+        const message = String(json.error || "Upgrade failed");
+        const err = new Error(message) as Error & { code?: string };
+        err.code = typeof json.code === "string" ? json.code : undefined;
+        throw err;
+      }
+      const data = (json.data || {}) as { payment_url?: string };
+      if (!data.payment_url) {
+        throw new Error("No payment URL returned");
+      }
+      return { paymentUrl: data.payment_url };
+    },
+    [],
+  );
+
+  const downgrade = useCallback(
+    async (input: { planId: number }) => {
+      const res = await fetch("/api/billing/downgrade", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_id: input.planId }),
+      });
+      const json = await readJson(res);
+      if (!res.ok) {
+        throw new Error(String(json.error || "Downgrade failed"));
+      }
+      await refresh();
+    },
+    [refresh],
+  );
+
   const cancel = useCallback(async () => {
     const res = await fetch("/api/billing/cancel", {
       method: "POST",
@@ -230,6 +285,8 @@ export function useSubscription(): UseSubscriptionState {
     code,
     refresh,
     purchase,
+    upgrade,
+    downgrade,
     cancel,
     downloadInvoice,
   };

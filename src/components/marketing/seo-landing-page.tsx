@@ -189,7 +189,7 @@ export function SeoLandingPageContent({
                   {
                     icon: Sparkles,
                     label: "Built for teams",
-                    body: "Roles, inbox & pipelines",
+                    body: "Roles, inbox, pipelines & email",
                   },
                 ].map((item) => (
                   <div

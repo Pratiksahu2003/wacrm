@@ -20,7 +20,7 @@ export type DocFeature = {
   capabilities: string[];
   howToUse: string[];
   roleNote?: string;
-  badge?: "Beta" | "Admin+" | "Owner only";
+  badge?: "Beta" | "Admin+" | "Owner only" | "Business+";
 };
 
 export type DocSection = {
@@ -45,7 +45,7 @@ export const DOC_PAGES = [
     href: "/docs/email-marketing",
     slug: "email-marketing",
     label: "Email Marketing",
-    description: "BYO SMTP, lists, templates, and campaigns",
+    description: "BYO SMTP, CSV lists, starter templates & campaigns (Business+)",
   },
   {
     href: "/docs/troubleshooting",
@@ -265,23 +265,27 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
     title: "Email Marketing",
     href: "/email",
     summary:
-      "Bring your own SMTP, manage email lists, templates, and campaigns — separate from WhatsApp broadcasts.",
+      "Bring your own SMTP, grow email lists, pick starter templates, and send campaigns — separate from WhatsApp broadcasts.",
     capabilities: [
-      "Per-account SMTP (Gmail, Brevo, SES, and others)",
-      "Email lists with CSV import and public subscribe forms",
-      "Reusable HTML templates with merge tags",
+      "Business & Enterprise plans only (not on Starter)",
+      "Per-account SMTP (Brevo, Gmail, SES, and others) with test send",
+      "Email lists with CSV file upload or paste, plus public subscribe forms",
+      "Ready-made starter templates (welcome, promo, event, and more)",
+      "Merge tags: {{name}}, {{email}}, {{unsubscribe_url}}",
       "Campaign wizard: list → compose → send or schedule",
-      "Delivery stats (sent / failed / skipped) from SMTP",
-      "One-click unsubscribe links on every campaign email",
+      "Delivery stats (sent / failed / skipped) from your SMTP",
+      "One-click unsubscribe on every campaign email",
     ],
     howToUse: [
-      "Connect SMTP under Email → SMTP or Settings → Email SMTP.",
-      "Create a list, import CSV or share the subscribe URL.",
-      "Optional: save an HTML template with {{name}} and {{email}}.",
-      "Email → Campaigns → New campaign, then send or schedule.",
-      "See /docs/email-marketing for provider setup tips.",
+      "Upgrade to Business or Enterprise if needed (Billing → Upgrade plan).",
+      "Connect SMTP under Email → SMTP; verify and send a test email.",
+      "Create a list, upload a CSV file or paste rows, or share the subscribe URL.",
+      "Email → Templates → choose a starter, edit, and save.",
+      "Email → Campaigns → New campaign, then send or schedule. Full guide: /docs/email-marketing.",
     ],
-    roleNote: "Admins configure SMTP and send. Agents can view lists and campaigns.",
+    roleNote:
+      "Available on Business and Enterprise. Admins configure SMTP and send; agents can view lists and campaigns.",
+    badge: "Business+",
   },
   {
     id: "automations",
@@ -334,7 +338,6 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
       "Profile, password, avatar, sessions, leave team",
       "WhatsApp API credentials and registration",
       "Meta App Secret for webhook verification",
-      "Email SMTP for marketing campaigns",
       "Message template manager with Meta sync",
       "Tag manager with colors",
       "Team invites and role management",
@@ -342,7 +345,7 @@ export const DASHBOARD_FEATURES: DocFeature[] = [
     ],
     howToUse: [
       "Use the tabs at the top to switch between settings sections.",
-      "Admins configure WhatsApp, Email SMTP, and templates; agents have read-only access to config.",
+      "Admins configure WhatsApp and templates; email SMTP is under Email → SMTP. Agents have read-only access to config.",
       "Owners can optionally set personal WhatsApp credentials.",
     ],
     badge: "Admin+",
@@ -397,14 +400,6 @@ export const SETTINGS_TABS: {
     who: "Admin+",
   },
   {
-    tab: "smtp",
-    label: "Email SMTP",
-    href: "/settings?tab=smtp",
-    description:
-      "Bring-your-own SMTP for email marketing (host, port, credentials, from address, test send).",
-    who: "Admin+",
-  },
-  {
     tab: "templates",
     label: "Templates",
     href: "/settings?tab=templates",
@@ -441,12 +436,12 @@ export const ROLE_MATRIX: {
 }[] = [
   {
     role: "Viewer",
-    capabilities: "Read-only access to inbox, contacts, pipelines, broadcasts, automations, and flows.",
+    capabilities: "Read-only access to inbox, contacts, pipelines, broadcasts, email, automations, and flows.",
   },
   {
     role: "Agent",
     capabilities:
-      "Send messages, create/edit contacts and deals, run broadcasts, build automations and flows.",
+      "Send WhatsApp messages, create/edit contacts and deals, run broadcasts, view email lists/campaigns, build automations and flows.",
   },
   {
     role: "Admin",

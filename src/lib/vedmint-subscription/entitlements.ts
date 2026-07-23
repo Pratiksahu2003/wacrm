@@ -158,7 +158,7 @@ export const CAPABILITY_LABEL: Record<PlanCapability, string> = {
   contacts: "manage contacts",
   ai_credits: "use AI credits",
   compliance: "manage compliance & DND",
-  email_marketing: "use email marketing",
+  email_marketing: "use email marketing (Business or Enterprise plan)",
 };
 
 function normalizePlanKey(raw?: string | null): string {
@@ -243,10 +243,21 @@ export function planAllowsTeam(input: {
   return isEnterprisePlan(input);
 }
 
+/** Email marketing is Business + Enterprise (not Starter). */
+export function planAllowsEmailMarketing(input: {
+  planName?: string | null;
+  planSlug?: string | null;
+}): boolean {
+  return isBusinessPlan(input) || isEnterprisePlan(input);
+}
+
 export const TEAM_BUSINESS_ONLY_MESSAGE =
   "Team invites are available on the Enterprise plan only. Upgrade to Enterprise to invite teammates.";
 
 export const TEAM_ENTERPRISE_ONLY_MESSAGE = TEAM_BUSINESS_ONLY_MESSAGE;
+
+export const EMAIL_MARKETING_PLAN_MESSAGE =
+  "Email marketing is available on the Business and Enterprise plans. Upgrade to unlock SMTP, lists, templates, and campaigns.";
 
 export function whatsappNumberLimitMessage(limit: number): string {
   if (limit <= 1) {

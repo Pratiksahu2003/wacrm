@@ -73,6 +73,8 @@ export function BillingPage() {
     code,
     refresh,
     purchase,
+    upgrade,
+    downgrade,
     cancel,
     downloadInvoice,
   } = useSubscription();
@@ -168,6 +170,15 @@ export function BillingPage() {
     ) ||
     null;
 
+  const currentMonthlyPrice = useMemo(() => {
+    const plan =
+      subscription?.plan && typeof subscription.plan === "object"
+        ? subscription.plan
+        : plans.find((p) => p.id === currentPlanId) || null;
+    if (!plan) return null;
+    const monthly = planPrice(plan, "monthly").amount;
+    return monthly;
+  }, [subscription, plans, currentPlanId]);
 
   const sortedPlans = useMemo(() => {
     return [...plans].sort((a, b) => {
@@ -177,23 +188,80 @@ export function BillingPage() {
     });
   }, [plans]);
 
-  const onPurchase = (plan: VedmintPlan) => {
+  const planAction = (
+    plan: VedmintPlan,
+  ): "current" | "subscribe" | "upgrade" | "downgrade" => {
+    if (currentPlanId === plan.id && active) return "current";
+    if (!active || currentPlanId == null || currentMonthlyPrice == null) {
+      return "subscribe";
+    }
+    const target = planPrice(plan, "monthly").amount;
+    if (target == null) return "subscribe";
+    if (target > currentMonthlyPrice) return "upgrade";
+    if (target < currentMonthlyPrice) return "downgrade";
+    return "subscribe";
+  };
+
+  const onSelectPlan = (plan: VedmintPlan) => {
     if (!canEditSettings) {
       toast.error("Only account admins can change the subscription.");
       return;
     }
+    const action = planAction(plan);
+    if (action === "current") return;
+
+    if (action === "downgrade") {
+      if (
+        !window.confirm(
+          `Downgrade to ${plan.name}? Your plan will change immediately to the lower tier.`,
+        )
+      ) {
+        return;
+      }
+      startTransition(async () => {
+        setBuyingPlanId(plan.id);
+        try {
+          await downgrade({ planId: plan.id });
+          toast.success(`Downgraded to ${plan.name}`);
+          await refreshEntitlements();
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Downgrade failed");
+        } finally {
+          setBuyingPlanId(null);
+        }
+      });
+      return;
+    }
+
     startTransition(async () => {
       setBuyingPlanId(plan.id);
       try {
-        const { paymentUrl } = await purchase({
-          planId: plan.id,
-          billingCycle: cycle,
-          couponCode: coupon.trim() || undefined,
-        });
-        toast.success("Redirecting to secure checkout…");
-        window.location.href = paymentUrl;
+        const checkout =
+          action === "upgrade"
+            ? await upgrade({
+                planId: plan.id,
+                billingCycle: cycle,
+                couponCode: coupon.trim() || undefined,
+              })
+            : await purchase({
+                planId: plan.id,
+                billingCycle: cycle,
+                couponCode: coupon.trim() || undefined,
+              });
+        toast.success(
+          action === "upgrade"
+            ? "Redirecting to upgrade checkout…"
+            : "Redirecting to secure checkout…",
+        );
+        window.location.href = checkout.paymentUrl;
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Purchase failed");
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : action === "upgrade"
+              ? "Upgrade failed"
+              : "Purchase failed",
+        );
         setBuyingPlanId(null);
       }
     });
@@ -607,24 +675,40 @@ export function BillingPage() {
                 </ul>
 
                 <div className="mt-6">
-                  {isCurrent ? (
-                    <Button disabled className="w-full" variant="secondary">
-                      Current plan
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      disabled={!canEditSettings || pending || !configured}
-                      onClick={() => onPurchase(plan)}
-                    >
-                      {busy ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <ArrowRight className="size-4" />
-                      )}
-                      {canEditSettings ? "Continue to checkout" : "Admin only"}
-                    </Button>
-                  )}
+                  {(() => {
+                    const action = planAction(plan);
+                    if (action === "current") {
+                      return (
+                        <Button disabled className="w-full" variant="secondary">
+                          Current plan
+                        </Button>
+                      );
+                    }
+                    const label = !canEditSettings
+                      ? "Admin only"
+                      : action === "upgrade"
+                        ? "Upgrade plan"
+                        : action === "downgrade"
+                          ? "Downgrade"
+                          : "Continue to checkout";
+                    return (
+                      <Button
+                        className="w-full"
+                        variant={
+                          action === "downgrade" ? "outline" : "default"
+                        }
+                        disabled={!canEditSettings || pending || !configured}
+                        onClick={() => onSelectPlan(plan)}
+                      >
+                        {busy ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <ArrowRight className="size-4" />
+                        )}
+                        {label}
+                      </Button>
+                    );
+                  })()}
                 </div>
               </article>
             );

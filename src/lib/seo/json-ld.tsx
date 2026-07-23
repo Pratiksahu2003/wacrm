@@ -39,7 +39,7 @@ export function softwareApplicationJsonLd() {
     operatingSystem: "Web",
     url: OFFICIAL_APP_URL,
     description:
-      "WhatsApp Business CRM with shared inbox, contacts, pipelines, broadcasts, and automations.",
+      "WhatsApp Business CRM with shared inbox, contacts, pipelines, WhatsApp broadcasts, email marketing, and automations.",
     offers: {
       "@type": "Offer",
       url: abs("/pricing"),

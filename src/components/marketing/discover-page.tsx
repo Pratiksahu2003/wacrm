@@ -49,8 +49,9 @@ export function DiscoverPageContent() {
             Discover {PRODUCT_NAME}
           </h1>
           <p className="mt-4 text-lg leading-relaxed text-slate-600">
-            Everything in one place — dashboard modules, documentation, settings
-            tabs, roles, setup steps, and links across the VedMint ecosystem.
+            Everything in one place — dashboard modules (including email
+            marketing on Business+), documentation, settings tabs, roles, setup
+            steps, and links across the VedMint ecosystem.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Button
@@ -192,12 +193,12 @@ export function DiscoverPageContent() {
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Documentation</h2>
               <p className="text-sm text-slate-600">
-                Guides for setup, WhatsApp, and troubleshooting
+                Guides for setup, WhatsApp, email marketing, and troubleshooting
               </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {DOC_PAGES.map((page) => (
               <Link
                 key={page.href}

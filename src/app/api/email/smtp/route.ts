@@ -14,9 +14,21 @@ import {
   planGateResponse,
 } from "@/lib/vedmint-subscription/server";
 
+async function requireEmailMarketing(userId: string, accountId: string) {
+  try {
+    await assertCanPerform(userId, accountId, "email_marketing");
+    return null;
+  } catch (err) {
+    if (err instanceof PlanGateError) return planGateResponse(err);
+    throw err;
+  }
+}
+
 export async function GET() {
   try {
     const ctx = await requireRole("agent");
+    const gated = await requireEmailMarketing(ctx.userId, ctx.accountId);
+    if (gated) return gated;
     const settings = await getSmtpSettings(ctx.accountId);
     return NextResponse.json({ data: { settings } });
   } catch (err) {
@@ -27,12 +39,8 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const ctx = await requireRole("admin");
-    try {
-      await assertCanPerform(ctx.userId, ctx.accountId, "email_marketing");
-    } catch (err) {
-      if (err instanceof PlanGateError) return planGateResponse(err);
-      throw err;
-    }
+    const gated = await requireEmailMarketing(ctx.userId, ctx.accountId);
+    if (gated) return gated;
 
     const body = (await request.json().catch(() => ({}))) as {
       host?: string;
@@ -75,6 +83,8 @@ export async function PUT(request: Request) {
 export async function DELETE() {
   try {
     const ctx = await requireRole("admin");
+    const gated = await requireEmailMarketing(ctx.userId, ctx.accountId);
+    if (gated) return gated;
     await deleteSmtpSettings(ctx.accountId);
     return NextResponse.json({ data: { ok: true } });
   } catch (err) {
@@ -85,6 +95,9 @@ export async function DELETE() {
 export async function POST(request: Request) {
   try {
     const ctx = await requireRole("admin");
+    const gated = await requireEmailMarketing(ctx.userId, ctx.accountId);
+    if (gated) return gated;
+
     const body = (await request.json().catch(() => ({}))) as {
       action?: string;
       to?: string;

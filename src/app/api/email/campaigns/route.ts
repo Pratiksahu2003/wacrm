@@ -14,6 +14,12 @@ import {
 export async function GET() {
   try {
     const ctx = await requireRole("agent");
+    try {
+      await assertCanPerform(ctx.userId, ctx.accountId, "email_marketing");
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err);
+      throw err;
+    }
     const campaigns = await listCampaigns(ctx.accountId);
     return NextResponse.json({ data: { campaigns } });
   } catch (err) {

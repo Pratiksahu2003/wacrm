@@ -18,10 +18,11 @@ export function TroubleshootingPage() {
   return (
     <DocsShell
       title="Troubleshooting"
-      description="Common WhatsApp and CRM issues and where to fix them."
+      description="Common WhatsApp, email marketing, and CRM issues and where to fix them."
     >
       <div className="flex flex-wrap gap-2">
         <DocLinkButton href="/docs/whatsapp-setup" label="WhatsApp Setup" />
+        <DocLinkButton href="/docs/email-marketing" label="Email Marketing" />
         <DocLinkButton href="/docs/getting-started" label="Getting Started" />
       </div>
 

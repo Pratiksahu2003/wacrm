@@ -39,6 +39,7 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
       "Contact Management",
       "1 WhatsApp Business number",
       "Single-user workspace (no team invites)",
+      "No email marketing",
     ],
   },
   {
@@ -57,6 +58,7 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
       "Bulk WhatsApp",
       "Automation",
       "Up to 10 WhatsApp Business numbers",
+      "Email marketing (SMTP, lists, campaigns)",
       "Single-user workspace (no team invites)",
     ],
   },
@@ -75,6 +77,7 @@ export const PUBLIC_SUBSCRIPTION_PLANS: PublicPlan[] = [
       "Custom Integrations",
       "Unlimited WhatsApp Business numbers",
       "Team invites & multi-agent seats",
+      "Email marketing included",
     ],
   },
 ];
@@ -88,6 +91,7 @@ export const CUSTOM_PLAN = {
   ctaEmail: "support@vedmint.com",
   features: [
     "WhatsApp Business inbox, templates & broadcasts",
+    "Email marketing (SMTP, lists, templates, campaigns)",
     "Custom CRM / ERP modules for your business",
     "Automations, approvals & multi-branch workflows",
     "Dedicated implementation, training & handover",

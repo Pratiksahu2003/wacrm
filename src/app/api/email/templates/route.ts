@@ -5,6 +5,7 @@ import {
   createTemplate,
   listTemplates,
   STARTER_TEMPLATE_HTML,
+  STARTER_TEMPLATES,
 } from "@/lib/email-marketing/templates";
 import {
   assertCanPerform,
@@ -15,9 +16,19 @@ import {
 export async function GET() {
   try {
     const ctx = await requireRole("agent");
+    try {
+      await assertCanPerform(ctx.userId, ctx.accountId, "email_marketing");
+    } catch (err) {
+      if (err instanceof PlanGateError) return planGateResponse(err);
+      throw err;
+    }
     const templates = await listTemplates(ctx.accountId);
     return NextResponse.json({
-      data: { templates, starter_html: STARTER_TEMPLATE_HTML },
+      data: {
+        templates,
+        starter_html: STARTER_TEMPLATE_HTML,
+        starter_templates: STARTER_TEMPLATES,
+      },
     });
   } catch (err) {
     return toErrorResponse(err);

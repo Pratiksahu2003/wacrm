@@ -19,9 +19,11 @@ import {
 import {
   FEATURE_ALIASES,
   featureEnabledInMap,
+  isBusinessPlan,
   isEnterprisePlan,
   pickLimitValue,
   resolveFeatureKey,
+  EMAIL_MARKETING_PLAN_MESSAGE,
   TEAM_ENTERPRISE_ONLY_MESSAGE,
   whatsappNumberLimitForPlan,
   whatsappNumberLimitMessage,
@@ -325,6 +327,8 @@ export async function getEntitlementSnapshot(
     };
 
     const enterprisePlan = isEnterprisePlan({ planName, planSlug });
+    const emailMarketingPlan =
+      isBusinessPlan({ planName, planSlug }) || enterprisePlan;
 
     const features: Record<string, boolean> = {};
     (Object.keys(FEATURE_ALIASES) as PlanCapability[]).forEach((cap) => {
@@ -335,6 +339,9 @@ export async function getEntitlementSnapshot(
 
     // Hard gate: Team invites / seats are Enterprise-plan only.
     features.team = Boolean(active && enterprisePlan);
+
+    // Hard gate: Email marketing is Business + Enterprise only.
+    features.email_marketing = Boolean(active && emailMarketingPlan);
 
     const limits: Record<string, number | null> = {};
     (
@@ -572,6 +579,46 @@ export async function assertPlanCapability(
     }
   }
 
+  // Email marketing is Business + Enterprise only.
+  if (capability === "email_marketing") {
+    const accountId = opts?.accountId;
+    if (accountId) {
+      const snap = await getEntitlementSnapshot(userId, accountId);
+      if (!snap.features.email_marketing) {
+        throw new PlanGateError(EMAIL_MARKETING_PLAN_MESSAGE, {
+          code: "FEATURE_NOT_ALLOWED",
+          status: 403,
+          feature: "email_marketing",
+        });
+      }
+    } else {
+      const { result } = await withVedmintToken(userId, async (jwt) => {
+        const current = await getCurrentSubscription(jwt).catch(() => null);
+        return { current };
+      });
+      const plan =
+        result.current?.plan && typeof result.current.plan === "object"
+          ? result.current.plan
+          : null;
+      const planName =
+        (result.current?.plan_name as string) ||
+        (plan?.name as string) ||
+        null;
+      const planSlug =
+        (plan && typeof plan.slug === "string" ? plan.slug : null) || null;
+      if (
+        !isBusinessPlan({ planName, planSlug }) &&
+        !isEnterprisePlan({ planName, planSlug })
+      ) {
+        throw new PlanGateError(EMAIL_MARKETING_PLAN_MESSAGE, {
+          code: "FEATURE_NOT_ALLOWED",
+          status: 403,
+          feature: "email_marketing",
+        });
+      }
+    }
+  }
+
   const aliases = FEATURE_ALIASES[capability];
   let lastError: unknown = null;
 
@@ -584,7 +631,9 @@ export async function assertPlanCapability(
         throw new PlanGateError(
           capability === "team"
             ? TEAM_ENTERPRISE_ONLY_MESSAGE
-            : `Your plan does not allow you to ${capability.replace(/_/g, " ")}. Upgrade to continue.`,
+            : capability === "email_marketing"
+              ? EMAIL_MARKETING_PLAN_MESSAGE
+              : `Your plan does not allow you to ${capability.replace(/_/g, " ")}. Upgrade to continue.`,
           {
             code: "FEATURE_NOT_ALLOWED",
             status: 403,
@@ -619,9 +668,9 @@ export async function assertPlanCapability(
     }
   }
 
-  // Team already passed the Business gate above — allow if check-feature
-  // keys are unknown on the remote API.
-  if (capability === "team") return;
+  // Team / email marketing already passed the local plan gate above — allow
+  // if check-feature keys are unknown on the remote API.
+  if (capability === "team" || capability === "email_marketing") return;
 
   // If every check-feature call failed (unknown keys), allow when sub is active.
   if (lastError) {

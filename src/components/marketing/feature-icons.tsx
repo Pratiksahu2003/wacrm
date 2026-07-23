@@ -1,6 +1,7 @@
 import {
   GitBranch,
   LayoutDashboard,
+  Mail,
   MessageSquare,
   Radio,
   Settings,
@@ -17,6 +18,7 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   contacts: Users,
   pipelines: GitBranch,
   broadcasts: Radio,
+  "email-marketing": Mail,
   automations: Zap,
   flows: Workflow,
   settings: Settings,
